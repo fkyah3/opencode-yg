@@ -46,11 +46,12 @@ function sdkKey(npm: string): string | undefined {
 }
 
 // Returns the providerOptions key that the AI SDK expects for the given model.
-// For @ai-sdk/openai-compatible, the provider is instantiated with name: model.providerID
-// (see provider.ts resolveSDK), so the providerOptions key must be model.providerID.
+// Note: @ai-sdk/openai-compatible's getOpenAIMetadata() hardcodes "openaiCompatible"
+// as the providerOptions key (see node_modules/@ai-sdk/openai-compatible/dist/index.mjs),
+// so we must use that key regardless of the provider's instantiated name.
 function providerOptionsKey(model: Provider.Model): string {
   if (model.api.npm === "@ai-sdk/openai-compatible") {
-    return model.providerID
+    return "openaiCompatible"
   }
   return sdkKey(model.api.npm) ?? "openaiCompatible"
 }
