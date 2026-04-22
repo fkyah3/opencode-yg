@@ -45,6 +45,16 @@ function sdkKey(npm: string): string | undefined {
   return undefined
 }
 
+// Returns the providerOptions key that the AI SDK expects for the given model.
+// For @ai-sdk/openai-compatible, the provider is instantiated with name: model.providerID
+// (see provider.ts resolveSDK), so the providerOptions key must be model.providerID.
+function providerOptionsKey(model: Provider.Model): string {
+  if (model.api.npm === "@ai-sdk/openai-compatible") {
+    return model.providerID
+  }
+  return sdkKey(model.api.npm) ?? "openaiCompatible"
+}
+
 function normalizeMessages(
   msgs: ModelMessage[],
   model: Provider.Model,
@@ -177,6 +187,7 @@ function normalizeMessages(
 
   if (typeof model.capabilities.interleaved === "object" && model.capabilities.interleaved.field) {
     const field = model.capabilities.interleaved.field
+    const key = providerOptionsKey(model)
     return msgs.map((msg) => {
       if (msg.role === "assistant" && Array.isArray(msg.content)) {
         const reasoningParts = msg.content.filter((part: any) => part.type === "reasoning")
@@ -192,8 +203,8 @@ function normalizeMessages(
             content: filteredContent,
             providerOptions: {
               ...msg.providerOptions,
-              openaiCompatible: {
-                ...msg.providerOptions?.openaiCompatible,
+              [key]: {
+                ...msg.providerOptions?.[key],
                 [field]: reasoningText,
               },
             },
@@ -217,6 +228,7 @@ function applyCaching(msgs: ModelMessage[], model: Provider.Model): ModelMessage
   const system = msgs.filter((msg) => msg.role === "system").slice(0, 2)
   const final = msgs.filter((msg) => msg.role !== "system").slice(-2)
 
+  const key = providerOptionsKey(model)
   const providerOptions = {
     anthropic: {
       cacheControl: { type: "ephemeral" },
@@ -227,7 +239,7 @@ function applyCaching(msgs: ModelMessage[], model: Provider.Model): ModelMessage
     bedrock: {
       cachePoint: { type: "default" },
     },
-    openaiCompatible: {
+    [key]: {
       cache_control: { type: "ephemeral" },
     },
     copilot: {
