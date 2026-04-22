@@ -207,7 +207,11 @@ function normalizeMessages(
         // (even if empty) to satisfy API requirements for thinking mode.
         const isAfterLastUser = index > lastUserIndex
 
-        if (reasoningText || isAfterLastUser) {
+        // Some APIs (e.g. Kimi K2.5, K2.6 via OpenAI-compatible) require reasoning_content
+        // on assistant messages that contain tool calls, even if the reasoning text is empty.
+        const hasToolCalls = msg.content.some((part: any) => part.type === "tool-call")
+
+        if (reasoningText || isAfterLastUser || hasToolCalls) {
           return {
             ...msg,
             content: filteredContent,
