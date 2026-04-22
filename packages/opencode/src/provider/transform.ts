@@ -188,7 +188,13 @@ function normalizeMessages(
   if (typeof model.capabilities.interleaved === "object" && model.capabilities.interleaved.field) {
     const field = model.capabilities.interleaved.field
     const key = providerOptionsKey(model)
-    return msgs.map((msg) => {
+
+    // Find the index of the last user message.
+    // Some APIs (e.g. DeepSeek, Kimi) require every assistant message after the last user
+    // message to include a reasoning_content field, even if empty.
+    const lastUserIndex = msgs.map((m) => m.role).lastIndexOf("user")
+
+    return msgs.map((msg, index) => {
       if (msg.role === "assistant" && Array.isArray(msg.content)) {
         const reasoningParts = msg.content.filter((part: any) => part.type === "reasoning")
         const reasoningText = reasoningParts.map((part: any) => part.text).join("")
@@ -196,8 +202,11 @@ function normalizeMessages(
         // Filter out reasoning parts from content
         const filteredContent = msg.content.filter((part: any) => part.type !== "reasoning")
 
-        // Include reasoning_content | reasoning_details directly on the message for all assistant messages
-        if (reasoningText) {
+        // For assistant messages after the last user message, always include the field
+        // (even if empty) to satisfy API requirements for thinking mode.
+        const isAfterLastUser = index > lastUserIndex
+
+        if (reasoningText || isAfterLastUser) {
           return {
             ...msg,
             content: filteredContent,
@@ -205,7 +214,7 @@ function normalizeMessages(
               ...msg.providerOptions,
               [key]: {
                 ...msg.providerOptions?.[key],
-                [field]: reasoningText,
+                [field]: reasoningText || "",
               },
             },
           }
