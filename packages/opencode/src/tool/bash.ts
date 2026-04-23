@@ -283,7 +283,11 @@ const ask = Effect.fn("BashTool.ask")(function* (ctx: Tool.Context, scan: Scan) 
 
 function cmd(shell: string, name: string, command: string, cwd: string, env: NodeJS.ProcessEnv) {
   if (process.platform === "win32" && PS.has(name)) {
-    return ChildProcess.make(shell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command], {
+    // chcp alone is insufficient: PowerShell's [Console]::OutputEncoding and
+    // $OutputEncoding also default to the system ANSI code page (e.g. 936 GBK
+    // on Chinese Windows), garbling CJK output when read as UTF-8.
+    const psPrefix = "chcp 65001 > $null; [Console]::OutputEncoding = [Text.UTF8Encoding]::new(); $OutputEncoding = [Text.UTF8Encoding]::new(); "
+    return ChildProcess.make(shell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", `${psPrefix}${command}`], {
       cwd,
       env,
       stdin: "ignore",
@@ -291,7 +295,12 @@ function cmd(shell: string, name: string, command: string, cwd: string, env: Nod
     })
   }
 
-  return ChildProcess.make(command, [], {
+  // On Windows, chcp 65001 is NOT inherited from the parent process.
+  // Each spawned cmd.exe gets the system default code page (e.g. 936 GBK),
+  // which garbles Chinese/CJK output when read as UTF-8.
+  // For cmd.exe, chcp is sufficient (no .NET encoding layer to fix).
+  const cmdPrefix = process.platform === "win32" ? `chcp 65001 > nul && ` : ""
+  return ChildProcess.make(`${cmdPrefix}${command}`, [], {
     shell,
     cwd,
     env,
