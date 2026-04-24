@@ -33,27 +33,61 @@ Magic Context 侧边栏始终空白不渲染。根因：OpenCode fork 的 `TuiOp
 
 提交：`c1a595acc`
 
-### 3. DeepSeek V4 思考模式 reasoning_content 回传修复
+### 3. DeepSeek 思考模式 reasoning_content 回传修复（核心修复）
 
-**问题**：DeepSeek V4 在思考模式（`thinking: {type: "enabled"}`）下使用工具调用时，报错 `The reasoning_content in the thinking mode must be passed back to the API`。
+**问题**：DeepSeek 模型在思考模式（V4: `thinking: {type: "enabled"}` / R1: 内置）下使用工具调用时，第二轮起报错：
 
-**根因**：OpenCode 的 `@ai-sdk/openai-compatible` 适配器在消息序列化时，未保存 `reasoning_content` 字段。后续轮次回放消息时该字段丢失，DeepSeek API 要求有工具调用的轮次必须完整回传。
+> The `reasoning_content` in the thinking mode must be passed back to the API.
 
-**修复**：在 `opencode.json` 的 V4 模型配置中添加 `interleaved` 字段，告知 SDK 该字段需要跨轮次保留：
+每条消息都失败，对话直接锁死。纯聊天无 tool call 时不触发，一旦有工具调用则必然发生。
 
-```json
-"deepseek-v4-flash": {
-  "interleaved": {
-    "field": "reasoning_content"
-  }
+**根因**：DeepSeek API 要求思考模式下**所有** assistant 消息都必须携带 `reasoning_content` 字段（无推理内容时传空字符串 `""`）。但 OpenCode 的 `normalizeMessages()`（`packages/opencode/src/provider/transform.ts`）有两个缺陷：
+
+1. **入口条件过窄**：只有配置了 `model.capabilities.interleaved` 的模型才能进入 `reasoning_content` 注入分支。R1 等模型只有 `capabilities.reasoning = true`，被完全跳过。
+2. **内层条件遗漏**：注入分支内，对 `reasoning_content` 的附加条件（有推理文本 / 在最后 user 之后 / 有 tool call）过滤掉了从 DB 回放的历史消息，而这些恰是 DeepSeek API 最需要的。
+
+**源码头修复（commit `b5b6ad05d`）**：
+
+```typescript
+// 1️⃣ 入口条件：interleaved || reasoning || 消息已含 reasoning parts
+const hasReasoningContent =
+  isInterleaved ||
+  model.capabilities.reasoning ||
+  msgs.some((msg) =>
+    msg.role === "assistant" &&
+    Array.isArray(msg.content) &&
+    msg.content.some((part: any) => part.type === "reasoning"),
+  )
+
+// 2️⃣ 去掉内层条件：所有 assistant 消息无条件注入 reasoning_content
+// （无推理内容 = 空字符串，旧 DB 格式的 string content 也处理）
+if (hasReasoningContent) {
+  return msgs.map((msg) => {
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      // ... 提取 reasoningText，filter out reasoning parts
+      return { ...msg, content: filteredContent, providerOptions: { [field]: reasoningText || "" } }
+    }
+    if (msg.role === "assistant" && typeof msg.content === "string") {
+      return { ...msg, providerOptions: { [field]: "" } }
+    }
+    return msg
+  })
 }
 ```
 
-**注意**：`deepseek-reasoner`（R1）**不需要**此配置。旧 R1 的文档明确指出传入 `reasoning_content` 会返回 400，与 V4 行为相反。
+**Workaround（仅 V4，临时）**：在 `opencode.json` 的 V4 模型配置中添加 `interleaved` 字段可绕过入口条件，但内层条件依然会漏——这是该 workaround 不能彻底解决的原因：
+
+```json
+"deepseek-v4-flash": {
+  "interleaved": { "field": "reasoning_content" }
+}
+```
 
 **参考**：
-- DeepSeek 思考模式文档：`https://api-docs.deepseek.com/zh-cn/guides/thinking_mode`
-- 社区 issue：#6040、#8934、#9397、#10788、#17523
+- 根因分析文档：`E:\fkyah3\Agent\deepseek\doc\reasoning_content-loss-root-cause-analysis.md`
+- Fork issue 跟踪：`fkyah3_dev/issues/001-reasoning_content-thinking-mode.md`
+- Upstream issue：`anomalyco/opencode#24104`
+- 社区 issue：#17523、#19081、#8934、#6040
 
 ---
 
@@ -74,10 +108,12 @@ bun run --conditions=browser src/index.ts
 | 路径 | 说明 |
 |------|------|
 | `fkyah3_dev/README.md` | 本文件 — 分支介绍 |
+| `fkyah3_dev/issues/` | 已知问题和修复记录（issues 已禁用时的替代） |
 | `fkyah3_dev/做了什么/` | 详细贡献总结 |
 | `fkyah3_dev/ACHIEVEMENTS.md` | 修订记录 |
 | `fkyah3_dev/internal/` | 内部工作文档（无关观众） |
 | `opencodesrc.ps1` | 推荐启动脚本 |
+| `E:\fkyah3\Agent\deepseek\doc\` | 根因分析文档索引（AI 内部参考） |
 
 ---
 
