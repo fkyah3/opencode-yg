@@ -3,6 +3,10 @@
 > 基于 [anomalyco/opencode](https://github.com/anomalyco/opencode) v1.14.19
 > 这些 bug 在社区挂了几个月，没人愿意修 Windows 平台的问题。我们修了。
 >
+> **代码实现：AI（DeepSeek v4Lite / Sisyphus）**  
+> **反馈与质量监督：fkyah3（人工）**  
+> 本分支所有修复和优化由 AI 完成。人类负责发现问题、确认方向、紧急刹车。
+>
 > **⚠️ 本分支所有配置优化和修复均基于 DeepSeek 系列模型。** 使用其他模型的用户可能需要调整配置。
 
 ---

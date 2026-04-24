@@ -12,6 +12,11 @@
 **这是 [anomalyco/opencode](https://github.com/anomalyco/opencode) 的个人维护分支。**  
 专注于解决 Windows 平台问题和 DeepSeek 模型兼容性。
 
+> **代码实现：AI（DeepSeek v4Lite / Sisyphus）**  
+> **反馈与质量监督：fkyah3（人工）**  
+> 这个分支的所有修复和优化由 AI 完成。人类负责发现问题、确认方向、紧急刹车。  
+> 详见 [`fkyah3_dev/`](./fkyah3_dev/)。
+
 ## 本分支修复了什么问题
 
 - **[Windows CJK 编码]** 子进程中文输出乱码（GBK → UTF-8 三层注入）
