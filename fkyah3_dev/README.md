@@ -89,6 +89,24 @@ if (hasReasoningContent) {
 - Upstream issue：`anomalyco/opencode#24104`
 - 社区 issue：#17523、#19081、#8934、#6040
 
+### 4. 仓库清理与分支管理 / Repo Cleanup
+
+**问题**：Fork 时复制了 upstream 全部 373 个分支，导致仓库首页被噪音淹没，难以区分哪些是我们的修复。
+
+**操作**：
+1. 在最新 commit 创建 `main` 稳定分支，推送至远程
+2. 将 GitHub 默认分支从 `fix/permission-reasoning-truncation` 切换为 `main`
+3. 通过 GitHub API 列出全部远端分支
+4. **白名单保留** `main` 和 `fix/permission-reasoning-truncation`，其余 373 个分两批批量删除
+5. 每次删除后立即验证，确保我们自己的分支完好
+6. 清理本地孤儿分支和 remote-tracking refs
+
+**结果**：远程只保留两个分支：
+- `main`（默认）—— 稳定构建版本，首页展示 fork README
+- `fix/permission-reasoning-truncation` —— 开发分支
+
+**风险控制**：先建 `main` + 改默认分支再删，确保仓库永不处于无默认分支状态。白名单过滤而非黑名单排除，保证永远不会误删自己的分支。
+
 ---
 
 ## 启动 / How to Run
@@ -111,7 +129,7 @@ bun run --conditions=browser src/index.ts
 | `fkyah3_dev/analysis/` | 根因分析文档（问题追踪 + 技术细节） |
 | `fkyah3_dev/issues/` | 已知问题和修复记录（issues 已禁用时的替代） |
 | `fkyah3_dev/做了什么/` | 详细贡献总结 |
-| `fkyah3_dev/ACHIEVEMENTS.md` | 修订记录 |
+| `fkyah3_dev/ACHIEVEMENTS.md` | 修订记录（含难度评估和排查过程） |
 | `fkyah3_dev/internal/` | 内部工作文档（无关观众） |
 | `opencodesrc.ps1` | 推荐启动脚本 |
 
