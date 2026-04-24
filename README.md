@@ -1,3 +1,7 @@
+<!-- ⚠️  fkyah3/opencode-fkyah3 — 本 fork 包含 Windows 专属修复  -->
+<!--     中文用户请查看 fkyah3_dev/README.md                     -->
+<!--     English: see fkyah3_dev/README.md for fork changes       -->
+
 <p align="center">
   <a href="https://opencode.ai">
     <picture>
@@ -8,6 +12,11 @@
   </a>
 </p>
 <p align="center">The open source AI coding agent.</p>
+
+> [!NOTE]
+> **fkyah3/opencode-fkyah3** — Windows 平台专属修复分支。包含 CJK 编码修复、TUI 插件加载修复等。
+> 详见 [`fkyah3_dev/README.md`](fkyah3_dev/README.md)（中英双语）。
+>
 <p align="center">
   <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
   <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>

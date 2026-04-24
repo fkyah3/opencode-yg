@@ -7,5 +7,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 #    same settings into every spawned PowerShell/cmd command.
 # ──────────────────────────────────────────────────────────────────
 $here = Get-Location
-Set-Location "E:\fkyah3\Agent\deepseek\opecode\opencode-fkyah3\packages\opencode"
+# Ensure we're in the opencode package directory (works with any clone path)
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location "$scriptDir\packages\opencode"
 bun run --conditions=browser src/index.ts $here
