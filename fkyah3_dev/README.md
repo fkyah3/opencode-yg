@@ -84,7 +84,7 @@ if (hasReasoningContent) {
 ```
 
 **参考**：
-- 根因分析文档：`E:\fkyah3\Agent\deepseek\doc\reasoning_content-loss-root-cause-analysis.md`
+- 根因分析文档：`fkyah3_dev/analysis/reasoning_content-loss-root-cause-analysis.md`
 - Fork issue 跟踪：`fkyah3_dev/issues/001-reasoning_content-thinking-mode.md`
 - Upstream issue：`anomalyco/opencode#24104`
 - 社区 issue：#17523、#19081、#8934、#6040
@@ -108,12 +108,12 @@ bun run --conditions=browser src/index.ts
 | 路径 | 说明 |
 |------|------|
 | `fkyah3_dev/README.md` | 本文件 — 分支介绍 |
+| `fkyah3_dev/analysis/` | 根因分析文档（问题追踪 + 技术细节） |
 | `fkyah3_dev/issues/` | 已知问题和修复记录（issues 已禁用时的替代） |
 | `fkyah3_dev/做了什么/` | 详细贡献总结 |
 | `fkyah3_dev/ACHIEVEMENTS.md` | 修订记录 |
 | `fkyah3_dev/internal/` | 内部工作文档（无关观众） |
 | `opencodesrc.ps1` | 推荐启动脚本 |
-| `E:\fkyah3\Agent\deepseek\doc\` | 根因分析文档索引（AI 内部参考） |
 
 ---
 
