@@ -1,11 +1,19 @@
-<p align="center">
-  <picture>
-    <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
-    <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-    <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo" width="400">
-  </picture>
-</p>
-<p align="center"><b>fkyah3/opencode-fkyah3</b> — Windows 优先 + DeepSeek 优化分支</p>
+<p align="center"><b>fkyah3/opencode-fkyah3</b> — Windows-first fork, optimized for DeepSeek</p>
+
+---
+
+**English** · [简体中文](./README.zh.md) · [繁體中文](./README.zht.md)
+
+---
+
+This is a personal fork of [anomalyco/opencode](https://github.com/anomalyco/opencode), focused on Windows platform compatibility and DeepSeek model support.
+
+The upstream project is excellent, but Windows and DeepSeek have different priorities there. Rather than waiting on open issues, we chose to address these problems ourselves and move at our own pace.
+
+> **Code by: AI (DeepSeek v4Lite / Sisyphus)**  
+> **Review & direction: fkyah3 (human)**  
+> All fixes and optimizations in this fork are implemented by AI. The human reviews the output and catches direction errors.  
+> See [`fkyah3_dev/`](./fkyah3_dev/) for details.
 
 ---
 
@@ -19,29 +27,30 @@
 > 这个分支的所有修复和优化由 AI 完成。人类负责发现问题、确认方向、紧急刹车。  
 > 详见 [`fkyah3_dev/`](./fkyah3_dev/)。
 
-## 本分支修复了什么问题
+---
 
-- **[Windows CJK 编码]** 子进程中文输出乱码（GBK → UTF-8 三层注入）
-- **[TUI 插件加载]** Magic Context 侧边栏空白（Zod schema `show_thinking` 未声明）
-- **[DeepSeek 思考模式]** `reasoning_content` 丢失导致 API 400（核心修复，已提交 upstream issue [#24104](https://github.com/anomalyco/opencode/issues/24104)）
+## What's Fixed / 修复列表
 
-## 快速开始
+- **[Windows CJK Encoding]** Garbled Chinese output in subprocesses (GBK → UTF-8, 3-layer fix)
+- **[TUI Plugin Loading]** Magic Context sidebar blank (Zod schema `show_thinking` undeclared)
+- **[DeepSeek Thinking Mode]** `reasoning_content` lost on replay causing API 400 (core fix, upstream issue [#24104](https://github.com/anomalyco/opencode/issues/24104))
+
+## Quick Start / 快速开始
 
 ```powershell
-# 从源码运行（推荐）
 cd packages/opencode
 bun run --conditions=browser src/index.ts
 ```
 
-## 了解更多
+## Learn More / 了解更多
 
-| 位置 | 内容 |
+| Location / 位置 | What's there / 内容 |
 |------|------|
-| [`fkyah3_dev/README.md`](./fkyah3_dev/README.md) | 完整修复详情、根因分析入口 |
-| [`fkyah3_dev/issues/`](./fkyah3_dev/issues/) | 已知问题和修复跟踪 |
-| [`fkyah3_dev/analysis/`](./fkyah3_dev/analysis/) | 根因分析文档（含代码流程图） |
+| [`fkyah3_dev/README.md`](./fkyah3_dev/README.md) | Full fix details & root cause analysis |
+| [`fkyah3_dev/issues/`](./fkyah3_dev/issues/) | Issue tracking & resolution records |
+| [`fkyah3_dev/analysis/`](./fkyah3_dev/analysis/) | Deep-dive analysis docs with code flow |
 
 ## Upstream
 
-本项目基于 [anomalyco/opencode](https://github.com/anomalyco/opencode)（Apache 2.0）。  
-所有上游变更定期合并。
+Based on [anomalyco/opencode](https://github.com/anomalyco/opencode) (Apache 2.0).  
+Changes from upstream are merged regularly.
