@@ -2,6 +2,7 @@
 - ALWAYS USE PARALLEL TOOLS WHEN APPLICABLE.
 - The default branch in this repo is `dev`.
 - Local `main` ref may not exist; use `dev` or `origin/dev` for diffs.
+- **fkyah3 fork**: 启动/数据库/分支说明见 `specs/fkyah3_dev/DEV_STARTUP.md`
 - Prefer automation: execute requested actions without confirmation unless blocked by missing info or safety/irreversibility.
 
 ## Style Guide

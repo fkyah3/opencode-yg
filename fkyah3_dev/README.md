@@ -2,6 +2,8 @@
 
 > 基于 [anomalyco/opencode](https://github.com/anomalyco/opencode) v1.14.19
 > 这些 bug 在社区挂了几个月，没人愿意修 Windows 平台的问题。我们修了。
+>
+> **⚠️ 本分支所有配置优化和修复均基于 DeepSeek 系列模型。** 使用其他模型的用户可能需要调整配置。
 
 ---
 
@@ -30,6 +32,28 @@ Magic Context 侧边栏始终空白不渲染。根因：OpenCode fork 的 `TuiOp
 **修复**：在 `packages/opencode/src/cli/cmd/tui/config/tui-schema.ts` 中新增 `show_thinking: z.boolean().optional()`。一行代码，三个月没人找到。
 
 提交：`c1a595acc`
+
+### 3. DeepSeek V4 思考模式 reasoning_content 回传修复
+
+**问题**：DeepSeek V4 在思考模式（`thinking: {type: "enabled"}`）下使用工具调用时，报错 `The reasoning_content in the thinking mode must be passed back to the API`。
+
+**根因**：OpenCode 的 `@ai-sdk/openai-compatible` 适配器在消息序列化时，未保存 `reasoning_content` 字段。后续轮次回放消息时该字段丢失，DeepSeek API 要求有工具调用的轮次必须完整回传。
+
+**修复**：在 `opencode.json` 的 V4 模型配置中添加 `interleaved` 字段，告知 SDK 该字段需要跨轮次保留：
+
+```json
+"deepseek-v4-flash": {
+  "interleaved": {
+    "field": "reasoning_content"
+  }
+}
+```
+
+**注意**：`deepseek-reasoner`（R1）**不需要**此配置。旧 R1 的文档明确指出传入 `reasoning_content` 会返回 400，与 V4 行为相反。
+
+**参考**：
+- DeepSeek 思考模式文档：`https://api-docs.deepseek.com/zh-cn/guides/thinking_mode`
+- 社区 issue：#6040、#8934、#9397、#10788、#17523
 
 ---
 
