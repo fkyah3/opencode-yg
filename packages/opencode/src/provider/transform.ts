@@ -50,10 +50,14 @@ function sdkKey(npm: string): string | undefined {
 // as the providerOptions key (see node_modules/@ai-sdk/openai-compatible/dist/index.mjs),
 // so we must use that key regardless of the provider's instantiated name.
 function providerOptionsKey(model: Provider.Model): string {
-  if (model.api.npm === "@ai-sdk/openai-compatible") {
+  // @ai-sdk/openai-compatible's getOpenAIMetadata() hardcodes "openaiCompatible"
+  // as the providerOptions key for reasoning content. Any provider wrapping
+  // openai-compatible (e.g., @openrouter/ai-sdk-provider) inherits this behavior.
+  const npm = model.api.npm
+  if (npm === "@ai-sdk/openai-compatible" || npm === "@openrouter/ai-sdk-provider") {
     return "openaiCompatible"
   }
-  return sdkKey(model.api.npm) ?? "openaiCompatible"
+  return sdkKey(npm) ?? "openaiCompatible"
 }
 
 function normalizeMessages(
