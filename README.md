@@ -12,6 +12,8 @@
 **这是 [anomalyco/opencode](https://github.com/anomalyco/opencode) 的个人维护分支。**  
 专注于解决 Windows 平台问题和 DeepSeek 模型兼容性。
 
+这个分支源于个人使用需求。上游是个优秀的项目，但 Windows 平台和 DeepSeek 模型的兼容性不是他们的优先方向。与其在 issue 里等待，我们选择自己处理这些问题，按自己的节奏推进。
+
 > **代码实现：AI（DeepSeek v4Lite / Sisyphus）**  
 > **反馈与质量监督：fkyah3（人工）**  
 > 这个分支的所有修复和优化由 AI 完成。人类负责发现问题、确认方向、紧急刹车。  
