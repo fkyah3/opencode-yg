@@ -43,14 +43,13 @@ export function DialogSessionList() {
         return result.data ?? []
       }
       const offset = page * pageSize
-      Log.Default.info("session-list fetch", { page, offset })
       const result = await sdk.client.session.list({ limit: pageSize, offset })
       return result.data ?? []
     },
   )
 
   const currentSessionID = createMemo(() => (route.data.type === "session" ? route.data.sessionID : undefined))
-  const sessions = createMemo(() => allSessions() ?? sync.data.session)
+  const sessions = createMemo(() => allSessions() ?? [])
 
   function createWorkspace() {
     dialog.replace(() => (
