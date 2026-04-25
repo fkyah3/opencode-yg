@@ -1,18 +1,18 @@
 <p align="center"><b>fkyah3/opencode-fkyah3</b><br>
-<code>DeepSeek-optimized · Windows-hardened · AI-crafted</code></p>
+<code>DeepSeek 优化 · Windows 适配 · AI 实现</code></p>
 
 <p align="center">
-  <a href="./README.zh.md">简体中文</a> · <a href="./README.zht.md">繁體中文</a>
+  <a href="./SETUP.md"><b>🚀 从零搭建指南（中文）</b></a> · <a href="./README.en.md">English</a> · <a href="./README.zht.md">繁體中文</a>
 </p>
 
 ---
 
-This is a personal fork of [anomalyco/opencode](https://github.com/anomalyco/opencode). Every fix, optimization, and feature in this repository was implemented entirely by AI — specifically **DeepSeek V4 Flash (thinking mode) / Sisyphus** — under human oversight.
+本项目是 [anomalyco/opencode](https://github.com/anomalyco/opencode) 的个人 Fork。所有修复、优化、功能均由 AI 完成——**DeepSeek V4 Flash (thinking mode) / Sisyphus**——在人类监督下执行。
 
-The upstream project is excellent. Windows and DeepSeek are simply not their priority. We handle those ourselves.
+上游是优秀项目。Windows 和 DeepSeek 并非他们的优先方向。我们自行处理。
 
-> **Code by: DeepSeek V4 Flash (thinking mode) / Sisyphus**  
-> **Human reviewer & direction: fkyah3**  
+> **代码实现：DeepSeek V4 Flash (thinking mode) / Sisyphus（AI）**  
+> **人工审核与方向把控：fkyah3**  
 > This fork is a live demonstration of what AI-built software looks like.  
 > See [`fkyah3_dev/`](./fkyah3_dev/) for the full story.
 
