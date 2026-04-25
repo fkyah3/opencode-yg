@@ -8,7 +8,7 @@ import { type ProviderMetadata, type LanguageModelUsage } from "ai"
 import { Flag } from "../flag/flag"
 import { InstallationVersion } from "../installation/version"
 
-import { Database, NotFoundError, eq, and, gte, isNull, desc, like, inArray, lt } from "../storage"
+import { Database, NotFoundError, eq, and, gte, isNull, desc, like, inArray, lt, sql } from "../storage"
 import { SyncEvent } from "../sync"
 import type { SQL } from "../storage"
 import { PartTable, SessionTable } from "./session.sql"
@@ -699,6 +699,22 @@ export const layer: Layer.Layer<Service, never, Bus.Service | Storage.Service> =
 
 export const defaultLayer = layer.pipe(Layer.provide(Bus.layer), Layer.provide(Storage.defaultLayer))
 
+// fkyah3: migrate all existing sessions to global project ID
+// when global session pool mode is enabled
+export function* migrateSessionsToGlobal() {
+  if (!Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) return
+  const result = Database.use((db) =>
+    db
+      .update(SessionTable)
+      .set({ project_id: ProjectID.global })
+      .where(sql`${SessionTable.project_id} != ${ProjectID.global}`)
+      .run(),
+  )
+  yield* Effect.log(`[fkyah3] migrated ${result.changes} sessions to global project ID`)
+}
+
+let migrated = false
+
 export function* list(input?: {
   directory?: string
   workspaceID?: WorkspaceID
@@ -708,6 +724,10 @@ export function* list(input?: {
   limit?: number
 }) {
   if (Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) {
+    if (!migrated) {
+      yield* migrateSessionsToGlobal()
+      migrated = true
+    }
     return yield* listGlobal(input)
   }
   const project = Instance.project
