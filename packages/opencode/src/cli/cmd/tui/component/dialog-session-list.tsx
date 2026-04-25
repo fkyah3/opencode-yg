@@ -220,12 +220,12 @@ export function DialogSessionList() {
           title: "delete",
           onTrigger: async (option) => {
             // fkyah3: prevent deletion while AI is actively working
-            const sessionStatus = sync.data.session_status?.[option.value]
-            if (sessionStatus?.type === "busy" || sessionStatus?.type === "compacting") {
+            const activeStatus = sync.session.status(option.value)
+            if (activeStatus === "working" || activeStatus === "compacting") {
               toast.show({
                 variant: "info",
-                title: "Can't delete",
-                message: "Wait for the AI to finish before deleting this session.",
+                title: "无法删除",
+                message: "AI 正在工作中，请等待完成后再删除此对话。",
               })
               setToDelete(undefined)
               return
