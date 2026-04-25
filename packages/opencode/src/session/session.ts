@@ -706,6 +706,7 @@ export function* list(input?: {
   start?: number
   search?: string
   limit?: number
+  offset?: number
 }) {
   if (Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) {
     return yield* listGlobal(input)
