@@ -102,6 +102,9 @@ const cli = yargs(args)
       })(),
     })
 
+    Log.Default.info(`=== SESSION START [${new Date().toISOString()}] ===`)
+    Log.Default.info(`workdir=${process.cwd()} pid=${process.pid} version=${Installation.version}`)
+
     Heap.start()
 
     process.env.AGENT = "1"

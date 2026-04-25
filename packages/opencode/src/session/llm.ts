@@ -391,6 +391,11 @@ const live: Layer.Layer<
               specificationVersion: "v3" as const,
               async transformParams(args) {
                 if (args.type === "stream") {
+                  const msgs = args.params.prompt as ModelMessage[]
+                  const assistantCount = msgs.filter((m: ModelMessage) => m.role === "assistant").length
+                  Log.Default.info(
+                    `[sisyphus-debug] normalizeMessages called: ${msgs.length} msgs, ${assistantCount} assistant`,
+                  )
                   // @ts-expect-error
                   args.params.prompt = ProviderTransform.message(args.params.prompt, input.model, options)
                 }
