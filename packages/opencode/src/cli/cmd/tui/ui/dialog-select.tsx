@@ -23,6 +23,7 @@ export interface DialogSelectProps<T> {
   onFilter?: (query: string) => void
   onSelect?: (option: DialogSelectOption<T>) => void
   skipFilter?: boolean
+  hideSearch?: boolean
   keybind?: {
     keybind?: Keybind.Info
     title: string
@@ -250,6 +251,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
             esc
           </text>
         </box>
+        <Show when={!props.hideSearch}>
         <box paddingTop={1}>
           <input
             onInput={(e) => {
@@ -274,6 +276,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
             placeholderColor={theme.textMuted}
           />
         </box>
+        </Show>
       </box>
       <Show
         when={grouped().length > 0}

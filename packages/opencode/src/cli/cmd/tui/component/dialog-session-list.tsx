@@ -182,14 +182,16 @@ export function DialogSessionList() {
   })
 
   onMount(() => {
-    dialog.setSize("large")
+    dialog.setSize("xlarge")
     sync.session.refresh()
   })
 
   return (
     <DialogSelect
-      title="Sessions"
+      title={`Sessions (Page ${page() + 1})`}
       options={options()}
+      // fkyah3: hide search in global mode — use arrow keys for page nav instead
+      hideSearch={true}
       skipFilter={true}
       current={currentSessionID()}
       onFilter={setSearch}
