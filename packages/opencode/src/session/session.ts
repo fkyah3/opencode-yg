@@ -707,6 +707,9 @@ export function* list(input?: {
   search?: string
   limit?: number
 }) {
+  if (Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) {
+    return yield* listGlobal(input)
+  }
   const project = Instance.project
   const conditions = [eq(SessionTable.project_id, project.id)]
 
