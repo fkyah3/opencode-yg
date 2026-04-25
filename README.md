@@ -28,6 +28,9 @@
 | Per-session log isolation (no more truncated dev.log on restart) | **DX** |
 | Windows CJK encoding — 3-layer GBK/UTF-8 fix for subprocess pipes | **Win32** |
 | TUI plugin loading — Magic Context sidebar blank due to Zod strict mode | **TUI** |
+| MC tool truncation — `[truncated]` → `[tool: N lines, MKB \| preview]` for compressed context | **MC** |
+| DeepSeek V4 architecture research → config alignment: 800K context, 85% MC threshold, CSA-aligned compression | **V4** |
+| Full Chinese system prompt: Sisyphus, keyword-detector, system messages, environment info | **i18n** |
 
 ## Quick Start
 
@@ -42,7 +45,7 @@ bun run --conditions=browser src/index.ts
 
 ```jsonc
 "deepseek-v4-flash": {
-  "limit": { "context": 500000, "output": 393216 },
+  "limit": { "context": 800000, "output": 393216 },
   "options": {
     "reasoningEffort": "max",
     "thinking": { "type": "enabled" }
@@ -55,7 +58,7 @@ bun run --conditions=browser src/index.ts
 
 ```jsonc
 "deepseek-v4-pro": {
-  "limit": { "context": 500000, "output": 262144 },
+  "limit": { "context": 800000, "output": 262144 },
   "options": {
     "reasoningEffort": "max",
     "thinking": { "type": "enabled" }
@@ -83,7 +86,8 @@ bun run --conditions=browser src/index.ts
 | Link | Content |
 |------|---------|
 | [`fkyah3_dev/`](./fkyah3_dev/) | Fix details, analysis docs, issue tracking |
-| [`fkyah3_dev/internal/HANDOFF.md`](./fkyah3_dev/internal/HANDOFF.md) | Current fork state & commit map |
+| [`fkyah3_dev/internal/COMPLETION.md`](./fkyah3_dev/internal/COMPLETION.md) | Completed work checklist & current state |
+| [`fkyah3_dev/analysis/deepseek-v4-workflow-optimization.md`](./fkyah3_dev/analysis/deepseek-v4-workflow-optimization.md) | V4 architecture research → config alignment |
 | [Upstream issue #24104](https://github.com/anomalyco/opencode/issues/24104) | reasoning_content root cause discussion |
 
 ## Upstream

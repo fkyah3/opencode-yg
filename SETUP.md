@@ -109,7 +109,7 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
       },
       "models": {
         "deepseek-v4-flash": {
-          "limit": { "context": 500000, "output": 393216 },
+          "limit": { "context": 800000, "output": 393216 },
           "options": {
             "reasoningEffort": "max",
             "thinking": { "type": "enabled" }
@@ -117,7 +117,7 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
           "interleaved": { "field": "reasoning_content" }
         },
         "deepseek-v4-pro": {
-          "limit": { "context": 500000, "output": 262144 },
+          "limit": { "context": 800000, "output": 262144 },
           "options": {
             "reasoningEffort": "max",
             "thinking": { "type": "enabled" }
@@ -193,7 +193,7 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
 ```jsonc
 {
   "$schema": "https://raw.githubusercontent.com/cortexkit/opencode-magic-context/master/assets/magic-context.schema.json",
-  "max_input_tokens": 500000,
+  "max_input_tokens": 800000,
   "historian": {
     "model": "deepseek/deepseek-v4-flash"
   },
