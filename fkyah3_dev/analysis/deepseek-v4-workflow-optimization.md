@@ -75,6 +75,25 @@ V4-Flash 在 1M 上下文下仅用 V3.2 10% 的 FLOPs。
 | execute_threshold 70 → 85 | magic-context.jsonc | 更晚触发压缩，更少打断 |
 | reasoningEffort: "max" | opencode.json | 与 Think Max 模式对齐 |
 
+## P1 分层压缩 — 已实现验证
+
+MC 已有分层压缩设计（`COMPRESSOR_MERGE_RATIO_BY_DEPTH`），与 V4 CSA/HCA 结构对标：
+
+| MC 深度 | 压缩比率 | 对标 V4 |
+|---------|---------|---------|
+| 1（最新 15 个） | 4:3 合并 | CSA sliding window（128 token） |
+| 2 | 3:2 lite caveman | CSA block compression（m=4） |
+| 3 | 2:1 full caveman | — |
+| 4 | 2:1 ultra caveman | HCA 重度压缩（m'=128） |
+| 5 | 仅标题 | HCA 超重度 |
+
+### 已应用的对齐
+
+| 参数 | 旧值 | 新值 | 依据 |
+|------|------|------|------|
+| `DEFAULT_COMPRESSOR_GRACE_COMPARTMENTS` | 10 | **15** | V4 800K 上下文可容纳更多新鲜 compartment |
+| `HISTORIAN_CHUNK_MAX` | 50K | **80K** | V4 Flash 800K × 25% ≈ 200K 理论上限，80K 安全 |
+
 ## 设计决策
 
 ### Historian/Dreamer 启用 thinking 模式
