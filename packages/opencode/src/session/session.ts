@@ -707,10 +707,7 @@ export function* list(input?: {
   search?: string
   limit?: number
 }) {
-  const log = Log.create({ service: "session" })
-  yield* log.info("list called", { globalMode: Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS, projectId: Instance.project.id, directory: input?.directory })
   if (Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) {
-    yield* log.info("list: delegating to listGlobal", { input })
     return yield* listGlobal(input)
   }
   const project = Instance.project
