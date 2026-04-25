@@ -3,6 +3,7 @@ import { UI } from "../ui"
 import { cmd } from "./cmd"
 import { withNetworkOptions, resolveNetworkOptions } from "../network"
 import { Flag } from "../../flag/flag"
+import { getServerPassword } from "../../server/middleware"
 import open from "open"
 import { networkInterfaces } from "os"
 
@@ -34,7 +35,8 @@ export const WebCommand = cmd({
   describe: "start opencode server and open web interface",
   handler: async (args) => {
     if (!Flag.OPENCODE_SERVER_PASSWORD) {
-      UI.println(UI.Style.TEXT_WARNING_BOLD + "!  OPENCODE_SERVER_PASSWORD is not set; server is unsecured.")
+      const pwd = getServerPassword()
+      UI.println(UI.Style.TEXT_INFO_BOLD + "  🔐 Auth:           ", UI.Style.TEXT_NORMAL, `auto-generated password (${pwd?.length ?? 0} chars)`)
     }
     const opts = await resolveNetworkOptions(args)
     const server = await Server.listen(opts)

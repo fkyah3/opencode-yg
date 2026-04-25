@@ -20,7 +20,10 @@ If you need true isolation, run OpenCode inside a Docker container or VM.
 
 ### Server Mode
 
-Server mode is opt-in only. When enabled, set `OPENCODE_SERVER_PASSWORD` to require HTTP Basic Auth. Without this, the server runs unauthenticated (with a warning). It is the end user's responsibility to secure the server - any functionality it provides is not a vulnerability.
+Server mode is opt-in only. When enabled, the HTTP server requires HTTP Basic Auth.
+If `OPENCODE_SERVER_PASSWORD` is not set, a secure 32-character password is auto-generated
+at startup and logged to the console. Set `OPENCODE_SERVER_PASSWORD` to use a custom password.
+Authentication is always enforced — unauthenticated access returns HTTP 401.
 
 ### Out of Scope
 

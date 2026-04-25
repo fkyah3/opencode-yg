@@ -5,6 +5,7 @@ import { AppRuntime } from "@/effect/app-runtime"
 import { InstanceRef, WorkspaceRef } from "@/effect/instance-ref"
 import { Observability } from "@/effect"
 import { Flag } from "@/flag/flag"
+import { getServerPassword } from "@/server/middleware"
 import { InstanceBootstrap } from "@/project/bootstrap"
 import { Instance } from "@/project/instance"
 import { lazy } from "@/util/lazy"
@@ -71,13 +72,14 @@ const auth = Layer.succeed(
   Authorization.of({
     basic: (effect, { credential }) =>
       Effect.gen(function* () {
-        if (!Flag.OPENCODE_SERVER_PASSWORD) return yield* effect
+        const password = getServerPassword()
+        if (!password) return yield* effect
 
         const user = Flag.OPENCODE_SERVER_USERNAME ?? "opencode"
         if (credential.username !== user) {
           return yield* new Unauthorized({ message: "Unauthorized" })
         }
-        if (Redacted.value(credential.password) !== Flag.OPENCODE_SERVER_PASSWORD) {
+        if (Redacted.value(credential.password) !== password) {
           return yield* new Unauthorized({ message: "Unauthorized" })
         }
         return yield* effect
