@@ -207,16 +207,20 @@ export function DialogSessionList() {
         ...(Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS
             ? [
                 {
-                  keybind: "[",
+                  keybind: "<left>",
                   title: page() > 0 ? "Prev page" : "",
+                  global: true,
                   onTrigger: async () => {
+
                     if (page() > 0) setPage(page() - 1)
                   },
                 },
                 {
-                  keybind: "]",
+                  keybind: "<right>",
                   title: "Next page",
+                  global: true,
                   onTrigger: async () => {
+
                     setPage(page() + 1)
                   },
                 },

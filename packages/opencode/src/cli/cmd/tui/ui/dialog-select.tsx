@@ -216,7 +216,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       if (item.disabled || !item.keybind) continue
       if (Keybind.match(item.keybind, keybind.parse(evt))) {
         const s = selected()
-        if (s) {
+        if (s || (item as any).global) {
           evt.preventDefault()
           item.onTrigger(s)
         }
