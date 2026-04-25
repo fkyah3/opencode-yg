@@ -1458,10 +1458,10 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                   if (!p.text.trim()) continue
                   p.text = [
                     "<system-reminder>",
-                    "The user sent the following message:",
+                    "用户发来以下消息：",
                     p.text,
                     "",
-                    "Please address this message and continue with your tasks.",
+                    "请处理此消息并继续你的任务。",
                     "</system-reminder>",
                   ].join("\n")
                 }
