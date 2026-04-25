@@ -164,7 +164,9 @@ export function DialogSessionList() {
           bg: isDeleting ? theme.error : undefined,
           value: x.id,
           category,
-          footer,
+          footer: Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS && x.directory
+            ? `${x.directory}  ·  ${footer ?? ""}`
+            : (footer ?? undefined),
           gutter: isWorking ? <Spinner /> : undefined,
         }
       })
