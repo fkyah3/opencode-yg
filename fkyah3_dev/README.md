@@ -113,6 +113,35 @@ if (hasReasoningContent) {
 
 ---
 
+### 5. 子 Agent 权限继承分析与 Workaround / Sub-Agent Permission Analysis
+
+**问题**：父 agent 通过 `task()` 创建子 agent 时，子 agent 不继承父 agent 的权限限制。如果一个 agent 配置了 `write: false`，它仍然可以通过 `task()` 让子 agent 执行写操作绕过限制。
+
+**根因**：`tool/task.ts` 创建子 session 时只限制了 `todowrite` 和 `task` 递归，其他工具全部放行。父 agent 的规则集不传递给子 session。
+
+**Workaround（配置层）**：在 `opencode.json` 中用 `agent.{name}.permission` 为已知子 agent 类型声明独立权限：
+
+```jsonc
+{
+  "agent": {
+    "oracle": {
+      "permission": {
+        "read":  { "action": "allow" },
+        "edit":  { "action": "deny" },
+        "write": { "action": "deny" },
+        "bash":  { "action": "ask" }
+      }
+    }
+  }
+}
+```
+
+**局限性**：只对已知名称的 agent 生效；不是真正的权限隔离机制；上游若改动合并逻辑可能失效。
+
+详见：`fkyah3_dev/analysis/subagent-permission-inheritance.md`
+
+---
+
 ## 启动 / How to Run
 
 ```powershell
@@ -134,6 +163,7 @@ bun run --conditions=browser src/index.ts
 | `fkyah3_dev/issues/` | 已知问题和修复记录（issues 已禁用时的替代） |
 | `fkyah3_dev/做了什么/` | 详细贡献总结 |
 | `fkyah3_dev/ACHIEVEMENTS.md` | 修订记录（含难度评估和排查过程） |
+| `fkyah3_dev/workflows/` | 可复用工作流文档（B站评论采集等跨仓库任务） |
 | `fkyah3_dev/internal/` | 内部工作文档（无关观众） |
 | `opencodesrc.ps1` | 推荐启动脚本 |
 

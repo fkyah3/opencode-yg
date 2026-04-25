@@ -61,10 +61,8 @@ export async function init(options: Options) {
   if (options.level) level = options.level
   void cleanup(Global.Path.log)
   if (options.print) return
-  logpath = path.join(
-    Global.Path.log,
-    options.dev ? "dev.log" : new Date().toISOString().split(".")[0].replace(/:/g, "") + ".log",
-  )
+  const ts = new Date().toISOString().split(".")[0].replace(/:/g, "")
+  logpath = path.join(Global.Path.log, options.dev ? `dev-${ts}.log` : `${ts}.log`)
   await fs.truncate(logpath).catch(() => {})
   const stream = createWriteStream(logpath, { flags: "a" })
   write = async (msg: any) => {

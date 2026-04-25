@@ -2,6 +2,7 @@ import { Server } from "../../server/server"
 import { cmd } from "./cmd"
 import { withNetworkOptions, resolveNetworkOptions } from "../network"
 import { Flag } from "../../flag/flag"
+import { getServerPassword } from "../../server/middleware"
 
 export const ServeCommand = cmd({
   command: "serve",
@@ -9,7 +10,8 @@ export const ServeCommand = cmd({
   describe: "starts a headless opencode server",
   handler: async (args) => {
     if (!Flag.OPENCODE_SERVER_PASSWORD) {
-      console.log("Warning: OPENCODE_SERVER_PASSWORD is not set; server is unsecured.")
+      const pwd = getServerPassword()
+      console.log(`🔐 Auth enabled: auto-generated password (${pwd?.length ?? 0} chars)`)
     }
     const opts = await resolveNetworkOptions(args)
     const server = await Server.listen(opts)

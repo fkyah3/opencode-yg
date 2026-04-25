@@ -56,6 +56,9 @@ export interface Interface {
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/LLM") {}
 
+// Per-session normalizeMessages call counter for diagnostic logging.
+const normalizeCallCount = new Map<string, number>()
+
 const live: Layer.Layer<
   Service,
   never,
@@ -391,6 +394,13 @@ const live: Layer.Layer<
               specificationVersion: "v3" as const,
               async transformParams(args) {
                 if (args.type === "stream") {
+                  const msgs = args.params.prompt as ModelMessage[]
+                  const assistantCount = msgs.filter((m: ModelMessage) => m.role === "assistant").length
+                  const callCount = (normalizeCallCount.get(input.sessionID) ?? 0) + 1
+                  normalizeCallCount.set(input.sessionID, callCount)
+                  Log.Default.info(
+                    `[sisyphus-debug] normalizeMessages #${callCount}: ${msgs.length} msgs, ${assistantCount} assistant`,
+                  )
                   // @ts-expect-error
                   args.params.prompt = ProviderTransform.message(args.params.prompt, input.model, options)
                 }

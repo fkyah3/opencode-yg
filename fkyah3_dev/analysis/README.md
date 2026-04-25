@@ -6,3 +6,4 @@
 |------|------|
 | `reasoning_content-loss-root-cause-analysis.md` | 根因分析 — DeepSeek 思考模式 reasoning_content 回传丢失 |
 | `thinking-mode-reasoning_content-loss-issue.md` | 初次排查日志，**保留仅作历史参考** |
+| `subagent-permission-inheritance.md` | 子 agent 权限继承问题根因分析 + 配置层 workaround |
