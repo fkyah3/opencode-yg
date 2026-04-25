@@ -6,6 +6,7 @@ import { createStore } from "solid-js/store"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import * as fuzzysort from "fuzzysort"
 import { isDeepEqual } from "remeda"
+import { Log } from "@/util"
 import { useDialog, type DialogContext } from "@tui/ui/dialog"
 import { useKeybind } from "@tui/context/keybind"
 import { Keybind } from "@/util"
@@ -195,6 +196,9 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const keybind = useKeybind()
   useKeyboard((evt) => {
     setStore("input", "keyboard")
+
+    // fkyah3 debug: log all keyboard events to trace arrow key handling
+    Log.Default.info("dialog-select key", { name: evt.name, ctrl: evt.ctrl, shift: evt.shift })
 
     if (evt.name === "up" || (evt.ctrl && evt.name === "p")) move(-1)
     if (evt.name === "down" || (evt.ctrl && evt.name === "n")) move(1)
