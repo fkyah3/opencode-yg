@@ -36,6 +36,25 @@ cd packages/opencode
 bun run --conditions=browser src/index.ts
 ```
 
+## Model Configuration Reference
+
+The key DeepSeek config in `opencode.json`:
+
+```jsonc
+"deepseek-v4-flash": {
+  "limit": { "context": 500000, "output": 393216 },
+  "options": {
+    "reasoningEffort": "max",       // thinking depth: high | max
+    "thinking": { "type": "enabled" }
+  },
+  "interleaved": { "field": "reasoning_content" }
+}
+```
+
+- **`reasoningEffort`**: `high` (default) or `max`. Per [DeepSeek docs](https://api-docs.deepseek.com/guides/thinking_mode), agent tools auto-set to `max` anyway.
+- **`interleaved`**: Required for DeepSeek thinking mode via `@ai-sdk/openai-compatible`. Without it, `reasoning_content` is not forwarded.
+- **`thinking`**: Must be `{ type: "enabled" }` for reasoning models.
+
 ## Learn More
 
 | Link | Content |
