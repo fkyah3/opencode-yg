@@ -38,18 +38,41 @@ bun run --conditions=browser src/index.ts
 
 ## Model Configuration Reference
 
-The key DeepSeek config in `opencode.json`:
+### Flash (daily driver)
 
 ```jsonc
 "deepseek-v4-flash": {
   "limit": { "context": 500000, "output": 393216 },
   "options": {
-    "reasoningEffort": "max",       // thinking depth: high | max
+    "reasoningEffort": "max",
     "thinking": { "type": "enabled" }
   },
   "interleaved": { "field": "reasoning_content" }
 }
 ```
+
+### Pro (heavy tasks — planning, architecture, oracle)
+
+```jsonc
+"deepseek-v4-pro": {
+  "limit": { "context": 500000, "output": 262144 },
+  "options": {
+    "reasoningEffort": "max",
+    "thinking": { "type": "enabled" }
+  },
+  "interleaved": { "field": "reasoning_content" }
+}
+```
+
+**Agent split (via oh-my-openagent.json):**
+
+| Agent | Model | Fallback | Use case |
+|-------|-------|----------|----------|
+| Sisyphus | Pro | → Flash | Complex planning, architecture, debug |
+| Oracle | Pro | → Flash | High-difficulty reasoning |
+| Others | Flash | → Flash | Search, execute, routine |
+
+> Pro is on 2.5折 discount until **2026/05/05 23:59 (UTC+8)**. After that, revert to all-Flash.
 
 - **`reasoningEffort`**: `high` (default) or `max`. Per [DeepSeek docs](https://api-docs.deepseek.com/guides/thinking_mode), agent tools auto-set to `max` anyway.
 - **`interleaved`**: Required for DeepSeek thinking mode via `@ai-sdk/openai-compatible`. Without it, `reasoning_content` is not forwarded.
