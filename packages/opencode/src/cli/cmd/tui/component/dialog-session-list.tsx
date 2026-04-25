@@ -18,6 +18,17 @@ import { Spinner } from "./spinner"
 import { errorMessage } from "@/util/error"
 import { DialogSessionDeleteFailed } from "./dialog-session-delete-failed"
 
+/*
+ * fkyah3 / global-session-pool-2.0
+ * 
+ * Design decisions:
+ * - All sessions shown regardless of working directory (no projectID filter in global mode)
+ * - Sub-agent sessions (with parentID) included — they're valid conversation history
+ * - Session deletion disabled while AI is actively working to prevent race conditions
+ *   during high-intensity task execution (read/write/delete collision risk)
+ * - Auto-refresh on dialog open; deletion triggers list refresh
+ */
+
 type WorkspaceStatus = "connected" | "connecting" | "disconnected" | "error"
 
 export function DialogSessionList() {
@@ -208,6 +219,17 @@ export function DialogSessionList() {
           keybind: keybind.all.session_delete?.[0],
           title: "delete",
           onTrigger: async (option) => {
+            // fkyah3: prevent deletion while AI is actively working
+            const sessionStatus = sync.data.session_status?.[option.value]
+            if (sessionStatus?.type === "busy" || sessionStatus?.type === "compacting") {
+              toast.show({
+                variant: "info",
+                title: "Can't delete",
+                message: "Wait for the AI to finish before deleting this session.",
+              })
+              setToDelete(undefined)
+              return
+            }
             if (toDelete() === option.value) {
               const session = sessions().find((item) => item.id === option.value)
               const status = session?.workspaceID ? project.workspace.status(session.workspaceID) : undefined
