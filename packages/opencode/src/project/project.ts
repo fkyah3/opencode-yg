@@ -313,7 +313,8 @@ export const layer: Layer.Layer<
           .run(),
       )
 
-      if (data.id !== ProjectID.global) {
+      // fkyah3: 全局 session 池 — 关闭 projectID 迁移，所有 session 保持在 "global"
+      if (data.id !== ProjectID.global && !Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) {
         yield* db((d) =>
           d
             .update(SessionTable)
