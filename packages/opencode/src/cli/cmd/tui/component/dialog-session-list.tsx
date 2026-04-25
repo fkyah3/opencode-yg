@@ -47,6 +47,8 @@ export function DialogSessionList() {
 
   const sessions = createMemo(() => allSessions() ?? [])
 
+  const currentSessionID = createMemo(() => (route.data.type === "session" ? route.data.sessionID : undefined))
+
   function createWorkspace() {
     dialog.replace(() => (
       <DialogWorkspaceCreate
