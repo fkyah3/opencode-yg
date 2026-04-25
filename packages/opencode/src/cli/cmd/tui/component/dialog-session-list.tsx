@@ -9,8 +9,8 @@ import { useKeybind } from "../context/keybind"
 import { useTheme } from "../context/theme"
 import { useSDK } from "../context/sdk"
 import { Flag } from "@/flag/flag"
-import { DialogSessionRename } from "./dialog-session-rename"
 import { Keybind } from "@/util"
+import { DialogSessionRename } from "./dialog-session-rename"
 import { createDebouncedSignal } from "../util/signal"
 import { useToast } from "../ui/toast"
 import { DialogWorkspaceCreate, openWorkspaceSession, restoreWorkspaceSession } from "./dialog-workspace-create"
@@ -209,7 +209,7 @@ export function DialogSessionList() {
         ...(Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS
             ? [
                 {
-                  keybind: "left",
+                  keybind: Keybind.parse("left")[0],
                   title: page() > 0 ? "Prev page" : "",
                   global: true,
                   onTrigger: async () => {
@@ -218,7 +218,7 @@ export function DialogSessionList() {
                   },
                 },
                 {
-                  keybind: "right",
+                  keybind: Keybind.parse("right")[0],
                   title: "Next page",
                   global: true,
                   onTrigger: async () => {
