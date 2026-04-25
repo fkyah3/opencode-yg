@@ -40,7 +40,7 @@ export function DialogSessionList() {
         const result = await sdk.client.session.list({ search: query, limit: 50 })
         return result.data ?? []
       }
-      const result = await sdk.client.session.list({ limit: 500 })
+      const result = await sdk.client.session.list({ limit: 40 })
       return result.data ?? []
     },
   )
@@ -246,7 +246,7 @@ export function DialogSessionList() {
               if (status && status !== "connected") {
                 await sync.session.refresh()
               }
-              if (search()) await refetch()
+              await refetchAll()
               setToDelete(undefined)
               return
             }
