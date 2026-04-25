@@ -45,7 +45,7 @@ export function DialogSessionList() {
     },
   )
 
-  const sessions = createMemo(() => allSessions())
+  const sessions = createMemo(() => allSessions() ?? [])
 
   function createWorkspace() {
     dialog.replace(() => (
