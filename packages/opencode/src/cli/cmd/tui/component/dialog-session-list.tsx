@@ -42,7 +42,9 @@ export function DialogSessionList() {
         const result = await sdk.client.session.list({ search: query, limit: 50 })
         return result.data ?? []
       }
-      const result = await sdk.client.session.list({ limit: pageSize, offset: page * pageSize })
+      const offset = page * pageSize
+      Log.Default.info("session-list fetch", { page, offset })
+      const result = await sdk.client.session.list({ limit: pageSize, offset })
       return result.data ?? []
     },
   )
