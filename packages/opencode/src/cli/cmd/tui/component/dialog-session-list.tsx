@@ -31,15 +31,24 @@ export function DialogSessionList() {
   const toast = useToast()
   const [toDelete, setToDelete] = createSignal<string>()
   const [search, setSearch] = createDebouncedSignal("", 150)
+  const [page, setPage] = createSignal(0)
+  const pageSize = 40
 
-  const [searchResults, { refetch }] = createResource(search, async (query) => {
-    if (!query) return undefined
-    const result = await sdk.client.session.list({ search: query, limit: 50 })
-    return result.data ?? []
-  })
+  // refresh all sessions (including old ones via offset) when no search query
+  const [allSessions, { refetch: refetchAll }] = createResource(
+    () => ({ query: search(), page: page() }),
+    async ({ query, page }) => {
+      if (query) {
+        const result = await sdk.client.session.list({ search: query, limit: 50 })
+        return result.data ?? []
+      }
+      const result = await sdk.client.session.list({ limit: pageSize, offset: page * pageSize })
+      return result.data ?? []
+    },
+  )
 
   const currentSessionID = createMemo(() => (route.data.type === "session" ? route.data.sessionID : undefined))
-  const sessions = createMemo(() => searchResults() ?? sync.data.session)
+  const sessions = createMemo(() => allSessions() ?? sync.data.session)
 
   function createWorkspace() {
     dialog.replace(() => (
@@ -195,6 +204,24 @@ export function DialogSessionList() {
         dialog.clear()
       }}
       keybind={[
+        ...(Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS
+            ? [
+                {
+                  keybind: "<shift+left>",
+                  title: page() > 0 ? "\u2190 Prev page" : "",
+                  onTrigger: async () => {
+                    if (page() > 0) setPage(page() - 1)
+                  },
+                },
+                {
+                  keybind: "<shift+right>",
+                  title: "\u2192 Next page",
+                  onTrigger: async () => {
+                    setPage(page() + 1)
+                  },
+                },
+              ]
+            : []),
         {
           keybind: keybind.all.session_delete?.[0],
           title: "delete",

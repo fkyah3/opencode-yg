@@ -754,6 +754,7 @@ export function* listGlobal(input?: {
   cursor?: number
   search?: string
   limit?: number
+  offset?: number
   archived?: boolean
 }) {
   const conditions: SQL[] = []
@@ -787,7 +788,11 @@ export function* listGlobal(input?: {
             .from(SessionTable)
             .where(and(...conditions))
         : db.select().from(SessionTable)
-    return query.orderBy(desc(SessionTable.time_updated), desc(SessionTable.id)).limit(limit).all()
+    let q = query.orderBy(desc(SessionTable.time_updated), desc(SessionTable.id)).limit(limit)
+    if (input?.offset) {
+      q = q.offset(input.offset)
+    }
+    return q.all()
   })
 
   const ids = [...new Set(rows.map((row) => row.project_id))]
