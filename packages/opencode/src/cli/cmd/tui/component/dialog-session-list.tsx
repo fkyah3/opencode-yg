@@ -31,25 +31,21 @@ export function DialogSessionList() {
   const toast = useToast()
   const [toDelete, setToDelete] = createSignal<string>()
   const [search, setSearch] = createDebouncedSignal("", 150)
-  const [page, setPage] = createSignal(0)
-  const pageSize = 40
 
   // refresh all sessions (including old ones via offset) when no search query
   const [allSessions, { refetch: refetchAll }] = createResource(
-    () => ({ query: search(), page: page() }),
-    async ({ query, page }) => {
+    () => search(),
+    async (query) => {
       if (query) {
         const result = await sdk.client.session.list({ search: query, limit: 50 })
         return result.data ?? []
       }
-      const offset = page * pageSize
-      const result = await sdk.client.session.list({ limit: pageSize, offset })
+      const result = await sdk.client.session.list({ limit: 500 })
       return result.data ?? []
     },
   )
 
-  const currentSessionID = createMemo(() => (route.data.type === "session" ? route.data.sessionID : undefined))
-  const sessions = createMemo(() => allSessions() ?? [])
+  const sessions = createMemo(() => allSessions())
 
   function createWorkspace() {
     dialog.replace(() => (
@@ -189,7 +185,7 @@ export function DialogSessionList() {
 
   return (
     <DialogSelect
-      title={`Sessions (Page ${page() + 1})`}
+      title="Sessions"
       options={options()}
       // fkyah3: hide search in global mode — use arrow keys for page nav instead
       hideSearch={true}
@@ -207,28 +203,6 @@ export function DialogSessionList() {
         dialog.clear()
       }}
       keybind={[
-        ...(Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS
-            ? [
-                {
-                  keybind: Keybind.parse("left")[0],
-                  title: page() > 0 ? "Prev page" : "",
-                  global: true,
-                  onTrigger: async () => {
-
-                    if (page() > 0) setPage(page() - 1)
-                  },
-                },
-                {
-                  keybind: Keybind.parse("right")[0],
-                  title: "Next page",
-                  global: true,
-                  onTrigger: async () => {
-
-                    setPage(page() + 1)
-                  },
-                },
-              ]
-            : []),
         {
           keybind: keybind.all.session_delete?.[0],
           title: "delete",
