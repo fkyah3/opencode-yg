@@ -197,9 +197,6 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   useKeyboard((evt) => {
     setStore("input", "keyboard")
 
-    // fkyah3 debug: log all keyboard events to trace arrow key handling
-    Log.Default.info("dialog-select key", { name: evt.name, ctrl: evt.ctrl, shift: evt.shift })
-
     if (evt.name === "up" || (evt.ctrl && evt.name === "p")) move(-1)
     if (evt.name === "down" || (evt.ctrl && evt.name === "n")) move(1)
     if (evt.name === "pageup") move(-10)
