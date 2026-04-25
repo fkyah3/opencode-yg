@@ -758,7 +758,7 @@ export function* listGlobal(input?: {
 }) {
   const conditions: SQL[] = []
 
-  if (input?.directory) {
+  if (input?.directory && !Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) {
     conditions.push(eq(SessionTable.directory, input.directory))
   }
   if (input?.roots) {
