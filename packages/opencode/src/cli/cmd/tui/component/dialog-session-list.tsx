@@ -174,6 +174,7 @@ export function DialogSessionList() {
 
   onMount(() => {
     dialog.setSize("large")
+    sync.session.refresh()
   })
 
   return (
