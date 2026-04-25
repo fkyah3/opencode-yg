@@ -1,56 +1,53 @@
-<p align="center"><b>fkyah3/opencode-fkyah3</b> — Windows-first fork, optimized for DeepSeek</p>
+<p align="center"><b>fkyah3/opencode-fkyah3</b><br>
+<code>DeepSeek-optimized · Windows-hardened · AI-crafted</code></p>
+
+<p align="center">
+  <a href="./README.zh.md">简体中文</a> · <a href="./README.zht.md">繁體中文</a>
+</p>
 
 ---
 
-**English** · [简体中文](./README.zh.md) · [繁體中文](./README.zht.md)
+This is a personal fork of [anomalyco/opencode](https://github.com/anomalyco/opencode). Every fix, optimization, and feature in this repository was implemented entirely by AI — specifically **DeepSeek V4 Flash (thinking mode) / Sisyphus** — under human oversight.
+
+The upstream project is excellent. Windows and DeepSeek are simply not their priority. We handle those ourselves.
+
+> **Code by: DeepSeek V4 Flash (thinking mode) / Sisyphus**  
+> **Human reviewer & direction: fkyah3**  
+> This fork is a live demonstration of what AI-built software looks like.  
+> See [`fkyah3_dev/`](./fkyah3_dev/) for the full story.
 
 ---
 
-This is a personal fork of [anomalyco/opencode](https://github.com/anomalyco/opencode), focused on Windows platform compatibility and DeepSeek model support.
+## What's Fixed
 
-The upstream project is excellent, but Windows and DeepSeek have different priorities there. Rather than waiting on open issues, we chose to address these problems ourselves and move at our own pace.
+| Fix | Area |
+|-----|------|
+| `reasoning_content` loss on conversation replay — the root cause of API 400 errors with DeepSeek thinking mode | **Core** |
+| OpenRouter `@openrouter/ai-sdk-provider` providerOptions key mismatch | **Provider** |
+| Multi-window crash cascade — added circuit breaker to OMO tool-pair-validator | **Stability** |
+| Per-session log isolation (no more truncated dev.log on restart) | **DX** |
+| Windows CJK encoding — 3-layer GBK/UTF-8 fix for subprocess pipes | **Win32** |
+| TUI plugin loading — Magic Context sidebar blank due to Zod strict mode | **TUI** |
 
-> **Code by: AI (DeepSeek v4Lite / Sisyphus)**  
-> **Review & direction: fkyah3 (human)**  
-> All fixes and optimizations in this fork are implemented by AI. The human reviews the output and catches direction errors.  
-> See [`fkyah3_dev/`](./fkyah3_dev/) for details.
-
----
-
-**这是 [anomalyco/opencode](https://github.com/anomalyco/opencode) 的个人维护分支。**  
-专注于解决 Windows 平台问题和 DeepSeek 模型兼容性。
-
-这个分支源于个人使用需求。上游是个优秀的项目，但 Windows 平台和 DeepSeek 模型的兼容性不是他们的优先方向。与其在 issue 里等待，我们选择自己处理这些问题，按自己的节奏推进。
-
-> **代码实现：AI（DeepSeek v4Lite / Sisyphus）**  
-> **反馈与质量监督：fkyah3（人工）**  
-> 这个分支的所有修复和优化由 AI 完成。人类负责发现问题、确认方向、紧急刹车。  
-> 详见 [`fkyah3_dev/`](./fkyah3_dev/)。
-
----
-
-## What's Fixed / 修复列表
-
-- **[Windows CJK Encoding]** Garbled Chinese output in subprocesses (GBK → UTF-8, 3-layer fix)
-- **[TUI Plugin Loading]** Magic Context sidebar blank (Zod schema `show_thinking` undeclared)
-- **[DeepSeek Thinking Mode]** `reasoning_content` lost on replay causing API 400 (core fix, upstream issue [#24104](https://github.com/anomalyco/opencode/issues/24104))
-
-## Quick Start / 快速开始
+## Quick Start
 
 ```powershell
 cd packages/opencode
 bun run --conditions=browser src/index.ts
 ```
 
-## Learn More / 了解更多
+## Learn More
 
-| Location / 位置 | What's there / 内容 |
-|------|------|
-| [`fkyah3_dev/README.md`](./fkyah3_dev/README.md) | Full fix details & root cause analysis |
-| [`fkyah3_dev/issues/`](./fkyah3_dev/issues/) | Issue tracking & resolution records |
-| [`fkyah3_dev/analysis/`](./fkyah3_dev/analysis/) | Deep-dive analysis docs with code flow |
+| Link | Content |
+|------|---------|
+| [`fkyah3_dev/`](./fkyah3_dev/) | Fix details, analysis docs, issue tracking |
+| [`fkyah3_dev/internal/HANDOFF.md`](./fkyah3_dev/internal/HANDOFF.md) | Current fork state & commit map |
+| [Upstream issue #24104](https://github.com/anomalyco/opencode/issues/24104) | reasoning_content root cause discussion |
 
 ## Upstream
 
-Based on [anomalyco/opencode](https://github.com/anomalyco/opencode) (Apache 2.0).  
-Changes from upstream are merged regularly.
+Based on [anomalyco/opencode](https://github.com/anomalyco/opencode) (Apache 2.0). Changes merged periodically.
+
+---
+
+<p align="center"><i>Crafted by AI. Curated by human. Built for the real world.</i></p>
