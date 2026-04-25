@@ -75,6 +75,21 @@ V4-Flash 在 1M 上下文下仅用 V3.2 10% 的 FLOPs。
 | execute_threshold 70 → 85 | magic-context.jsonc | 更晚触发压缩，更少打断 |
 | reasoningEffort: "max" | opencode.json | 与 Think Max 模式对齐 |
 
+## 设计决策
+
+### Historian/Dreamer 启用 thinking 模式
+
+MC historian 和 dreamer 均使用 `deepseek-v4-flash` + `thinking: enabled`。理由：
+
+- **质量优先**：压缩/记忆任务的质量直接影响后续对话的上下文质量。Flash 的成本极低（¥0.14/M 输入），多出的 thinking token 可忽略
+- **实测对比**：待补充（fkyah3 提供 token 消耗和费用数据）
+- **用户选择**：如果你对成本敏感，可创建 `deepseek-v4-flash-nothink` 变体（去掉 `thinking` 字段），将 historian/dreamer 指向它
+
+### 上下文上限与压缩阈值
+
+- `limit.context: 800K`：足够覆盖绝大多数长对话，距 V4 1M 上限留 20% 缓冲
+- `execute_threshold_percentage: 85`：推迟 MC 压缩触发点，减少长对话中断
+
 ## 后续方向
 
 - P1 分层压缩：按 CSA m=4 block size 对齐 MC 压缩粒度
