@@ -134,7 +134,7 @@ export function DialogSessionList() {
       .toSorted((a, b) => {
         const updatedDay = new Date(b.time.updated).setHours(0, 0, 0, 0) - new Date(a.time.updated).setHours(0, 0, 0, 0)
         if (updatedDay !== 0) return updatedDay
-        return b.time.created - a.time.created
+        return b.time.updated - a.time.updated
       })
       .map((x) => {
         const workspace = x.workspaceID ? project.workspace.get(x.workspaceID) : undefined
