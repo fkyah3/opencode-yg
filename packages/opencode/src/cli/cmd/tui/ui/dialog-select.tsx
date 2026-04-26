@@ -25,6 +25,7 @@ export interface DialogSelectProps<T> {
   onSelect?: (option: DialogSelectOption<T>) => void
   skipFilter?: boolean
   hideSearch?: boolean
+  titleColor?: RGBA
   keybind?: {
     keybind?: Keybind.Info
     title: string
@@ -245,7 +246,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     <box gap={1} paddingBottom={1}>
       <box paddingLeft={4} paddingRight={4}>
         <box flexDirection="row" justifyContent="space-between">
-          <text fg={theme.text} attributes={TextAttributes.BOLD}>
+          <text fg={props.titleColor ?? theme.text} attributes={TextAttributes.BOLD}>
             {props.title}
           </text>
           <text fg={theme.textMuted} onMouseUp={() => dialog.clear()}>

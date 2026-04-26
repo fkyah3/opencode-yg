@@ -199,10 +199,15 @@ export function DialogSessionList() {
     const anyWorking = sessions().some((s) => sync.session.status(s.id) === "working")
     return anyWorking ? "Sessions（AI 工作中，删除已禁用）" : "Sessions"
   })
+  const titleColor = createMemo(() => {
+    const anyWorking = sessions().some((s) => sync.session.status(s.id) === "working")
+    return anyWorking ? theme.error : undefined
+  })
 
   return (
     <DialogSelect
       title={dialogTitle()}
+      titleColor={titleColor()}
       options={options()}
       // fkyah3: hide search in global mode — use arrow keys for page nav instead
       hideSearch={true}
