@@ -134,6 +134,20 @@ export default function Home() {
           </div>
         </Match>
       </Switch>
+      <div class="mt-32 mx-auto max-w-md px-4 py-3 rounded-lg border border-warning-base/30 bg-warning-base/5">
+        <div class="flex items-start gap-2">
+          <Icon name="warning" size="small" class="text-warning-base shrink-0 mt-0.5" />
+          <div class="text-11-regular text-text-weak leading-relaxed">
+            <p class="text-12-medium text-warning-base mb-1">安全提醒</p>
+            <p>
+              opencode-fkyah3 是开源实验室项目，官方渠道仅为
+              <span class="text-text-strong">github.com/fkyah3/opencode-fkyah3</span>。
+              从任何非 GitHub 渠道获取的版本可能已被篡改，包含恶意代码或病毒。
+              本工具由 AI 生成代码，使用者需自行验证安全性。
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
