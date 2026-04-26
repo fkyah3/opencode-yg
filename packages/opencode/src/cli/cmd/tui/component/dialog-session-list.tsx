@@ -9,14 +9,25 @@ import { useKeybind } from "../context/keybind"
 import { useTheme } from "../context/theme"
 import { useSDK } from "../context/sdk"
 import { Flag } from "@/flag/flag"
-import { DialogSessionRename } from "./dialog-session-rename"
 import { Keybind } from "@/util"
+import { DialogSessionRename } from "./dialog-session-rename"
 import { createDebouncedSignal } from "../util/signal"
 import { useToast } from "../ui/toast"
 import { DialogWorkspaceCreate, openWorkspaceSession, restoreWorkspaceSession } from "./dialog-workspace-create"
 import { Spinner } from "./spinner"
 import { errorMessage } from "@/util/error"
 import { DialogSessionDeleteFailed } from "./dialog-session-delete-failed"
+
+/*
+ * fkyah3 / global-session-pool-2.0
+ * 
+ * Design decisions:
+ * - All sessions shown regardless of working directory (no projectID filter in global mode)
+ * - Sub-agent sessions (with parentID) included — they're valid conversation history
+ * - Session deletion disabled while AI is actively working to prevent race conditions
+ *   during high-intensity task execution (read/write/delete collision risk)
+ * - Auto-refresh on dialog open; deletion triggers list refresh
+ */
 
 type WorkspaceStatus = "connected" | "connecting" | "disconnected" | "error"
 
@@ -32,14 +43,22 @@ export function DialogSessionList() {
   const [toDelete, setToDelete] = createSignal<string>()
   const [search, setSearch] = createDebouncedSignal("", 150)
 
-  const [searchResults, { refetch }] = createResource(search, async (query) => {
-    if (!query) return undefined
-    const result = await sdk.client.session.list({ search: query, limit: 30 })
-    return result.data ?? []
-  })
+  // refresh all sessions (including old ones via offset) when no search query
+  const [allSessions, { refetch: refetchAll }] = createResource(
+    () => search(),
+    async (query) => {
+      if (query) {
+        const result = await sdk.client.session.list({ search: query, limit: 50 })
+        return result.data ?? []
+      }
+      const result = await sdk.client.session.list({ limit: 40 })
+      return result.data ?? []
+    },
+  )
+
+  const sessions = createMemo(() => allSessions() ?? [])
 
   const currentSessionID = createMemo(() => (route.data.type === "session" ? route.data.sessionID : undefined))
-  const sessions = createMemo(() => searchResults() ?? sync.data.session)
 
   function createWorkspace() {
     dialog.replace(() => (
@@ -112,7 +131,6 @@ export function DialogSessionList() {
   const options = createMemo(() => {
     const today = new Date().toDateString()
     return sessions()
-      .filter((x) => x.parentID === undefined)
       .toSorted((a, b) => {
         const updatedDay = new Date(b.time.updated).setHours(0, 0, 0, 0) - new Date(a.time.updated).setHours(0, 0, 0, 0)
         if (updatedDay !== 0) return updatedDay
@@ -164,20 +182,35 @@ export function DialogSessionList() {
           bg: isDeleting ? theme.error : undefined,
           value: x.id,
           category,
-          footer,
+          footer: Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS && x.directory
+            ? `${x.directory}  ·  ${footer ?? ""}`
+            : (footer ?? undefined),
           gutter: isWorking ? <Spinner /> : undefined,
         }
       })
   })
 
   onMount(() => {
-    dialog.setSize("large")
+    dialog.setSize("xlarge")
+    sync.session.refresh()
+  })
+
+  const dialogTitle = createMemo(() => {
+    const anyWorking = sessions().some((s) => sync.session.status(s.id) === "working")
+    return anyWorking ? "Sessions（AI 工作中，删除已禁用）" : "Sessions"
+  })
+  const titleColor = createMemo(() => {
+    const anyWorking = sessions().some((s) => sync.session.status(s.id) === "working")
+    return anyWorking ? theme.error : undefined
   })
 
   return (
     <DialogSelect
-      title="Sessions"
+      title={dialogTitle()}
+      titleColor={titleColor()}
       options={options()}
+      // fkyah3: hide search in global mode — use arrow keys for page nav instead
+      hideSearch={true}
       skipFilter={true}
       current={currentSessionID()}
       onFilter={setSearch}
@@ -196,6 +229,16 @@ export function DialogSessionList() {
           keybind: keybind.all.session_delete?.[0],
           title: "delete",
           onTrigger: async (option) => {
+            // fkyah3: prevent any deletion while ANY AI session is actively working
+            // to avoid read/write/delete race conditions during high-intensity tasks
+            const anyWorking = sessions().some((s) => {
+              const st = sync.session.status(s.id)
+              return st === "working" || st === "compacting"
+            })
+            if (anyWorking) {
+              setToDelete(undefined)
+              return
+            }
             if (toDelete() === option.value) {
               const session = sessions().find((item) => item.id === option.value)
               const status = session?.workspaceID ? project.workspace.status(session.workspaceID) : undefined
@@ -233,7 +276,7 @@ export function DialogSessionList() {
               if (status && status !== "connected") {
                 await sync.session.refresh()
               }
-              if (search()) await refetch()
+              await refetchAll()
               setToDelete(undefined)
               return
             }

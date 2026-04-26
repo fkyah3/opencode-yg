@@ -6,6 +6,7 @@ import { createStore } from "solid-js/store"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import * as fuzzysort from "fuzzysort"
 import { isDeepEqual } from "remeda"
+import { Log } from "@/util"
 import { useDialog, type DialogContext } from "@tui/ui/dialog"
 import { useKeybind } from "@tui/context/keybind"
 import { Keybind } from "@/util"
@@ -23,6 +24,8 @@ export interface DialogSelectProps<T> {
   onFilter?: (query: string) => void
   onSelect?: (option: DialogSelectOption<T>) => void
   skipFilter?: boolean
+  hideSearch?: boolean
+  titleColor?: RGBA
   keybind?: {
     keybind?: Keybind.Info
     title: string
@@ -216,7 +219,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       if (item.disabled || !item.keybind) continue
       if (Keybind.match(item.keybind, keybind.parse(evt))) {
         const s = selected()
-        if (s) {
+        if (s || (item as any).global) {
           evt.preventDefault()
           item.onTrigger(s)
         }
@@ -243,13 +246,14 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     <box gap={1} paddingBottom={1}>
       <box paddingLeft={4} paddingRight={4}>
         <box flexDirection="row" justifyContent="space-between">
-          <text fg={theme.text} attributes={TextAttributes.BOLD}>
+          <text fg={props.titleColor ?? theme.text} attributes={TextAttributes.BOLD}>
             {props.title}
           </text>
           <text fg={theme.textMuted} onMouseUp={() => dialog.clear()}>
             esc
           </text>
         </box>
+        <Show when={!props.hideSearch}>
         <box paddingTop={1}>
           <input
             onInput={(e) => {
@@ -274,6 +278,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
             placeholderColor={theme.textMuted}
           />
         </box>
+        </Show>
       </box>
       <Show
         when={grouped().length > 0}

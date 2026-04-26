@@ -25,6 +25,7 @@ import { errors } from "../../error"
 import { lazy } from "@/util/lazy"
 import { Bus } from "@/bus"
 import { NamedError } from "@opencode-ai/shared/util/error"
+import { Flag } from "@/flag/flag"
 import { jsonRequest, runRequest } from "./trace"
 
 const log = Log.create({ service: "server" })
@@ -59,6 +60,7 @@ export const SessionRoutes = lazy(() =>
             .meta({ description: "Filter sessions updated on or after this timestamp (milliseconds since epoch)" }),
           search: z.string().optional().meta({ description: "Filter sessions by title (case-insensitive)" }),
           limit: z.coerce.number().optional().meta({ description: "Maximum number of sessions to return" }),
+          offset: z.coerce.number().optional().meta({ description: "Skip N sessions (pagination)" }),
         }),
       ),
       async (c) => {
@@ -70,6 +72,7 @@ export const SessionRoutes = lazy(() =>
           start: query.start,
           search: query.search,
           limit: query.limit,
+          offset: query.offset,
         })) {
           sessions.push(session)
         }
@@ -453,6 +456,9 @@ export const SessionRoutes = lazy(() =>
       ),
       async (c) =>
         jsonRequest("SessionRoutes.share", c, function* () {
+          if (Flag.OPENCODE_FKYAH3_DISABLE_SHARE) {
+            return c.json({ error: "Session sharing is disabled" }, 403)
+          }
           const sessionID = c.req.valid("param").sessionID
           const share = yield* SessionShare.Service
           const session = yield* Session.Service

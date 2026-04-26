@@ -8,7 +8,7 @@ import { type ProviderMetadata, type LanguageModelUsage } from "ai"
 import { Flag } from "../flag/flag"
 import { InstallationVersion } from "../installation/version"
 
-import { Database, NotFoundError, eq, and, gte, isNull, desc, like, inArray, lt } from "../storage"
+import { Database, NotFoundError, eq, and, gte, isNull, desc, like, inArray, lt, sql } from "../storage"
 import { SyncEvent } from "../sync"
 import type { SQL } from "../storage"
 import { PartTable, SessionTable } from "./session.sql"
@@ -706,7 +706,11 @@ export function* list(input?: {
   start?: number
   search?: string
   limit?: number
+  offset?: number
 }) {
+  if (Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) {
+    return yield* listGlobal(input)
+  }
   const project = Instance.project
   const conditions = [eq(SessionTable.project_id, project.id)]
 
@@ -751,11 +755,12 @@ export function* listGlobal(input?: {
   cursor?: number
   search?: string
   limit?: number
+  offset?: number
   archived?: boolean
 }) {
   const conditions: SQL[] = []
 
-  if (input?.directory) {
+  if (input?.directory && !Flag.OPENCODE_FKYAH3_GLOBAL_SESSIONS) {
     conditions.push(eq(SessionTable.directory, input.directory))
   }
   if (input?.roots) {
@@ -784,7 +789,11 @@ export function* listGlobal(input?: {
             .from(SessionTable)
             .where(and(...conditions))
         : db.select().from(SessionTable)
-    return query.orderBy(desc(SessionTable.time_updated), desc(SessionTable.id)).limit(limit).all()
+    let q = query.orderBy(desc(SessionTable.time_updated), desc(SessionTable.id)).limit(limit)
+    if (input?.offset) {
+      q = q.offset(input.offset)
+    }
+    return q.all()
   })
 
   const ids = [...new Set(rows.map((row) => row.project_id))]
