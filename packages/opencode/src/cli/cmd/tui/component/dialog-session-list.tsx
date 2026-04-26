@@ -217,7 +217,10 @@ export function DialogSessionList() {
       keybind={[
         {
           keybind: keybind.all.session_delete?.[0],
-          title: "delete",
+          title: sessions().some((s) => {
+            const st = sync.session.status(s.id)
+            return st === "working" || st === "compacting"
+          }) ? "delete (AI busy)" : "delete",
           onTrigger: async (option) => {
             // fkyah3: prevent any deletion while ANY AI session is actively working
             // to avoid read/write/delete race conditions during high-intensity tasks
@@ -226,11 +229,6 @@ export function DialogSessionList() {
               return st === "working" || st === "compacting"
             })
             if (anyWorking) {
-              toast.show({
-                variant: "info",
-                title: "无法删除",
-                message: "有 AI 正在工作中，请等待完成后再删除对话。",
-              })
               setToDelete(undefined)
               return
             }
