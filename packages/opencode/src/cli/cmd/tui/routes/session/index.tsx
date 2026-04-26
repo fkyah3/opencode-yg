@@ -381,7 +381,7 @@ export function Session() {
       suggested: route.type === "session",
       keybind: "session_share",
       category: "Session",
-      enabled: sync.data.config.share !== "disabled",
+      enabled: sync.data.config.share !== "disabled" && !Flag.OPENCODE_FKYAH3_DISABLE_SHARE,
       slash: {
         name: "share",
       },
@@ -505,7 +505,7 @@ export function Session() {
       value: "session.unshare",
       keybind: "session_unshare",
       category: "Session",
-      enabled: !!session()?.share?.url,
+      enabled: !!session()?.share?.url && !Flag.OPENCODE_FKYAH3_DISABLE_SHARE,
       slash: {
         name: "unshare",
       },

@@ -107,4 +107,7 @@ export const Flag = {
   get OPENCODE_FKYAH3_GLOBAL_SESSIONS() {
     return truthy("OPENCODE_FKYAH3_GLOBAL_SESSIONS")
   },
+  get OPENCODE_FKYAH3_DISABLE_SHARE() {
+    return truthy("OPENCODE_FKYAH3_DISABLE_SHARE")
+  },
 }
