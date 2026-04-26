@@ -52,11 +52,13 @@ export const layer = Layer.effect(
             `你当前使用的模型是 ${model.api.id}。完整模型 ID 为 ${model.providerID}/${model.api.id}`,
             `以下是运行环境的参考信息：`,
             `<env>`,
+            `  语言: 中文（所有内部推理必须使用中文，技术术语和代码保持原样）`,
             `  工作目录: ${Instance.directory}`,
             `  工作区根目录: ${Instance.worktree}`,
             `  是否为 git 仓库: ${project.vcs === "git" ? "是" : "否"}`,
             `  平台: ${process.platform}`,
             `  当前日期: ${new Date().toDateString()}`,
+            `  版本: opencode-fkyah3 (官方渠道: github.com/fkyah3/opencode-fkyah3)`,
             `</env>`,
           ].join("\n"),
         ]

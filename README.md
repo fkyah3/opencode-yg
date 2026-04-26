@@ -29,7 +29,8 @@
 | Windows CJK encoding — 3-layer GBK/UTF-8 fix for subprocess pipes | **Win32** |
 | TUI plugin loading — Magic Context sidebar blank due to Zod strict mode | **TUI** |
 | MC tool truncation — `[truncated]` → `[tool: N lines, MKB \| preview]` for compressed context | **MC** |
-| DeepSeek V4 architecture research → config alignment: 800K context, 85% MC threshold, CSA-aligned compression | **V4** |
+| DeepSeek V4 architecture research → config alignment: 400K context, 90% MC threshold, CSA-aligned compression | **V4** |
+| Global session pool — all conversations visible from any directory (2.0) | **Session** |
 | Full Chinese system prompt: Sisyphus, keyword-detector, system messages, environment info | **i18n** |
 
 ## Quick Start
@@ -41,11 +42,11 @@ bun run --conditions=browser src/index.ts
 
 ## Model Configuration Reference
 
-### Flash (daily driver)
+### Flash (daily driver — all agents)
 
 ```jsonc
 "deepseek-v4-flash": {
-  "limit": { "context": 800000, "output": 393216 },
+  "limit": { "context": 400000, "output": 393216 },
   "options": {
     "reasoningEffort": "max",
     "thinking": { "type": "enabled" }
@@ -53,29 +54,6 @@ bun run --conditions=browser src/index.ts
   "interleaved": { "field": "reasoning_content" }
 }
 ```
-
-### Pro (heavy tasks — planning, architecture, oracle)
-
-```jsonc
-"deepseek-v4-pro": {
-  "limit": { "context": 800000, "output": 262144 },
-  "options": {
-    "reasoningEffort": "max",
-    "thinking": { "type": "enabled" }
-  },
-  "interleaved": { "field": "reasoning_content" }
-}
-```
-
-**Agent split (via oh-my-openagent.json):**
-
-| Agent | Model | Fallback | Use case |
-|-------|-------|----------|----------|
-| Sisyphus | Pro | → Flash | Complex planning, architecture, debug |
-| Oracle | Pro | → Flash | High-difficulty reasoning |
-| Others | Flash | → Flash | Search, execute, routine |
-
-> Pro is on 2.5折 discount until **2026/05/05 23:59 (UTC+8)**. After that, revert to all-Flash.
 
 - **`reasoningEffort`**: `high` (default) or `max`. Per [DeepSeek docs](https://api-docs.deepseek.com/guides/thinking_mode), agent tools auto-set to `max` anyway.
 - **`interleaved`**: Required for DeepSeek thinking mode via `@ai-sdk/openai-compatible`. Without it, `reasoning_content` is not forwarded.

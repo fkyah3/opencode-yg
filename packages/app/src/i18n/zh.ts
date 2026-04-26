@@ -917,4 +917,28 @@ export const dict = {
   "error.childStore.persistedProjectIconCreateFailed": "创建持久化项目图标失败",
   "error.childStore.storeCreateFailed": "创建存储失败",
   "terminal.connectionLost.abnormalClose": "WebSocket 异常关闭：{{code}}",
+
+  "command.project.previous": "上一个项目",
+  "command.project.next": "下一个项目",
+
+  "session.child.promptDisabled": "提示已禁用",
+  "session.child.backToParent": "返回父会话",
+
+  "session.review.noUncommittedChanges": "没有未提交的更改",
+  "session.review.noBranchChanges": "分支无更改",
+
+  "sidebar.empty.title": "无会话",
+  "sidebar.empty.description": "开始一个新对话",
+
+  "settings.general.section.advanced": "高级",
+  "settings.general.row.showFileTree.title": "显示文件树",
+  "settings.general.row.showFileTree.description": "在侧边栏中显示文件浏览器",
+  "settings.general.row.showNavigation.title": "显示导航",
+  "settings.general.row.showNavigation.description": "显示项目与会话导航",
+  "settings.general.row.showSearch.title": "显示搜索",
+  "settings.general.row.showSearch.description": "在标题栏显示搜索入口",
+  "settings.general.row.showTerminal.title": "显示终端",
+  "settings.general.row.showTerminal.description": "启用集成终端面板",
+  "settings.general.row.showStatus.title": "显示状态栏",
+  "settings.general.row.showStatus.description": "在底部显示服务器和工具状态",
 } satisfies Partial<Record<Keys, string>>
