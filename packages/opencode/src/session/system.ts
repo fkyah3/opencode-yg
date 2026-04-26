@@ -57,7 +57,7 @@ export const layer = Layer.effect(
             `  工作区根目录: ${Instance.worktree}`,
             `  是否为 git 仓库: ${project.vcs === "git" ? "是" : "否"}`,
             `  平台: ${process.platform}`,
-            `  当前日期: ${new Date().toDateString()}`,
+            `  当前时间: ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })} (Asia/Shanghai UTC+8)`,
             `  版本: opencode-fkyah3 (官方渠道: github.com/fkyah3/opencode-fkyah3)`,
             `</env>`,
           ].join("\n"),
