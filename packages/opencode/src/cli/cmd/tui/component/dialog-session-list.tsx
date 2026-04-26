@@ -219,13 +219,17 @@ export function DialogSessionList() {
           keybind: keybind.all.session_delete?.[0],
           title: "delete",
           onTrigger: async (option) => {
-            // fkyah3: prevent deletion while AI is actively working
-            const activeStatus = sync.session.status(option.value)
-            if (activeStatus === "working" || activeStatus === "compacting") {
+            // fkyah3: prevent any deletion while ANY AI session is actively working
+            // to avoid read/write/delete race conditions during high-intensity tasks
+            const anyWorking = sessions().some((s) => {
+              const st = sync.session.status(s.id)
+              return st === "working" || st === "compacting"
+            })
+            if (anyWorking) {
               toast.show({
                 variant: "info",
                 title: "无法删除",
-                message: "AI 正在工作中，请等待完成后再删除此对话。",
+                message: "有 AI 正在工作中，请等待完成后再删除对话。",
               })
               setToDelete(undefined)
               return
