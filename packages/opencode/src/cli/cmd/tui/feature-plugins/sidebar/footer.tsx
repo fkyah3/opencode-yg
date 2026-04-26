@@ -68,7 +68,7 @@ function View(props: { api: TuiPluginApi }) {
         <span style={{ fg: theme().text }}>
           <b>Code</b>
         </span>{" "}
-        <span style={{ fg: theme().success }}>local-fkyah3-V1.2</span>
+        <span style={{ fg: theme().success }}>local-fkyah3-V2.0</span>
       </text>
     </box>
   )
