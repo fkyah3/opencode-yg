@@ -195,9 +195,14 @@ export function DialogSessionList() {
     sync.session.refresh()
   })
 
+  const dialogTitle = createMemo(() => {
+    const anyWorking = sessions().some((s) => sync.session.status(s.id) === "working")
+    return anyWorking ? "Sessions（AI 工作中，删除已禁用）" : "Sessions"
+  })
+
   return (
     <DialogSelect
-      title="Sessions"
+      title={dialogTitle()}
       options={options()}
       // fkyah3: hide search in global mode — use arrow keys for page nav instead
       hideSearch={true}
@@ -217,10 +222,7 @@ export function DialogSessionList() {
       keybind={[
         {
           keybind: keybind.all.session_delete?.[0],
-          title: sessions().some((s) => {
-            const st = sync.session.status(s.id)
-            return st === "working" || st === "compacting"
-          }) ? "delete (AI busy)" : "delete",
+          title: "delete",
           onTrigger: async (option) => {
             // fkyah3: prevent any deletion while ANY AI session is actively working
             // to avoid read/write/delete race conditions during high-intensity tasks
