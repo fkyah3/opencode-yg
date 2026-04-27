@@ -682,13 +682,13 @@ export const toModelMessagesEffect = Effect.fnUntraced(function* (
         if (part.type === "compaction") {
           userMessage.parts.push({
             type: "text",
-            text: "What did we do so far?",
+            text: "我们到目前为止做了什么？",
           })
         }
         if (part.type === "subtask") {
           userMessage.parts.push({
             type: "text",
-            text: "The following tool was executed by the user",
+            text: "用户执行了以下工具",
           })
         }
       }

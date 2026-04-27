@@ -1005,7 +1005,7 @@ export const GithubRunCommand = cmd({
                 {
                   id: PartID.ascending(),
                   type: "text",
-                  text: "Summarize the actions (tool calls & reasoning) you did for the user in 1-2 sentences.",
+                  text: "用 1-2 句话总结你为用户执行的操作（工具调用和推理过程）。",
                 },
               ],
             })

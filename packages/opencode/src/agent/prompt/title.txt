@@ -31,16 +31,16 @@
 </rules>
 
 <examples>
-"debug 500 errors in production" → Debugging production 500 errors
-"refactor user service" → Refactoring user service
-"why is app.js failing" → app.js failure investigation
-"implement rate limiting" → Rate limiting implementation
-"how do I connect postgres to my API" → Postgres API connection
-"best practices for React hooks" → React hooks best practices
-"@src/auth.ts can you add refresh token support" → Auth refresh token support
-"@utils/parser.ts this is broken" → Parser bug fix
-"look at @config.json" → Config review
-"@App.tsx add dark mode toggle" → Dark mode toggle in App
+"debug 500 errors in production" → 排查生产环境 500 错误
+"refactor user service" → 重构用户服务
+"why is app.js failing" → app.js 失败原因排查
+"implement rate limiting" → 实现速率限制
+"how do I connect postgres to my API" → Postgres API 连接
+"best practices for React hooks" → React hooks 最佳实践
+"@src/auth.ts can you add refresh token support" → 添加刷新令牌支持
+"@utils/parser.ts this is broken" → 解析器 bug 修复
+"look at @config.json" → 配置审查
+"@App.tsx add dark mode toggle" → 在 App 中添加暗色模式切换
 "帮我看看这个报错" → 排查编译报错
 "重构一下用户模块" → 重构用户模块
 "数据库连接超时怎么解决" → 数据库连接超时排查
