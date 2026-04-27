@@ -72,6 +72,10 @@ export const AuthMiddleware: MiddlewareHandler = (c, next) => {
   // Browser clients sending Authorization headers will preflight with OPTIONS.
   if (c.req.method === "OPTIONS") return next()
 
+  // Internal plugin calls (via omo's custom fetch) skip auth.
+  // These requests stay within the same process — no network exposure.
+  if (c.req.header("x-opencode-internal")) return next()
+
   const password = getServerPassword()
   if (!password) return next()
 

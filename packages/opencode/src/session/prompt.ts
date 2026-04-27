@@ -53,15 +53,15 @@ import { EffectBridge } from "@/effect"
 // @ts-ignore
 globalThis.AI_SDK_LOG_WARNINGS = false
 
-const STRUCTURED_OUTPUT_DESCRIPTION = `Use this tool to return your final response in the requested structured format.
+const STRUCTURED_OUTPUT_DESCRIPTION = `使用此工具以请求的结构化格式返回你的最终响应。
 
-IMPORTANT:
-- You MUST call this tool exactly once at the end of your response
-- The input must be valid JSON matching the required schema
-- Complete all necessary research and tool calls BEFORE calling this tool
-- This tool provides your final answer - no further actions are taken after calling it`
+重要：
+- 你必须在响应末尾恰好调用此工具一次
+- 输入必须是符合所需 schema 的有效 JSON
+- 在调用此工具之前完成所有必要的研究和工具调用
+- 此工具提供你的最终答案——调用后不会执行进一步的操作`
 
-const STRUCTURED_OUTPUT_SYSTEM_PROMPT = `IMPORTANT: The user has requested structured output. You MUST use the StructuredOutput tool to provide your final response. Do NOT respond with plain text - you MUST call the StructuredOutput tool with your answer formatted according to the schema.`
+const STRUCTURED_OUTPUT_SYSTEM_PROMPT = `重要：用户请求了结构化输出。你必须使用 StructuredOutput 工具提供你的最终响应。不要用纯文本回复——你必须调用 StructuredOutput 工具，并根据 schema 格式化你的答案。`
 
 const log = Log.create({ service: "session.prompt" })
 const elog = EffectLogger.create({ service: "session.prompt" })
@@ -196,7 +196,7 @@ export const layer = Layer.effect(
           model: mdl,
           sessionID: input.session.id,
           retries: 2,
-          messages: [{ role: "user", content: "Generate a title for this conversation:\n" }, ...msgs],
+          messages: [{ role: "user", content: "为此对话生成一个标题：\n" }, ...msgs],
         })
         .pipe(
           Stream.filter((e): e is Extract<LLM.Event, { type: "text-delta" }> => e.type === "text-delta"),
@@ -710,7 +710,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         messageID: summaryUserMsg.id,
         sessionID,
         type: "text",
-        text: "Summarize the task tool output above and continue with your task.",
+        text: "总结上面任务工具的输出，继续你的任务。",
         synthetic: true,
       } satisfies MessageV2.TextPart)
     })
@@ -745,7 +745,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         id: PartID.ascending(),
         messageID: userMsg.id,
         sessionID: input.sessionID,
-        text: "The following tool was executed by the user",
+        text: "用户执行了以下工具",
         synthetic: true,
       }
       yield* sessions.updatePart(userPart)
@@ -1822,7 +1822,7 @@ export function createStructuredOutputTool(input: {
       // AI SDK validates args against inputSchema before calling execute()
       input.onSuccess(args)
       return {
-        output: "Structured output captured successfully.",
+        output: "结构化输出已成功捕获。",
         title: "Structured Output",
         metadata: { valid: true },
       }
