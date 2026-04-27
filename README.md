@@ -32,7 +32,8 @@
 | DeepSeek V4 architecture research → config alignment: 400K context, 90% MC threshold, CSA-aligned compression | **V4** |
 | Global session pool — all conversations visible from any directory (2.0) | **Session** |
 | Full Chinese system prompt: Sisyphus, keyword-detector, system messages, environment info | **i18n** |
-
+| Language Anchoring — systematic method for LLM multilingual adaptation (verified with dose-response data) | **i18n** |
+ 
 ## Quick Start
 
 ```powershell
@@ -67,6 +68,7 @@ bun run --conditions=browser src/index.ts
 | [`fkyah3_dev/internal/COMPLETION.md`](./fkyah3_dev/internal/COMPLETION.md) | Completed work checklist & current state |
 | [`fkyah3_dev/analysis/deepseek-v4-workflow-optimization.md`](./fkyah3_dev/analysis/deepseek-v4-workflow-optimization.md) | V4 architecture research → config alignment |
 | [Upstream issue #24104](https://github.com/anomalyco/opencode/issues/24104) | reasoning_content root cause discussion |
+| [Discussion: Language Anchoring RFC](https://github.com/fkyah3/opencode-fkyah3/discussions/1) | System-level approach to multilingual LLM adaptation |
 
 ## Upstream
 
