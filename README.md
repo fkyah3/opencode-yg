@@ -2,17 +2,49 @@
 <code>DeepSeek 优化 · Windows 适配 · AI 实现</code></p>
 
 <p align="center">
-  <a href="./SETUP.md"><b>🚀 从零搭建指南（中文）</b></a> · <a href="./README.en.md">English</a> · <a href="./README.zht.md">繁體中文</a>
+  <a href="./SETUP.md"><b>🚀 从零搭建指南（中文）</b></a> · <a href="./README.zh.md">简体中文</a> · <a href="./README.zht.md">繁體中文</a>
 </p>
 
 ---
 
-本项目是 [anomalyco/opencode](https://github.com/anomalyco/opencode) 的个人 Fork。所有修复、优化、功能均由 AI 完成——**DeepSeek V4 Flash (thinking mode) / Sisyphus**——在人类监督下执行。
+## 🧠 Language Anchoring — A Systematic Method for LLM Multilingual Adaptation
 
-上游是优秀项目。Windows 和 DeepSeek 并非他们的优先方向。我们自行处理。
+**Key finding:** The first active output from an LLM determines the thinking language for the entire session. Reading a language ≠ thinking in it.
 
-> **代码实现：DeepSeek V4 Flash (thinking mode) / Sisyphus（AI）**  
-> **人工审核与方向把控：fkyah3**  
+| Stage | Compliance | Intervention |
+|-------|-----------|-------------|
+| Prompt constraints only (4 language rules) | ~70% | Prompt text changes only |
+| + Translate 16 tool descriptions | ~85% | Tool layer language alignment |
+| + Translate 50+ source file comments (fresh session) | ~95%+ | Code layer reinforcement |
+| + Anchoring instruction (7 lines) | ~100% | Leverages autoregressive inertia |
+
+The anchoring instruction is minimal:
+
+```
+## Language Anchoring (Hard Requirement)
+After receiving the user's first message, before executing any action or starting reasoning, you MUST first write a brief summary in the target language describing:
+1. What the user is asking you to do
+2. What steps you plan to take
+3. What information is still missing
+This output is your first response — it anchors the thinking language for the entire session.
+```
+
+**Related academic work:** Contextual Inertia ([arXiv 2603.04783](https://arxiv.org/abs/2603.04783)), Cognitive Inertia ([arXiv 2503.01307](https://arxiv.org/abs/2503.01307)) — these study "how to break harmful inertia". Our contribution is the positive utilization of the same mechanism.
+
+📖 [Discussion #1 — Language Anchoring RFC](https://github.com/fkyah3/opencode-fkyah3/discussions/1)
+💬 [Discussion #2 — AI合作、信任、螺旋进化（中文）](https://github.com/fkyah3/opencode-fkyah3/discussions/2)
+🌐 [Discussion #3 — How I Work with AI (English)](https://github.com/fkyah3/opencode-fkyah3/discussions/3)
+
+---
+
+## About This Fork
+
+This is a personal fork of [anomalyco/opencode](https://github.com/anomalyco/opencode). All fixes, optimizations, and features are implemented by AI — **DeepSeek V4 Flash (thinking mode) / Sisyphus** — under human supervision.
+
+The upstream project is excellent. Windows and DeepSeek are not their priority. We handle them ourselves.
+
+> **Implementation: DeepSeek V4 Flash (thinking mode) / Sisyphus (AI)**  
+> **Review & direction: fkyah3 (human)**  
 > This fork is a live demonstration of what AI-built software looks like.  
 > See [`fkyah3_dev/`](./fkyah3_dev/) for the full story.
 
@@ -33,7 +65,7 @@
 | Global session pool — all conversations visible from any directory (2.0) | **Session** |
 | Full Chinese system prompt: Sisyphus, keyword-detector, system messages, environment info | **i18n** |
 | Language Anchoring — systematic method for LLM multilingual adaptation (verified with dose-response data) | **i18n** |
- 
+
 ## Quick Start
 
 ```powershell
@@ -66,9 +98,7 @@ bun run --conditions=browser src/index.ts
 |------|---------|
 | [`fkyah3_dev/`](./fkyah3_dev/) | Fix details, analysis docs, issue tracking |
 | [`fkyah3_dev/internal/COMPLETION.md`](./fkyah3_dev/internal/COMPLETION.md) | Completed work checklist & current state |
-| [`fkyah3_dev/analysis/deepseek-v4-workflow-optimization.md`](./fkyah3_dev/analysis/deepseek-v4-workflow-optimization.md) | V4 architecture research → config alignment |
 | [Upstream issue #24104](https://github.com/anomalyco/opencode/issues/24104) | reasoning_content root cause discussion |
-| [Discussion: Language Anchoring RFC](https://github.com/fkyah3/opencode-fkyah3/discussions/1) | System-level approach to multilingual LLM adaptation |
 
 ## Upstream
 

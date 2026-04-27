@@ -7,7 +7,40 @@
 
 ---
 
-本项目是 [anomalyco/opencode](https://github.com/anomalyco/opencode) 的个人 Fork。所有修复、优化、功能均由 AI 完成——**DeepSeek V4 Flash (thinking mode) / Sisyphus**——在人类监督下执行。
+## 🧠 语言锚定 —— LLM 多语言适配的系统方法
+
+**核心发现**：LLM 会话的第一个主动输出语言，决定了整场对话的思维惯性。读中文 ≠ 用中文思考。
+
+| 阶段 | 效果 | 干预措施 |
+|------|------|---------|
+| 纯 prompt 约束（4 条语言规则） | ~70% | 仅修改 prompt 文本 |
+| + 翻译 16 个工具描述 | ~85% | 工具层中文对齐 |
+| + 翻译 50+ 文件注释（新对话验证） | ~95%+ | 代码层加固 |
+| + 锚定指令（7 行） | 接近全程中文 | 自回归惯性利用 |
+
+锚定指令只有 7 行：
+
+```
+## 语言锚定（硬性要求）
+收到用户的第一条消息后，在执行任何操作或开始推理之前，
+你必须先用中文写一段简短总结：
+1. 用户要你做什么
+2. 你计划用什么步骤完成
+3. 你还缺什么信息
+这段中文是你的第一个输出。完成这段输出后才能开始执行具体任务。
+```
+
+**学术对照**：Contextual Inertia（[arXiv 2603.04783](https://arxiv.org/abs/2603.04783)）、Cognitive Inertia（[arXiv 2503.01307](https://arxiv.org/abs/2503.01307)）——这些研究的是"如何打破有害惯性"。我们的贡献是正面利用同一机制。
+
+📖 [Discussion #1 — 语言锚定 RFC](https://github.com/fkyah3/opencode-fkyah3/discussions/1)
+💬 [Discussion #2 — 我对AI的看法（中文）](https://github.com/fkyah3/opencode-fkyah3/discussions/2)
+🌐 [Discussion #3 — How I Work with AI (English)](https://github.com/fkyah3/opencode-fkyah3/discussions/3)
+
+---
+
+## 关于本项目
+
+这是 [anomalyco/opencode](https://github.com/anomalyco/opencode) 的个人 Fork。所有修复、优化、功能均由 AI 完成——**DeepSeek V4 Flash (thinking mode) / Sisyphus**——在人类监督下执行。
 
 上游是优秀项目。Windows 和 DeepSeek 并非他们的优先方向。我们自行处理。
 
@@ -66,7 +99,6 @@ bun run --conditions=browser src/index.ts
 |------|------|
 | [`fkyah3_dev/`](./fkyah3_dev/) | 修复详情、分析文档、问题跟踪 |
 | [`fkyah3_dev/internal/COMPLETION.md`](./fkyah3_dev/internal/COMPLETION.md) | 完成清单与当前状态 |
-| [`Discussion: 语言锚定 RFC`](https://github.com/fkyah3/opencode-fkyah3/discussions/1) | LLM 多语言适配的系统方法 |
 | [上游 Issue #24104](https://github.com/anomalyco/opencode/issues/24104) | reasoning_content 根因讨论 |
 
 ## Upstream
