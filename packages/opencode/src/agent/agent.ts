@@ -108,7 +108,7 @@ export const layer = Layer.effect(
         const agents: Record<string, Info> = {
           build: {
             name: "build",
-            description: "The default agent. Executes tools based on configured permissions.",
+            description: "默认 agent。根据配置的权限执行工具。",
             options: {},
             permission: Permission.merge(
               defaults,
@@ -123,7 +123,7 @@ export const layer = Layer.effect(
           },
           plan: {
             name: "plan",
-            description: "Plan mode. Disallows all edit tools.",
+            description: "计划模式。禁止所有编辑工具。",
             options: {},
             permission: Permission.merge(
               defaults,
@@ -146,7 +146,7 @@ export const layer = Layer.effect(
           },
           general: {
             name: "general",
-            description: `General-purpose agent for researching complex questions and executing multi-step tasks. Use this agent to execute multiple units of work in parallel.`,
+            description: `通用 agent，用于研究复杂问题和执行多步骤任务。使用此 agent 并行执行多个工作单元。`,
             permission: Permission.merge(
               defaults,
               Permission.fromConfig({
@@ -179,7 +179,7 @@ export const layer = Layer.effect(
               }),
               user,
             ),
-            description: `Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (eg. "src/components/**/*.tsx"), search code for keywords (eg. "API endpoints"), or answer questions about the codebase (eg. "how do API endpoints work?"). When calling this agent, specify the desired thoroughness level: "quick" for basic searches, "medium" for moderate exploration, or "very thorough" for comprehensive analysis across multiple locations and naming conventions.`,
+            description: `专用于浏览代码库的快速 agent。当你需要根据模式快速查找文件（如 "src/components/**/*.tsx"）、搜索关键词（如 "API endpoints"）或回答关于代码库的问题（如 "API 端点如何工作？"）时使用。调用此 agent 时，指定所需的彻底程度："quick" 用于基本搜索，"medium" 用于中等程度的浏览，"very thorough" 用于跨多个位置和命名约定的全面分析。`,
             prompt: PROMPT_EXPLORE,
             options: {},
             mode: "subagent",

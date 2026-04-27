@@ -109,15 +109,7 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
       },
       "models": {
         "deepseek-v4-flash": {
-          "limit": { "context": 800000, "output": 393216 },
-          "options": {
-            "reasoningEffort": "max",
-            "thinking": { "type": "enabled" }
-          },
-          "interleaved": { "field": "reasoning_content" }
-        },
-        "deepseek-v4-pro": {
-          "limit": { "context": 800000, "output": 262144 },
+          "limit": { "context": 400000, "output": 393216 },
           "options": {
             "reasoningEffort": "max",
             "thinking": { "type": "enabled" }
@@ -127,46 +119,6 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
       }
     }
   },
-  "agent": {
-    "oracle": {
-      "permission": {
-        "read": { "action": "allow", "pattern": "*" },
-        "grep": { "action": "allow", "pattern": "*" },
-        "glob": { "action": "allow", "pattern": "*" },
-        "bash": { "action": "ask", "pattern": "*" },
-        "edit": { "action": "deny", "pattern": "*" },
-        "write": { "action": "deny", "pattern": "*" }
-      }
-    },
-    "explore": {
-      "permission": {
-        "read": { "action": "allow", "pattern": "*" },
-        "grep": { "action": "allow", "pattern": "*" },
-        "glob": { "action": "allow", "pattern": "*" },
-        "bash": { "action": "ask", "pattern": "*" },
-        "edit": { "action": "deny", "pattern": "*" },
-        "write": { "action": "deny", "pattern": "*" }
-      }
-    },
-    "librarian": {
-      "permission": {
-        "read": { "action": "allow", "pattern": "*" },
-        "grep": { "action": "allow", "pattern": "*" },
-        "glob": { "action": "allow", "pattern": "*" },
-        "bash": { "action": "ask", "pattern": "*" },
-        "edit": { "action": "deny", "pattern": "*" },
-        "write": { "action": "deny", "pattern": "*" }
-      }
-    }
-  }
-}
-```
-
-### 4.2 `oh-my-openagent.json`
-
-```jsonc
-{
-  "$schema": "https://raw.githubusercontent.com/fkyah3/oh-my-openagent-fkyah3/main/assets/omo.schema.json",
   "models": {
     "deepseek-v4-pro": "deepseek/deepseek-v4-pro",
     "deepseek-v4-flash": "deepseek/deepseek-v4-flash"

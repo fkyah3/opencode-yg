@@ -147,9 +147,17 @@ export const WebFetchTool = Tool.define(
               return { output: content, title, metadata: {} }
 
             default:
-              return { output: content, title, metadata: {} }
+          return { output: content, title, metadata: {} }
           }
-        }).pipe(Effect.orDie),
+        }).pipe(
+          Effect.catchAll((err) =>
+            Effect.succeed({
+              output: `【网络不可用】无法访问目标网址。请检查网络连接或代理设置后重试。\n网址: ${params.url}\n错误详情: ${err instanceof Error ? err.message : String(err)}`,
+              title: `网页获取失败: ${params.url}`,
+              metadata: {},
+            }),
+          ),
+        ),
     }
   }),
 )

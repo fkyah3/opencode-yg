@@ -1,18 +1,18 @@
-Use the `apply_patch` tool to edit files. Your patch language is a stripped‑down, file‑oriented diff format designed to be easy to parse and safe to apply. You can think of it as a high‑level envelope:
+使用 `apply_patch` 工具编辑文件。你的补丁语言是一种精简的、面向文件的 diff 格式，易于解析且安全应用。你可以将其视为高级信封：
 
 *** Begin Patch
-[ one or more file sections ]
+[ 一个或多个文件段 ]
 *** End Patch
 
-Within that envelope, you get a sequence of file operations.
-You MUST include a header to specify the action you are taking.
-Each operation starts with one of three headers:
+在此信封内，包含一系列文件操作。
+**必须**包含头部来指定要执行的操作。
+每个操作以三种头部之一开始：
 
-*** Add File: <path> - create a new file. Every following line is a + line (the initial contents).
-*** Delete File: <path> - remove an existing file. Nothing follows.
-*** Update File: <path> - patch an existing file in place (optionally with a rename).
+*** Add File: <路径> —— 创建新文件。后续每一行都是 + 行（初始内容）。
+*** Delete File: <路径> —— 删除现有文件。之后不跟任何内容。
+*** Update File: <路径> —— 原地修补现有文件（可选附带重命名）。
 
-Example patch:
+补丁示例：
 
 ```
 *** Begin Patch
@@ -27,7 +27,7 @@ Example patch:
 *** End Patch
 ```
 
-It is important to remember:
+需要记住的重要事项：
 
-- You must include a header with your intended action (Add/Delete/Update)
-- You must prefix new lines with `+` even when creating a new file
+- **必须**包含带有操作意图的头部（Add/Delete/Update）
+- 即使是创建新文件，也**必须**在行前加 `+` 前缀

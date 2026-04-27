@@ -1,14 +1,14 @@
-Use this tool to suggest switching to plan agent when the user's request would benefit from planning before implementation.
+当用户的需求在实施前需要先规划时，使用此工具建议切换到计划 Agent。
 
-If they explicitly mention wanting to create a plan ALWAYS call this tool first.
+如果用户明确提到想要创建计划，**始终**先调用此工具。
 
-This tool will ask the user if they want to switch to plan agent.
+此工具会询问用户是否要切换到计划 Agent。
 
-Call this tool when:
-- The user's request is complex and would benefit from planning first
-- You want to research and design before making changes
-- The task involves multiple files or significant architectural decisions
+使用此工具的时机：
+- 用户请求复杂，先规划更有益
+- 需要先调研和设计，再进行变更
+- 任务涉及多个文件或重要的架构决策
 
-Do NOT call this tool:
-- For simple, straightforward tasks
-- When the user explicitly wants immediate implementation
+**不要**使用此工具的时机：
+- 简单、直接的任务
+- 用户明确要求立即实施

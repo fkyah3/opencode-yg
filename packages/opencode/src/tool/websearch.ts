@@ -64,11 +64,19 @@ export const WebSearchTool = Tool.define(
           )
 
           return {
-            output: result ?? "No search results found. Please try a different query.",
-            title: `Web search: ${params.query}`,
+            output: result ?? "没有找到搜索结果，请尝试其他关键词。",
+            title: `网络搜索: ${params.query}`,
             metadata: {},
           }
-        }).pipe(Effect.orDie),
+        }).pipe(
+          Effect.catchAll((err) =>
+            Effect.succeed({
+              output: `【网络不可用】无法完成搜索。请检查网络连接或代理设置后重试。\n查询内容: ${params.query}\n错误详情: ${err instanceof Error ? err.message : String(err)}`,
+              title: `网络搜索失败: ${params.query}`,
+              metadata: {},
+            }),
+          ),
+        ),
     }
   }),
 )
