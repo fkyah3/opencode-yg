@@ -1,0 +1,620 @@
+/** @jsxImportSource @opentui/solid */
+import { createEffect, createMemo, createSignal, on, onCleanup } from "solid-js"
+import type { TuiSlotPlugin, TuiPluginApi, TuiThemeCurrent } from "@opencode-ai/plugin/tui"
+import packageJson from "../../../package.json"
+import { loadSidebarSnapshot, type SidebarSnapshot } from "../data/context-db"
+
+const SINGLE_BORDER = { type: "single" } as any
+const REFRESH_DEBOUNCE_MS = 150
+const CLEANING_DURATION_MS = 1_500
+
+/** Tracks compression state transitions for idle/working/justDone display */
+function useCompressionStatus(compressing: () => boolean) {
+    const [state, setState] = createSignal<'idle' | 'working' | 'justDone'>('idle')
+    const [doneAt, setDoneAt] = createSignal<number>(0)
+    let prev = false
+    createEffect(() => {
+        const now = compressing()
+        if (now && !prev) { setState('working') }
+        else if (!now && prev) {
+            setState('justDone')
+            setDoneAt(Date.now())
+            setTimeout(() => setState('idle'), 15_000)
+        }
+        prev = now
+    })
+    return { state, doneAt }
+}
+
+/** Tracks queue state transitions for idle/pending/cleaning/justCleared display.
+ * Uses tick-based elapsed time for reliable auto-advance without setTimeout. */
+function useQueueStatus(count: () => number) {
+    const [lastFlushTime, setLastFlushTime] = createSignal<number>(0)
+    const [tick, setTick] = createSignal(0)
+    let prev = 0
+
+    // Tick every 500ms so elapsed-time-derived states auto-advance reactively
+    const tickInterval = setInterval(() => setTick(t => t + 1), 500)
+    onCleanup(() => clearInterval(tickInterval))
+
+    // Detect N→0 transition → record flush time
+    createEffect(() => {
+        const now = count()
+        if (now === 0 && prev > 0) {
+            setLastFlushTime(Date.now())
+        }
+        prev = now
+    })
+
+    // Compute display state from snapshot + elapsed time since last flush
+    const state = createMemo<'idle' | 'pending' | 'cleaning' | 'justCleared'>(() => {
+        // Read tick to make this reactive (auto-recompute every 500ms)
+        void tick()
+        const n = count()
+
+        // Pending ops exist → always pending
+        if (n > 0) return 'pending'
+
+        const flushTime = lastFlushTime()
+        if (!flushTime) return 'idle'
+
+        const elapsed = Date.now() - flushTime
+        // cleaning: first 1.5s after flush
+        if (elapsed < CLEANING_DURATION_MS) return 'cleaning'
+        // justCleared: next 15s (1.5s … 16.5s window)
+        if (elapsed < CLEANING_DURATION_MS + 15_000) return 'justCleared'
+        // idle: after window expires
+        return 'idle'
+    })
+
+    return { state, clearedAt: lastFlushTime }
+}
+
+function compactTokens(value: number): string {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
+    if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`
+    return String(value)
+}
+
+function relativeTime(ms: number): string {
+    const diff = Date.now() - ms
+    if (diff < 60_000) return "刚刚"
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`
+    return `${Math.floor(diff / 86_400_000)} 天前`
+}
+
+// Token breakdown segment colors (hardcoded hex values)
+const COLORS = {
+    system: "#c084fc",    // Purple-ish
+    compartments: "#60a5fa", // Blue-ish
+    facts: "#fbbf24",     // Yellow/orange
+    memories: "#34d399",  // Green
+    conversation: "#9ca3af", // Gray (will use theme.textMuted)
+}
+
+interface TokenSegment {
+    key: string
+    tokens: number
+    color: string
+    label: string
+}
+
+// Segmented token breakdown bar with legend
+const TokenBreakdown = (props: {
+    theme: TuiThemeCurrent
+    snapshot: SidebarSnapshot
+}) => {
+    const barWidth = 36
+
+    const segments = createMemo<TokenSegment[]>(() => {
+        const s = props.snapshot
+        const total = s.inputTokens || 1
+        const result: TokenSegment[] = []
+
+        // System Prompt (purple)
+        if (s.systemPromptTokens > 0) {
+            result.push({
+                key: "sys",
+                tokens: s.systemPromptTokens,
+                color: COLORS.system,
+                label: "系统提示",
+            })
+        }
+
+        // Compartments (blue)
+        if (s.compartmentTokens > 0) {
+            result.push({
+                key: "comp",
+                tokens: s.compartmentTokens,
+                color: COLORS.compartments,
+                label: "压缩区",
+            })
+        }
+
+        // Facts (yellow/orange)
+        if (s.factTokens > 0) {
+            result.push({
+                key: "fact",
+                tokens: s.factTokens,
+                color: COLORS.facts,
+                label: "事实",
+            })
+        }
+
+        // Memories (green)
+        if (s.memoryTokens > 0) {
+            result.push({
+                key: "mem",
+                tokens: s.memoryTokens,
+                color: COLORS.memories,
+                label: "记忆",
+            })
+        }
+
+        // Conversation = real user/assistant text/reasoning/images
+        // (excludes injected session-history and excludes tool call I/O)
+        if (s.conversationTokens > 0) {
+            result.push({
+                key: "conv",
+                tokens: s.conversationTokens,
+                color: props.theme.textMuted,
+                label: "对话",
+            })
+        }
+
+        // Tool Calls = tool_use/tool_result/tool/tool-invocation parts in messages
+        // (actionable — users can reduce via ctx_reduce)
+        if (s.toolCallTokens > 0) {
+            result.push({
+                key: "tool-calls",
+                tokens: s.toolCallTokens,
+                color: "#6b7280",
+                label: "工具调用",
+            })
+        }
+
+        // Tool Definitions = tool schemas sent separately by OpenCode
+        // (residual: inputTokens - system - messagesBlock - toolCalls)
+        if (s.toolDefinitionTokens > 0) {
+            result.push({
+                key: "tool-defs",
+                tokens: s.toolDefinitionTokens,
+                color: COLORS.conversation,
+                label: "工具定义 + 开销",
+            })
+        }
+
+        return result
+    })
+
+    const totalTokens = createMemo(() => props.snapshot.inputTokens || 1)
+
+    // Calculate proportional widths for each segment
+    const segmentWidths = createMemo(() => {
+        const total = totalTokens()
+        const segs = segments()
+        if (segs.length === 0) return []
+
+        // Calculate raw proportions
+        const proportions = segs.map((seg) => seg.tokens / total)
+
+        // Convert to character widths (minimum 1 char if tokens > 0)
+        let widths = proportions.map((p) => Math.max(1, Math.round(p * barWidth)))
+
+        // Adjust to exactly barWidth
+        const sum = widths.reduce((a, b) => a + b, 0)
+        if (sum > barWidth) {
+            // Shrink from the largest segments
+            let excess = sum - barWidth
+            while (excess > 0) {
+                const maxIdx = widths.indexOf(Math.max(...widths))
+                if (widths[maxIdx] > 1) {
+                    widths[maxIdx]--
+                    excess--
+                } else {
+                    break
+                }
+            }
+        } else if (sum < barWidth) {
+            // Expand the largest segments
+            let deficit = barWidth - sum
+            while (deficit > 0) {
+                const maxIdx = widths.indexOf(Math.max(...widths))
+                widths[maxIdx]++
+                deficit--
+            }
+        }
+
+        return widths
+    })
+
+    const barSegments = createMemo(() => {
+        const segs = segments()
+        const widths = segmentWidths()
+        return segs.map((seg, i) => ({
+            chars: "█".repeat(widths[i] || 0),
+            color: seg.color,
+        }))
+    })
+
+    return (
+        <box width="100%" flexDirection="column">
+            {/* Segmented bar */}
+            <box flexDirection="row">
+                {barSegments().map((seg, i) => (
+                    <text key={i} fg={seg.color}>{seg.chars}</text>
+                ))}
+            </box>
+
+            {/* Legend rows */}
+            <box flexDirection="column" marginTop={0}>
+                {segments().map((seg) => {
+                    const pct = ((seg.tokens / totalTokens()) * 100).toFixed(0)
+                    return (
+                        <box
+                            key={seg.key}
+                            width="100%"
+                            flexDirection="row"
+                            justifyContent="space-between"
+                        >
+                            <text fg={seg.color}>{seg.label}</text>
+                            <text fg={props.theme.textMuted}>
+                                {compactTokens(seg.tokens)} ({pct}%)
+                            </text>
+                        </box>
+                    )
+                })}
+            </box>
+        </box>
+    )
+}
+
+const StatRow = (props: {
+    theme: TuiThemeCurrent
+    label: string
+    value: string
+    accent?: boolean
+    warning?: boolean
+    dim?: boolean
+}) => {
+    const fg = createMemo(() => {
+        if (props.warning) return props.theme.warning
+        if (props.accent) return props.theme.accent
+        if (props.dim) return props.theme.textMuted
+        return props.theme.text
+    })
+
+    return (
+        <box width="100%" flexDirection="row" justifyContent="space-between">
+            <text fg={props.theme.textMuted}>{props.label}</text>
+            <text fg={fg()}>
+                <b>{props.value}</b>
+            </text>
+        </box>
+    )
+}
+
+const SectionHeader = (props: { theme: TuiThemeCurrent; title: string }) => (
+    <box width="100%" marginTop={1}>
+        <text fg={props.theme.text}>
+            <b>{props.title}</b>
+        </text>
+    </box>
+)
+
+const SidebarContent = (props: {
+    api: TuiPluginApi
+    sessionID: () => string
+    theme: TuiThemeCurrent
+}) => {
+    const [snapshot, setSnapshot] = createSignal<SidebarSnapshot | null>(null)
+    const { state, doneAt } = useCompressionStatus(() => snapshot()?.compartmentInProgress ?? false)
+    const { state: queueState, clearedAt } = useQueueStatus(() => snapshot()?.pendingOpsCount ?? 0)
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined
+
+    const refresh = () => {
+        const sid = props.sessionID()
+        if (!sid) return
+        const directory = props.api.state.path.directory ?? ""
+        void loadSidebarSnapshot(sid, directory).then((data) => {
+            setSnapshot(data)
+            try {
+                props.api.renderer.requestRender()
+            } catch {
+                // Ignore render errors
+            }
+        })
+    }
+
+    const scheduleRefresh = () => {
+        if (refreshTimer) clearTimeout(refreshTimer)
+        refreshTimer = setTimeout(() => {
+            refreshTimer = undefined
+            refresh()
+        }, REFRESH_DEBOUNCE_MS)
+    }
+
+    onCleanup(() => {
+        if (refreshTimer) clearTimeout(refreshTimer)
+    })
+
+    // Refresh on session change
+    createEffect(
+        on(props.sessionID, () => {
+            refresh()
+        }),
+    )
+
+    // Dynamic polling: 2s during flush window (cleaning/justCleared), 5s otherwise.
+    // Catches server-side state changes (flush, dreamer, historian, etc.)
+    // that don't trigger message.updated or session.updated events.
+    createEffect(() => {
+        const interval = setInterval(() => refresh(), 5_000)
+        onCleanup(() => clearInterval(interval))
+    })
+
+    // Instant refresh when flush is detected (pendingOpsCount N→0)
+    createEffect(() => {
+        if (queueState() === "cleaning") refresh()
+    })
+
+    // Subscribe to events for live updates
+    createEffect(
+        on(
+            props.sessionID,
+            (sessionID) => {
+                const unsubs = [
+                    props.api.event.on("message.updated", (event) => {
+                        if (event.properties.info.sessionID !== sessionID) return
+                        scheduleRefresh()
+                    }),
+                    props.api.event.on("session.updated", (event) => {
+                        if (event.properties.info.id !== sessionID) return
+                        scheduleRefresh()
+                    }),
+                    props.api.event.on("message.removed", (event) => {
+                        if (event.properties.sessionID !== sessionID) return
+                        scheduleRefresh()
+                    }),
+                ]
+
+                onCleanup(() => {
+                    for (const unsub of unsubs) unsub()
+                })
+            },
+            { defer: false },
+        ),
+    )
+
+    const s = createMemo(() => snapshot())
+
+    return (
+        <box
+            width="100%"
+            flexDirection="column"
+            border={SINGLE_BORDER}
+            borderColor={props.theme.borderActive}
+            paddingTop={1}
+            paddingBottom={1}
+            paddingLeft={1}
+            paddingRight={1}
+        >
+            {/* Header */}
+            <box flexDirection="row" justifyContent="space-between" alignItems="center">
+                <box paddingLeft={1} paddingRight={1} backgroundColor={props.theme.accent}>
+                    <text fg={props.theme.background}>
+                        <b>Magic Context</b>
+                    </text>
+                </box>
+                <text fg={props.theme.textMuted}>v{packageJson.version}</text>
+            </box>
+
+            {/* Token breakdown bar */}
+            {s() && s()!.inputTokens > 0 && (
+                <box marginTop={1}>
+                    <TokenBreakdown theme={props.theme} snapshot={s()!} />
+                </box>
+            )}
+
+            {/* 压缩处理器 section */}
+            <box width="100%" marginTop={1} flexDirection="row" justifyContent="space-between">
+                <text fg={props.theme.text}>
+                    <b>压缩处理器</b>
+                </text>
+                {(() => {
+                    const cs = state()
+                    if (cs === "压缩中") {
+                        return <text fg={props.theme.warning}>working ⟳</text>
+                    }
+                    if (cs === "刚完成") {
+                        const ago = Math.floor((Date.now() - doneAt()) / 1000)
+                        return <text fg={props.theme.success}>完成于 ({ago}s ago)</text>
+                    }
+                    return <text fg={props.theme.textMuted}>闲置中</text>
+                })()}
+            </box>
+            {(() => {
+                const cs = state()
+                const snap = s()
+                if (!snap) { return }
+                if (cs === "刚完成") {
+                    const total = snap.compressionTotalMessages
+                    const done = snap.compressionDoneMessages
+                    const pct = total > 0 ? min(100, round((done / total) * 100)) : 0
+                    return (
+                        <box width="100%" marginTop={0}>
+                            <text fg={props.theme.success} wrap="end">
+                                压缩完成 {((done / 1000).toFixed(0))}k/{((total / 1000).toFixed(0))}k msgs ({pct}%)
+                            </text>
+                        </box>
+                    )
+                }
+                if (cs === "压缩中") {
+                    const total = snap.compressionTotalMessages
+                    const done = snap.compressionDoneMessages
+                    const pct = total > 0 ? min(100, round((done / total) * 100)) : 0
+                    return (
+                        <box width="100%" marginTop={0}>
+                            <text fg={props.theme.accent} wrap="end">
+                                压缩中 {((done / 1000).toFixed(0))}k/{((total / 1000).toFixed(0))}k msgs ({pct}%)
+                            </text>
+                        </box>
+                    )
+                }
+                return
+            })()}total) * 100)) : 0
+                return (
+                    <box width="100%" marginTop={0}>
+                        <text fg={props.theme.accent} wrap="end">
+                            压缩中 {((done / 1000).toFixed(0))}k/{((total / 1000).toFixed(0))}k msgs ({pct}%)
+                        </text>
+                    </box>
+                )
+            })()}
+            <StatRow
+                theme={props.theme}
+                label="压缩区"
+                value={String(s()?.compartmentCount ?? 0)}
+            />
+            <StatRow
+                theme={props.theme}
+                label="事实"
+                value={String(s()?.factCount ?? 0)}
+            />
+
+            {/* 记忆 section */}
+            <SectionHeader theme={props.theme} title="记忆" />
+            <StatRow
+                theme={props.theme}
+                label="活跃"
+                value={String(s()?.memoryCount ?? 0)}
+                accent
+            />
+            {(s()?.memoryBlockCount ?? 0) > 0 && (
+                <StatRow
+                    theme={props.theme}
+                    label="已注入"
+                    value={String(s()!.memoryBlockCount)}
+                    dim
+                />
+            )}
+
+            {/* 队列 & 状态 */}
+            <SectionHeader theme={props.theme} title="状态" />
+            {(() => {
+                const qs = queueState()
+                if (qs === "pending") {
+                    return (
+                        <StatRow
+                            theme={props.theme}
+                            label="队列"
+                            value={`待清理 (${s()?.pendingOpsCount ?? 0})`}
+                            warning
+                        />
+                    )
+                }
+                if (qs === "cleaning") {
+                    return (
+                        <StatRow
+                            theme={props.theme}
+                            label="队列"
+                            value="正在清理 ⟳"
+                            warning
+                        />
+                    )
+                }
+                if (qs === "justCleared") {
+                    const ago = Math.floor((Date.now() - clearedAt()) / 1000)
+                    return (
+                        <StatRow
+                            theme={props.theme}
+                            label="队列"
+                            value={`刚刚清理 (${ago}s 前)`}
+                            accent
+                        />
+                    )
+                }
+                return (
+                    <StatRow
+                        theme={props.theme}
+                        label="队列"
+                        value="无"
+                        dim
+                    />
+                )
+            })()}
+            {(s()?.sessionNoteCount ?? 0) > 0 && (
+                <StatRow
+                    theme={props.theme}
+                    label="笔记"
+                    value={String(s()!.sessionNoteCount)}
+                />
+            )}
+            {(s()?.readySmartNoteCount ?? 0) > 0 && (
+                <StatRow
+                    theme={props.theme}
+                    label="智能笔记"
+                    value={`${s()!.readySmartNoteCount} 条就绪`}
+                    accent
+                />
+            )}
+
+            {/* 梦幻者 */}
+            <SectionHeader theme={props.theme} title="梦幻者" />
+            <StatRow
+                theme={props.theme}
+                label="状态"
+                value={s()?.dreamerRunning ? "运行中" : "空闲中"}
+                accent={s()?.dreamerRunning ?? false}
+                dim={!s()?.dreamerRunning}
+            />
+            {s()?.lastDreamerRunAt && (
+                <StatRow
+                    theme={props.theme}
+                    label="上次"
+                    value={relativeTime(s()!.lastDreamerRunAt!)}
+                    dim
+                />
+            )}
+            {s()?.dreamerNextRunAt && !s()?.dreamerRunning && (
+                <StatRow
+                    theme={props.theme}
+                    label="下次"
+                    value={relativeTime(s()!.dreamerNextRunAt!)}
+                    dim
+                />
+            )}
+            <StatRow
+                theme={props.theme}
+                label="记忆"
+                value={String(s()?.memoryCount ?? 0)}
+                dim
+            />
+            <StatRow
+                theme={props.theme}
+                label="事实"
+                value={String(s()?.factCount ?? 0)}
+                dim
+            />
+        </box>
+    )
+}
+
+export function createSidebarContentSlot(api: TuiPluginApi): TuiSlotPlugin {
+    return {
+        order: 150,
+        slots: {
+            sidebar_content: (ctx, value) => {
+                const theme = createMemo(() => ctx.theme.current)
+                return (
+                    <SidebarContent
+                        api={api}
+                        sessionID={() => value.session_id}
+                        theme={theme()}
+                    />
+                )
+            },
+        },
+    }
+}

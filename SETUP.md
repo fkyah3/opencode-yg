@@ -1,6 +1,8 @@
 # 从零搭建 fkyah3 版 OpenCode 开发环境
 
-本指南覆盖 OpenCode + oh-my-openagent + Magic Context 三个仓库的完整安装流程。
+本指南覆盖 OpenCode 核心 + oh-my-openagent（Sisyphus 编排 Agent）+ Magic Context（上下文压缩）的完整安装流程。
+三个组件已预先合并到单一仓库中，**无需分别克隆**。
+
 面向零基础用户——每个步骤都写明了要做什么、为什么这么做。
 
 ## 前置条件
@@ -17,57 +19,47 @@ git --version
 bun --version
 ```
 
-## 第一步：克隆三个仓库
+## 第一步：克隆本仓库
 
 ```powershell
-mkdir E:\fkyah3\Agent\deepseek -Force
-cd E:\fkyah3\Agent\deepseek
-
-# 1. OpenCode 核心（fork 版）
 git clone https://github.com/fkyah3/opencode-fkyah3.git
 cd opencode-fkyah3
-git checkout fix/cve-2026-22812-auth
-cd ..
 
-# 2. oh-my-openagent（Sisyphus 编排 Agent 插件）
-git clone https://github.com/fkyah3/oh-my-openagent-fkyah3.git
-
-# 3. Magic Context（上下文压缩插件）
-git clone https://github.com/fkyah3/opencode-magic-context-fkyah3.git
+# 切换到主分支
+git checkout main
 ```
 
 **目录结构应如下：**
 ```
-E:\fkyah3\Agent\deepseek\
-├── opencode-fkyah3\
-├── oh-my-openagent-fkyah3\
-└── opencode-magic-context-fkyah3\
+opencode-fkyah3\
+├── packages/opencode\           # OpenCode 核心
+├── plugins/oh-my-openagent\     # oh-my-openagent 插件（已合并）
+├── plugins/opencode-magic-context\  # Magic Context 插件（已合并）
+└── ...
 ```
 
-## 第二步：构建三个项目
+## 第二步：构建
 
-### 2.1 构建 OpenCode
+### 2.1 安装依赖
 
 ```powershell
-cd E:\fkyah3\Agent\deepseek\opencode-fkyah3
+cd opencode-fkyah3
 bun install
 ```
 
-**无需构建**——OpenCode 通过 `bun run` 直接运行源码。
+**无需构建 OpenCode 核心**——它通过 `bun run` 直接运行源码。
 
 ### 2.2 构建 oh-my-openagent
 
 ```powershell
-cd E:\fkyah3\Agent\deepseek\oh-my-openagent-fkyah3
-bun install
+cd plugins/oh-my-openagent
 bun run build
 ```
 
 ### 2.3 构建 Magic Context
 
 ```powershell
-cd E:\fkyah3\Agent\deepseek\opencode-magic-context-fkyah3
-bun install
+cd plugins/opencode-magic-context\packages\plugin
 bun run build
 ```
 
@@ -87,18 +79,20 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
 
 > API key 从 [platform.deepseek.com](https://platform.deepseek.com/api_keys) 获取。
 
-## 第四步：放置三个配置文件
+## 第四步：放置配置文件
 
-以下三个文件放到 `C:\Users\<你的用户名>\.config\opencode\` 目录：
+以下文件放到 `C:\Users\<你的用户名>\.config\opencode\` 目录：
 
 ### 4.1 `opencode.json`
+
+> **⚠️ 插件路径需要改为你本机仓库的实际路径。**
 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
-    "file:///E:/fkyah3/Agent/deepseek/oh-my-openagent-fkyah3",
-    "file:///E:/fkyah3/Agent/deepseek/opencode-magic-context-fkyah3/packages/plugin"
+    "file:///D:/path/to/opencode-fkyah3/plugins/oh-my-openagent",
+    "file:///D:/path/to/opencode-fkyah3/plugins/opencode-magic-context/packages/plugin"
   ],
   "provider": {
     "deepseek": {
@@ -140,6 +134,22 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
 }
 ```
 
+### 4.2 `oh-my-openagent.json`
+
+omo 插件需要一段额外配置，放在同目录下：
+
+```jsonc
+{
+  "maxTurns": 50,
+  "background_task": {
+    "maxDepth": 1,
+    "concurrency": 5
+  }
+}
+```
+
+> **`maxDepth: 1`** 表示子 agent 不能再创建子 agent，防止嵌套过深。如果你需要更灵活的编排，可以改成更高值或直接删掉此行使用默认值。
+
 ### 4.3 `magic-context.jsonc`
 
 ```jsonc
@@ -149,7 +159,7 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
   "historian": {
     "model": "deepseek/deepseek-v4-flash"
   },
-  "execute_threshold_percentage": 70,
+  "execute_threshold_percentage": 65,
   "dreamer": {
     "enabled": false,
     "model": "deepseek/deepseek-v4-flash"
@@ -162,7 +172,7 @@ DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
 ## 第五步：启动
 
 ```powershell
-cd E:\fkyah3\Agent\deepseek\opencode-fkyah3\packages\opencode
+cd opencode-fkyah3\packages\opencode
 bun run --conditions=browser src/index.ts
 ```
 
@@ -197,16 +207,16 @@ A: 确认 `opencode.json` 里 `deepseek-v4-flash` 包含 `"interleaved": { "fiel
 **Q: 中文乱码？**
 A: 在 PowerShell 中先执行 `chcp 65001`，再启动 OpenCode。
 
-**Q: 三个仓库要更新怎么办？**
-A: 分别 `git pull` 各自仓库的对应分支，重新 `bun run build` oh-my-openagent 和 magic-context，重启 OpenCode。
+**Q: 要更新怎么办？**
+A: `git pull` 本仓库。然后按第二步重新构建 oh-my-openagent 和 magic-context，重启 OpenCode。
 
 ## 项目结构一览
 
-| 仓库 | 作用 | 构建方式 |
+| 目录 | 作用 | 构建方式 |
 |------|------|---------|
-| `opencode-fkyah3` | OpenCode 核心（TUI、LLM provider、工具系统） | `bun run` 直接跑源码 |
-| `oh-my-openagent-fkyah3` | Sisyphus 编排 Agent + OMO 插件系统 | `bun run build` → dist/ |
-| `opencode-magic-context-fkyah3` | 上下文压缩、historian、dreamer | `bun run build` → packages/plugin/dist/ |
+| `packages/opencode/` | OpenCode 核心（TUI、LLM provider、工具系统） | `bun run` 直接跑源码 |
+| `plugins/oh-my-openagent/` | Sisyphus 编排 Agent + OMO 插件系统 | `bun run build` → dist/ |
+| `plugins/opencode-magic-context/` | 上下文压缩、historian、dreamer | `bun run build` → packages/plugin/dist/ |
 
 ## 相关链接
 

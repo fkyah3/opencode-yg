@@ -2,7 +2,7 @@
 <code>DeepSeek 优化 · Windows 适配 · AI 实现</code></p>
 
 <p align="center">
-  <a href="./SETUP.md"><b>🚀 从零搭建指南（中文）</b></a> · <a href="./README.md">简体中文</a> · <a href="./README.zht.md">繁體中文</a>
+  <a href="./SETUP.md"><b>🚀 Setup Guide (Chinese)</b></a> · <a href="./README.md">简体中文</a>
 </p>
 
 ---
@@ -62,6 +62,22 @@ Thinking-mode instruction (direct frame) →  ~90%+, stable across long sessions
 ```
 
 The original claim ("anchoring instruction alone drives Chinese thinking") was too coarse. The refined understanding is more useful: **the most effective approach is environment alignment + a direct thinking-mode instruction, in that order.**
+
+---
+
+## ⚠️ Major Rework in Progress
+
+This fork is undergoing a fundamental redesign of its prompt system, targeting completion around **May 5, 2026**.
+
+My approach differs from the mainstream. Most solutions today pile on hard constraints — "don't use English", "output must follow format X", "penalty if violated". I don't think that's the right path.
+
+My view is this: DeepSeek's training data contains a significantly high proportion of Chinese text. The model already has a nuanced understanding of Chinese thinking patterns — the question is whether we're framing things correctly to bring that out.
+
+This rework removes hard constraints entirely and replaces them with problem-framing and behavioral principles. More "define who you are and what problem you're solving", less "thou shalt not".
+
+> **Current version is usable for exploration, but not recommended as a daily driver. Wait for the rework to complete.**
+
+Progress will be tracked in [`fkyah3_dev/`](./fkyah3_dev/).
 
 ---
 
