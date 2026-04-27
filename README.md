@@ -52,7 +52,7 @@
 - 直接指定思维模式的指令（"用中文语言思维"）**远比锚定稳定**，零衰减
 - **思维语言 ≠ 输出语言**——锚定约束的是输出格式，思维指令直接作用于认知方式
 
-**完整实验报告：**[`fkyah3_dev/实验/语言对齐实验报告-v2.md`](./fkyah3_dev/实验/语言对齐实验报告-v2.md)
+**完整实验报告：**[`specs/实验/语言对齐实验报告-v2.md`](./specs/实验/语言对齐实验报告-v2.md)
 
 这不推翻 v1 发现，而是将其拆分为三层：
 
@@ -78,7 +78,7 @@
 
 > **现阶段版本可以自己折腾，但不推荐作为主力工具。等我完成重构后再看效果。**
 
-具体进度会在 [`fkyah3_dev/`](./fkyah3_dev/) 更新，感兴趣可以关注。
+具体进度会在 [`specs/`](./specs/) 更新，感兴趣可以关注。
 
 ---
 
@@ -91,7 +91,7 @@
 > **代码实现：DeepSeek V4 Flash (thinking mode) / Sisyphus（AI）**  
 > **人工审核与方向把控：fkyah3**  
 > This fork is a live demonstration of what AI-built software looks like.  
-> 详见 [`fkyah3_dev/`](./fkyah3_dev/)。
+> 详见 [`specs/`](./specs/)。
 
 ---
 
@@ -141,8 +141,8 @@ bun run --conditions=browser src/index.ts
 
 | 链接 | 内容 |
 |------|------|
-| [`fkyah3_dev/`](./fkyah3_dev/) | 修复详情、分析文档、问题跟踪 |
-| [`fkyah3_dev/internal/COMPLETION.md`](./fkyah3_dev/internal/COMPLETION.md) | 完成清单与当前状态 |
+| [`specs/`](./specs/) | 修复详情、分析文档、问题跟踪 |
+| [`specs/internal/COMPLETION.md`](./specs/internal/COMPLETION.md) | 完成清单与当前状态 |
 | [上游 Issue #24104](https://github.com/anomalyco/opencode/issues/24104) | reasoning_content 根因讨论 |
 
 ## Upstream
