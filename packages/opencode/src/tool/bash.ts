@@ -254,7 +254,7 @@ function tail(text: string, maxLines: number, maxBytes: number) {
 
 const parse = Effect.fn("BashTool.parse")(function* (command: string, ps: boolean) {
   const tree = yield* Effect.promise(() => parser().then((p) => (ps ? p.ps : p.bash).parse(command)))
-  if (!tree) throw new Error("Failed to parse command")
+  if (!tree) throw new Error("命令解析失败")
   return tree.rootNode
 })
 
@@ -602,7 +602,7 @@ export const BashTool = Tool.define(
                 ? yield* resolvePath(params.workdir, Instance.directory, shell)
                 : Instance.directory
               if (params.timeout !== undefined && params.timeout < 0) {
-                throw new Error(`Invalid timeout value: ${params.timeout}. Timeout must be a positive number.`)
+                throw new Error(`无效的超时值: ${params.timeout}。超时时间必须为正数。`)
               }
               const timeout = params.timeout ?? DEFAULT_TIMEOUT
               const ps = PS.has(name)

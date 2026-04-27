@@ -112,14 +112,16 @@ export const layer = Layer.effect(
       const file = yield* write(text)
 
       const hint = hasTaskTool(agent)
-        ? `The tool call succeeded but the output was truncated. Full output saved to: ${file}\nUse the Task tool to have explore agent process this file with Grep and Read (with offset/limit). Do NOT read the full file yourself - delegate to save context.`
-        : `The tool call succeeded but the output was truncated. Full output saved to: ${file}\nUse Grep to search the full content or Read with offset/limit to view specific sections.`
+        ? `工具执行成功但输出已截断。完整输出已保存至: ${file}\n使用 Task 工具让 explore agent 通过 Grep 和 Read（配合 offset/limit）处理此文件。不要自行读取完整文件——委派以节省上下文。`
+        : `工具执行成功但输出已截断。完整输出已保存至: ${file}\n使用 Grep 搜索完整内容，或使用 Read（配合 offset/limit）查看特定段落。`
+
+      const unitLabel = unit === "bytes" ? "字节" : "行"
 
       return {
         content:
           direction === "head"
-            ? `${preview}\n\n...${removed} ${unit} truncated...\n\n${hint}`
-            : `...${removed} ${unit} truncated...\n\n${hint}\n\n${preview}`,
+            ? `${preview}\n\n...已截断 ${removed} ${unitLabel}...\n\n${hint}`
+            : `...已截断 ${removed} ${unitLabel}...\n\n${hint}\n\n${preview}`,
         truncated: true,
         outputPath: file,
       } as const

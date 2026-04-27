@@ -149,7 +149,7 @@ export const ApplyPatchTool = Tool.define(
                 Effect.catch((error) =>
                   Effect.fail(
                     new Error(
-                      `apply_patch verification failed: ${error instanceof Error ? error.message : String(error)}`,
+                      `apply_patch 校验失败: ${error instanceof Error ? error.message : String(error)}`,
                     ),
                   ),
                 ),

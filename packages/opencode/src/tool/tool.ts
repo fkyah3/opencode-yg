@@ -90,7 +90,7 @@ function wrap<Parameters extends z.ZodType, Result extends Metadata>(
                 return new Error(toolInfo.formatValidationError(error), { cause: error })
               }
               return new Error(
-                `The ${id} tool was called with invalid arguments: ${error}.\nPlease rewrite the input so it satisfies the expected schema.`,
+                `工具 ${id} 调用参数无效: ${error}。\n请重写输入使其满足期望的 schema。`,
                 { cause: error },
               )
             },

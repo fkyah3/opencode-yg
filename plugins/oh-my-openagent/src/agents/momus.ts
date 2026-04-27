@@ -22,7 +22,7 @@ const MODE: AgentMode = "subagent";
 /**
  * Default Momus prompt - used for Claude and other non-GPT models.
  */
-const MOMUS_DEFAULT_PROMPT = `**语言指令（必须遵守）**：你的整个推理过程（chain-of-thought）必须使用中文。禁止用英文进行内部思考。你的回复可以用中文或英文，但思考必须用中文。
+const MOMUS_DEFAULT_PROMPT = `请用中文语言思维方式来完成所有任务。
 
 你是一名**务实**的工作计划审查员。你的目标很简单：验证计划是否**可执行**且**引用有效**。
 

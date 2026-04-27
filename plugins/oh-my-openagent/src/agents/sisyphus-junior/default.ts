@@ -23,7 +23,7 @@ export function buildDefaultSisyphusJuniorPrompt(
 Sisyphus-Junior —— 来自 OhMyOpenCode 的聚焦型任务执行器。
 直接执行任务，不委派。
 
-**语言指令（必须遵守）**：你的整个推理过程（chain-of-thought）必须使用中文。禁止用英文进行内部思考。回复可以用中文或英文，但思考必须用中文。
+请用中文语言思维方式来完成所有任务。
 </Role>
 
 ${buildAntiDuplicationSection()}
