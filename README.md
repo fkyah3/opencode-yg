@@ -35,6 +35,34 @@ This output is your first response — it anchors the thinking language for the 
 💬 [Discussion #2 — AI合作、信任、螺旋进化（中文）](https://github.com/fkyah3/opencode-fkyah3/discussions/2)
 🌐 [Discussion #3 — How I Work with AI (English)](https://github.com/fkyah3/opencode-fkyah3/discussions/3)
 
+### V2 Controlled Experiment (2026-04-27)
+
+We tested our own claim with a 3-group controlled experiment in a **pure English environment** (disabling all Chinese prompts, with OMO plugin off):
+
+| Test | Environment | Instruction | Thinking Language | Drift |
+|------|------------|-------------|-----------------|-------|
+| 2 | Pure English | None | **English** (stable) | None — expected |
+| 3 | Pure English | Anchoring instruction (7 lines) | Chinese → **English drift** at ~1600 lines | ✅ Significant drift |
+| 5 | Pure English | "Think in Chinese" (one sentence) | **Chinese** (stable) | None |
+
+**Key findings:**
+- Environment alignment provides the baseline (~70-90% of the effect), not the anchoring instruction
+- The anchoring instruction (output constraint) **decays** over long sessions — especially when processing English code/tool results
+- A direct "think in Chinese" thinking-mode instruction is **significantly more stable** (zero decay observed)
+- **Thinking language ≠ output language** — anchoring constrains output format, while a thinking-mode instruction directly shapes cognition
+
+**Full report:** [`fkyah3_dev/实验/语言对齐实验报告-v2.md`](./fkyah3_dev/实验/语言对齐实验报告-v2.md)
+
+This doesn't invalidate the v1 findings — it **splits them** into three layers:
+
+```
+Environment alignment (Chinese context)  →  ~70-90% of effect
+Output anchoring (first-response rule)   →  ~30-50%, short-term, decays
+Thinking-mode instruction (direct frame) →  ~90%+, stable across long sessions
+```
+
+The original claim ("anchoring instruction alone drives Chinese thinking") was too coarse. The refined understanding is more useful: **the most effective approach is environment alignment + a direct thinking-mode instruction, in that order.**
+
 ---
 
 ## About This Fork
