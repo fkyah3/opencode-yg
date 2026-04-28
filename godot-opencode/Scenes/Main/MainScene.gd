@@ -2,7 +2,7 @@ extends Control
 class_name MainScene
 
 
-@onready var msg_list: VBoxContainer = %MessageList
+@onready var virtual_content: Control = %VirtualContent
 @onready var msg_input: TextEdit = %TextInput
 @onready var send_btn: Button = %SendBtn
 @onready var status_label: Label = %Status
@@ -56,6 +56,7 @@ var _streaming_label: RichTextLabel
 var _streaming_thinking_text: String = ""  # 思考内容
 var _streaming_thinking_label: RichTextLabel  # 思考标签
 var _streaming_bubble: PanelContainer  # 流式气泡容器（用于插入思考区域）
+var _streaming_node: Control          # 流式容器的根节点（虚拟内容中的临时行）
 var _cached_sessions: Array = []  # 缓存的会话列表，避免重复 HTTP 请求
 
 # ── Agent/模型信息 ──
@@ -68,11 +69,13 @@ var _context_total: int = 0
 var _rate_tokens: int = 0
 var _rate_time: float = 0.0
 
-# ── 消息分页 ──
-const PAGE_SIZE: int = 20
-const MAX_CACHE: int = 300  # 单次最多缓存消息数
-var _all_messages: Array = []  # 当前会话的完整消息缓存
-var _rendered_count: int = 0  # 已经渲染的消息条数
+# ── 虚拟滚动（消息列表） ──
+var _row_data: Array = []        # 所有消息的原始数据（元素为 Dictionary，JSON 类型）
+var _y_offsets: Array[float] = []            # 每行的 Y 偏移
+var _row_heights: Array[float] = []          # 每行估算高度
+var _row_assignments: Dictionary = {}        # idx → Control（当前分配给可见行的池节点）
+var _free_nodes: Array[Control] = []         # 空闲池节点（自由列表，O(1) 取用）
+var _overscan: int = 4                       # 可见区域外的缓冲行数
 
 # ── 滚动防抖 ──
 var _scroll_timer: float = 0.0
@@ -96,6 +99,9 @@ func _ready() -> void:
 	_load_agent_info()
 	# 监听输入框输入，检测 / 命令
 	msg_input.text_changed.connect(_on_input_text_changed)
+	# 连接虚拟滚动的滚动信号
+	scroll.get_v_scroll_bar().value_changed.connect(_on_scroll_changed)
+	scroll.resized.connect(_on_scroll_resized)
 
 
 func _apply_font_theme() -> void:
@@ -261,7 +267,8 @@ func _send_message_direct(text: String) -> void:
 	msg_input.text = ""
 	_set_status("执行命令...")
 
-	_render_message({"role": "user", "parts": [{"type": "text", "text": text}]})
+	# 用户消息追加到虚拟滚动
+	_append_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
 	# 创建流式响应容器
 	_create_streaming_widget()
@@ -270,9 +277,9 @@ func _send_message_direct(text: String) -> void:
 	if result.is_empty():
 		push_warning("send_message 返回空结果")
 	else:
-		# 用响应立即渲染最终消息，不依赖 SSE 补全
+		# 移除流式占位，追加 AI 响应到虚拟滚动
 		_finalize_streaming()
-		_render_message(result)
+		_append_message(result)
 	_set_status("")
 
 
@@ -385,218 +392,305 @@ func _refresh_sessions() -> void:
 
 
 func _open_session(sid: String) -> void:
-	## 打开会话，一次加载最多 MAX_CACHE 条，分页渲染
-	_streaming_label = null
+	## 打开会话：加载消息并初始化虚拟滚动
+	await _load_session_messages(sid)
 
+func _load_session_messages(sid: String) -> void:
+	## 从 API 加载消息，初始化虚拟滚动
+	_streaming_label = null
 	_current_session_id = sid
 	_clear_messages()
 	_set_status("加载消息...")
 
-	# 一次加载最多 MAX_CACHE 条，全部缓存
-	_all_messages = await _api.get_messages(sid, MAX_CACHE)
-	if _all_messages.size() == 0:
+	var messages = await _api.get_messages(sid, 300)
+	if messages.is_empty():
 		_set_status("(无消息)")
 		return
 
-	# 渲染最近 PAGE_SIZE 条
-	_render_page_from_cache(max(0, _all_messages.size() - PAGE_SIZE))
-	_set_status(str(_all_messages.size()) + " 条消息，显示 " + str(_rendered_count) + " 条")
+	# 数据准备
+	_row_data = messages
+	_compute_heights_and_offsets()
+	_adjust_pool_size()
+	_update_visible_rows(scroll.scroll_vertical)
+
+	_set_status(str(_row_data.size()) + " 条消息")
 	_scroll_to_bottom()
 
-
 func _refresh_messages() -> void:
-	## 刷新全部消息（重新加载缓存并分页渲染）
-	_all_messages = await _api.get_messages(_current_session_id, MAX_CACHE)
-	if _all_messages.size() == 0:
+	## 重新加载当前会话消息
+	if _current_session_id.is_empty():
 		return
-	_clear_messages()
-	_render_page_from_cache(max(0, _all_messages.size() - PAGE_SIZE))
+	var messages = await _api.get_messages(_current_session_id, 300)
+	if messages.is_empty():
+		return
+	_row_data = messages
+	_compute_heights_and_offsets()
+	_adjust_pool_size()
+	_update_visible_rows(scroll.scroll_vertical)
 
 
-func _render_page_from_cache(start_idx: int) -> void:
-	## 从缓存 _all_messages 中渲染 start_idx 之后的所有消息
-	_rendered_count = _all_messages.size() - start_idx
-	for i in range(start_idx, _all_messages.size()):
-		_render_message(_all_messages[i])
+# ═══════════════════ 虚拟滚动核心 ═══════════════════
 
-	# 如果有更早的消息，添加"加载更多"按钮
-	if start_idx > 0:
-		_add_load_more_button()
+func _compute_heights_and_offsets() -> void:
+	## 按内容估算每行高度，计算 Y 偏移数组
+	_y_offsets.clear()
+	_row_heights.clear()
+	var cursor: float = 0.0
+	for msg in _row_data:
+		_y_offsets.append(cursor)
+		var h: float = _estimate_row_height(msg)
+		_row_heights.append(h)
+		cursor += h
+	virtual_content.custom_minimum_size.y = cursor
 
+func _estimate_row_height(msg: Dictionary) -> float:
+	## 基于字符数估算行高（ac: 80 chars/line, 22px line-height）
+	var parts: Array = msg.get("parts", [])
+	var text_len: int = 0
+	var thinking_len: int = 0
+	for p in parts:
+		if p.get("type") == "text":
+			text_len += len(p.get("text", ""))
+		elif p.get("type") == "reasoning":
+			thinking_len += len(p.get("reasoning_text", p.get("text", "")))
+	var cpl := 80.0
+	var lh := 22.0
+	var text_lines := maxi(1, ceili(text_len / cpl))
+	var thinking_lines := maxi(0, ceili(thinking_len / cpl))
+	return 36.0 + text_lines * lh + thinking_lines * lh * 0.5
 
-func _add_load_more_button() -> void:
-	## 在消息列表顶部添加"加载更多"按钮
-	var btn := Button.new()
-	btn.text = "  加载更早的消息..."
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
-	btn.flat = true
-	btn.pressed.connect(_load_more_messages)
-	msg_list.add_child(btn)
-	msg_list.move_child(btn, 0)
+func _grow_pool(amount: int) -> void:
+	for i in amount:
+		var row := _build_message_row()
+		row.visible = false
+		virtual_content.add_child(row)
+		_free_nodes.append(row)
 
+func _adjust_pool_size() -> void:
+	## 确保空闲池足够
+	var viewport_h: float = scroll.size.y
+	var n_rows: int = _row_data.size()
+	if n_rows == 0:
+		return
+	var avg_h: float = virtual_content.custom_minimum_size.y / max(1, n_rows)
+	var needed: int = ceili(viewport_h / max(1, avg_h)) + _overscan
+	needed = mini(needed, n_rows)
+	if needed > _free_nodes.size():
+		_grow_pool(needed - _free_nodes.size())
 
-func _load_more_messages() -> void:
-	## 加载更多历史消息（从缓存中取出更早的）
-	if _all_messages.size() == 0:
+func _find_row_by_node(node: Control) -> int:
+	## 根据节点查找对应的行索引
+	for idx in _row_assignments:
+		if _row_assignments[idx] == node:
+			return idx
+	return -1
+
+func _on_scroll_changed(_value: float) -> void:
+	## 滚动时更新可见行
+	_update_visible_rows(scroll.scroll_vertical)
+
+func _update_visible_rows(scroll_y: float) -> void:
+	## 更新可见窗口内的行（回收不可见 + 分配可见）
+	if _row_data.is_empty():
+		for node in _free_nodes:
+			node.visible = false
+		_row_assignments.clear()
 		return
 
-	# 计算当前最早渲染的消息索引
-	var current_start := _all_messages.size() - _rendered_count
-	var next_start: int = max(0, current_start - PAGE_SIZE)
-
-	# 移除"加载更多"按钮
-	for c in msg_list.get_children():
-		if c is Button and c.text.begins_with("  加载"):
-			msg_list.remove_child(c)
-			c.queue_free()
-			break
-
-	# 逆序插入到列表头部
-	var insert_idx := 0
-	for i in range(next_start, current_start):
-		_render_message(_all_messages[i])
-		msg_list.move_child(msg_list.get_child(msg_list.get_child_count() - 1), insert_idx)
-		insert_idx += 1
-
-	_rendered_count = _all_messages.size() - next_start
-
-	# 如果还有更早的消息，重新添加按钮
-	if next_start > 0:
-		_add_load_more_button()
-	_set_status("")
-
-
-func _render_message(msg: Variant) -> void:
-	if msg == null or not (msg is Dictionary):
+	var viewport_h: float = scroll.size.y
+	if viewport_h <= 0:
 		return
 
-	var d: Dictionary = msg as Dictionary
+	# 找出可见行区间
+	var first_row: int = _row_idx_at_y(max(0, scroll_y))
+	var last_row: int = _row_idx_at_y(min(virtual_content.custom_minimum_size.y, scroll_y + viewport_h))
+	last_row = mini(last_row, _row_data.size() - 1)
 
-	var role: String = d.get("role", "")
-	if role.is_empty() and d.has("info"):
-		role = d["info"].get("role", "")
+	# 缓冲扩展
+	var overscan_px: float = _overscan * _row_heights[0] if not _row_heights.is_empty() else 100
+	first_row = maxi(0, _row_idx_at_y(max(0, scroll_y - overscan_px)))
+	last_row = mini(_row_data.size() - 1, _row_idx_at_y(min(virtual_content.custom_minimum_size.y, scroll_y + viewport_h + overscan_px)))
 
-	var parts: Array = d.get("parts", [])
+	# 回收区间外的节点（放回空闲池）
+	var to_reclaim: Array[int] = []
+	for idx in _row_assignments:
+		if idx < first_row or idx > last_row:
+			to_reclaim.append(idx)
+	for idx in to_reclaim:
+		var node: Control = _row_assignments[idx]
+		node.visible = false
+		_row_assignments.erase(idx)
+		_free_nodes.append(node)
 
-	var is_user := role == "user"
-	var name_tag := "你" if is_user else "AI"
-
-	# ── 提取文本和思考内容 ──
-	var text_parts := PackedStringArray()
-	var thinking_text := ""
-	for part in parts:
-		if not (part is Dictionary):
+	# 为可见行分配池节点
+	for row_idx in range(first_row, last_row + 1):
+		if _row_assignments.has(row_idx):
+			var existing: Control = _row_assignments[row_idx]
+			existing.position.y = _y_offsets[row_idx] if row_idx < _y_offsets.size() else 0
+			existing.size.x = virtual_content.size.x
 			continue
-		var p: Dictionary = part as Dictionary
-		var ptype: String = p.get("type", "")
-		if ptype == "text":
-			text_parts.append(p.get("text", ""))
-		elif ptype == "reasoning":
-			thinking_text += p.get("text", "")
-		elif ptype == "tool":
-			var tname: String = p.get("tool", "")
-			var state: Dictionary = p.get("state", {})
-			var stype: String = state.get("status", "")
-			var icon := "🛠" if stype != "done" else "✅"
-			text_parts.append(icon + " [i]" + tname + "[/i]")
+		if _free_nodes.is_empty():
+			_grow_pool(1)
+		var found: Control = _free_nodes.pop_back()
+		_prepare_row_node(found, _row_data[row_idx])
+		found.position.y = _y_offsets[row_idx] if row_idx < _y_offsets.size() else 0
+		found.size.x = virtual_content.size.x
+		found.visible = true
+		_row_assignments[row_idx] = found
 
-	# ── 消息容器（VBox，包含名称 + 气泡） ──
-	var msg_vbox := VBoxContainer.new()
-	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	msg_vbox.add_theme_constant_override("separation", 2)
+func _row_idx_at_y(y: float) -> int:
+	## 二分查找 y 坐标对应的行索引
+	if _y_offsets.is_empty():
+		return 0
+	var lo := 0
+	var hi := _y_offsets.size() - 1
+	while lo < hi:
+		var mid := (lo + hi + 1) / 2
+		if _y_offsets[mid] <= y:
+			lo = mid
+		else:
+			hi = mid - 1
+	return lo
 
-	# ── 名称标签 ──
+func _build_message_row() -> Control:
+	## 创建固定结构的消息行（子节点不变，只通过 _prepare_row_node 更新内容）
+	var row := VBoxContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation", 2)
+
+	# ── 第 0 子节点：名称标签 ──
 	var name_label := RichTextLabel.new()
 	name_label.bbcode_enabled = true
 	name_label.fit_content = true
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.add_theme_font_size_override("normal_font_size", font_size_base - 3)
 	name_label.add_theme_color_override("default_color", color_text_name)
-	name_label.append_text(name_tag)
+	row.add_child(name_label)
 
-	# ── 创建气泡（用户 + AI 统一用 PanelContainer） ──
-	if is_user:
-		# ── 用户气泡：深灰背景 + 蓝色左边条 ──
-		var bubble := PanelContainer.new()
-		bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var style := StyleBoxFlat.new()
-		style.bg_color = bubble_user_bg
-		style.border_width_left = 3
-		style.border_color = bubble_user_border
-		style.corner_radius_bottom_right = 6
-		style.corner_radius_top_right = 6
-		style.content_margin_left = 10
-		style.content_margin_right = 10
-		style.content_margin_top = 6
-		style.content_margin_bottom = 6
-		bubble.add_theme_stylebox_override("panel", style)
+	# ── 第 1 子节点：思考标签（默认隐藏） ──
+	var thinking_label := RichTextLabel.new()
+	thinking_label.bbcode_enabled = true
+	thinking_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	thinking_label.fit_content = true
+	thinking_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	thinking_label.add_theme_font_size_override("normal_font_size", font_size_base - 1)
+	thinking_label.add_theme_color_override("default_color", color_text_dim)
+	thinking_label.visible = false
+	row.add_child(thinking_label)
 
-		var label := _make_msg_label()
-		label.append_text("\n".join(text_parts))
-		bubble.add_child(label)
+	# ── 第 2 子节点：主气泡 ──
+	var bubble := PanelContainer.new()
+	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var style := StyleBoxFlat.new()
+	style.border_width_left = 3
+	style.corner_radius_bottom_right = 6
+	style.corner_radius_top_right = 6
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	bubble.add_theme_stylebox_override("panel", style)
 
-		msg_vbox.add_child(name_label)
-		msg_vbox.add_child(bubble)
+	var text_label := RichTextLabel.new()
+	text_label.bbcode_enabled = true
+	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text_label.fit_content = true
+	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_label.add_theme_font_size_override("normal_font_size", font_size_base)
+	text_label.add_theme_color_override("default_color", color_text)
+	bubble.add_child(text_label)
+	row.add_child(bubble)
 
+	return row
+
+
+func _prepare_row_node(row: Control, msg: Dictionary) -> void:
+	## 用消息数据填充已有行结构（不创建/删除子节点）
+	var d: Dictionary = msg as Dictionary
+	var role: String = d.get("role", "")
+	if role.is_empty() and d.has("info"):
+		role = d["info"].get("role", "")
+	var parts: Array = d.get("parts", [])
+	var is_user: bool = role == "user"
+
+	# 获取固定子节点（位置固定：0=名称，1=思考，2=气泡）
+	var name_label: RichTextLabel = row.get_child(0)
+	var thinking_label: RichTextLabel = row.get_child(1)
+	var bubble: PanelContainer = row.get_child(2)
+	var text_label: RichTextLabel = bubble.get_child(0)
+
+	# ── 更新名称 ──
+	name_label.clear()
+	name_label.append_text("你" if is_user else "AI")
+
+	# ── 提取文本 + 思考 ──
+	var text_parts := PackedStringArray()
+	var thinking_text := ""
+	for p in parts:
+		if not (p is Dictionary):
+			continue
+		var pt: String = p.get("type", "")
+		if pt == "reasoning":
+			var rt: String = p.get("reasoning_text", p.get("text", ""))
+			if not rt.is_empty():
+				thinking_text = rt
+		elif pt == "text":
+			var txt: String = p.get("text", "")
+			if not txt.is_empty():
+				text_parts.append(txt)
+		elif pt == "tool-call":
+			var tool_name: String = p.get("name", p.get("function", {}).get("name", ""))
+			var args: String = p.get("arguments", "")
+			if args.length() > 100:
+				args = args.left(100) + "..."
+			text_parts.append("🔧 [%s] %s" % [tool_name, args])
+
+	# ── 更新思考标签 ──
+	if not thinking_text.is_empty():
+		thinking_label.clear()
+		thinking_label.append_text("思考：" + thinking_text)
+		thinking_label.visible = true
 	else:
-		# ── AI 气泡：稍深背景 + 极浅灰色左边条 ──
-		msg_vbox.add_child(name_label)
+		thinking_label.visible = false
 
-		# 思考内容直接显示（不折叠）
-		if not thinking_text.is_empty():
-			var think_content := RichTextLabel.new()
-			think_content.bbcode_enabled = true
-			think_content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			think_content.fit_content = true
-			think_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			think_content.add_theme_font_size_override("normal_font_size", font_size_base - 1)
-			# BBCode 灰色渲染思考文本 + "思考：" 前缀
-			var col_html := color_text_dim.to_html(true)
-			think_content.append_text("[color=#" + col_html + "]思考：" + thinking_text + "[/color]")
-			msg_vbox.add_child(think_content)
+	# ── 更新气泡文本 + 颜色 ──
+	if not text_parts.is_empty():
+		var style: StyleBoxFlat = bubble.get_theme_stylebox("panel")
+		style.bg_color = bubble_user_bg if is_user else bubble_ai_bg
+		style.border_color = bubble_user_border if is_user else bubble_ai_border
+		text_label.clear()
+		text_label.append_text("\n".join(text_parts))
+		bubble.visible = true
+	else:
+		bubble.visible = false
 
-		# 主回复气泡
-		if text_parts.size() > 0:
-			if not thinking_text.is_empty():
-				var spacing := ColorRect.new()
-				spacing.custom_minimum_size = Vector2(0, 4)
-				spacing.color = Color.TRANSPARENT
-				msg_vbox.add_child(spacing)
+func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
+	## 追加一条消息到虚拟滚动（用于用户/ AI 响应消息）
+	if remove_streaming or _streaming_node != null:
+		if _streaming_node != null and is_instance_valid(_streaming_node):
+			_streaming_node.queue_free()
+		_streaming_node = null
+		_streaming_label = null
+		_streaming_thinking_label = null
 
-			var bubble := PanelContainer.new()
-			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			var style := StyleBoxFlat.new()
-			style.bg_color = Color(0.07, 0.07, 0.07, 1)  # 比纯黑稍亮
-			style.border_width_left = 3
-			style.border_color = Color(0.75, 0.75, 0.75, 0.35)  # 极浅灰
-			style.corner_radius_bottom_right = 6
-			style.corner_radius_top_right = 6
-			style.content_margin_left = 10
-			style.content_margin_right = 10
-			style.content_margin_top = 6
-			style.content_margin_bottom = 6
-			bubble.add_theme_stylebox_override("panel", style)
+	_row_data.append(msg)
+	var h: float = _estimate_row_height(msg)
+	_row_heights.append(h)
+	_y_offsets.append(virtual_content.custom_minimum_size.y)
+	virtual_content.custom_minimum_size.y += h
 
-			var label := _make_msg_label()
-			label.append_text("\n".join(text_parts))
-			bubble.add_child(label)
-			msg_vbox.add_child(bubble)
-
-	msg_list.add_child(msg_vbox)
+	_adjust_pool_size()
+	_update_visible_rows(scroll.scroll_vertical)
+	_scroll_to_bottom()
 
 
-func _make_msg_label() -> RichTextLabel:
-	## 统一创建消息文本标签（调小字号、轻色）
-	var label := RichTextLabel.new()
-	label.bbcode_enabled = true
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.fit_content = true
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.add_theme_font_size_override("normal_font_size", font_size_base)
-	label.add_theme_font_size_override("bold_font_size", font_size_base)
-	label.add_theme_color_override("default_color", color_text)
-	return label
+func _on_scroll_resized() -> void:
+	## 滚动容器大小变化时重新调整
+	_adjust_pool_size()
+	_update_visible_rows(scroll.scroll_vertical)
+	# 更新流式节点的宽度
+	if _streaming_node != null and is_instance_valid(_streaming_node):
+		_streaming_node.size.x = virtual_content.size.x
 
 
 func _on_send_pressed() -> void:
@@ -607,7 +701,8 @@ func _on_send_pressed() -> void:
 	msg_input.text = ""
 	_set_status("发送中...")
 
-	_render_message({"role": "user", "parts": [{"type": "text", "text": text}]})
+	# 用户消息追加到虚拟滚动
+	_append_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
 	# 创建流式响应容器
 	_create_streaming_widget()
@@ -617,7 +712,7 @@ func _on_send_pressed() -> void:
 		push_warning("send_message 返回异常: " + str(res))
 	else:
 		_finalize_streaming()
-		_render_message(res)
+		_append_message(res)
 	_set_status("")
 
 
@@ -803,20 +898,42 @@ func _create_streaming_widget() -> VBoxContainer:
 	bubble.add_child(_streaming_label)
 	msg_vbox.add_child(bubble)
 
-	msg_list.add_child(msg_vbox)
+	# 将流式节点添加到虚拟内容底部（在虚拟滚动行之后）
+	_streaming_node = msg_vbox
+	var y_pos := virtual_content.custom_minimum_size.y
+	msg_vbox.position.y = y_pos
+	msg_vbox.size.x = virtual_content.size.x
+	virtual_content.add_child(msg_vbox)
 	_scroll_to_bottom()
 	return msg_vbox
 
 
 func _finalize_streaming() -> void:
+	## 完成流式响应（不删除节点，由 _append_message 清理）
 	_streaming_label = null
 	_streaming_thinking_label = null
 	_scroll_to_bottom()
 
 
 func _clear_messages() -> void:
-	for child in msg_list.get_children():
-		child.queue_free()
+	## 清除虚拟滚动所有状态
+	_row_data.clear()
+	_y_offsets.clear()
+	_row_heights.clear()
+	_row_assignments.clear()
+	if _streaming_node != null and is_instance_valid(_streaming_node):
+		_streaming_node.queue_free()
+		_streaming_node = null
+		_streaming_label = null
+		_streaming_thinking_label = null
+	for node in _free_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	_free_nodes.clear()
+	virtual_content.custom_minimum_size.y = 0
+	# 清除 virtual_content 下所有子节点
+	for c in virtual_content.get_children():
+		c.queue_free()
 
 
 func _set_status(text: String) -> void:
