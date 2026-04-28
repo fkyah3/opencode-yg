@@ -13,8 +13,37 @@ class_name MainScene
 @onready var info_workdir: Label = %InfoWorkdir
 @onready var info_version: Label = %InfoVersion
 
+# ── 信息栏（输入框上方） ──
+@onready var info_agent: Label = %InfoAgent
+@onready var info_model: Label = %InfoModel
+@onready var info_ctx: Label = %InfoCtx
+@onready var info_rate: Label = %InfoRate
+
+
+# ═══════════════════ 导出变量（可在 Inspector 中调整） ═══════════════════
+@export_group("字体设置")
+@export var font_path_normal: String = "res://fonts/JetBrains_Mono/static/JetBrainsMono-Regular.ttf"
+@export var font_path_bold: String = "res://fonts/JetBrains_Mono/static/JetBrainsMono-Bold.ttf"
+@export var font_size_base: int = 16
+
+@export_group("文字颜色")
+@export var color_text: Color = Color(0.93, 0.93, 0.93, 1.0)
+@export var color_text_dim: Color = Color(0.37, 0.37, 0.37, 1.0)
+@export var color_text_name: Color = Color(0.75, 0.75, 0.75, 1.0)
+@export var color_text_info: Color = Color(0.5, 0.5, 0.5, 1.0)
+
+@export_group("气泡颜色")
+@export var bubble_user_bg: Color = Color(0.13, 0.13, 0.13, 1.0)
+@export var bubble_user_border: Color = Color(0.3, 0.6, 1.0, 1.0)
+@export var bubble_ai_bg: Color = Color(0.07, 0.07, 0.07, 1.0)
+@export var bubble_ai_border: Color = Color(0.75, 0.75, 0.75, 0.35)
+
+
 # ── 会话选择器 ──
 var _session_picker: SessionPicker
+
+# ── 命令面板 ──
+var _cmd_palette: CommandPalette
 
 # ── 通信层 ──
 var _api: OpenCodeAPI
@@ -24,7 +53,26 @@ var _sse: SSEClient
 var _current_session_id: String = ""
 var _streaming_text: String = ""
 var _streaming_label: RichTextLabel
+var _streaming_thinking_text: String = ""  # 思考内容
+var _streaming_thinking_label: RichTextLabel  # 思考标签
+var _streaming_bubble: PanelContainer  # 流式气泡容器（用于插入思考区域）
 var _cached_sessions: Array = []  # 缓存的会话列表，避免重复 HTTP 请求
+
+# ── Agent/模型信息 ──
+var _primary_agent_name: String = "-"
+var _primary_model_name: String = "-"
+var _context_memory: int = 0
+var _context_total: int = 0
+
+# ── Token 速率追踪 ──
+var _rate_tokens: int = 0
+var _rate_time: float = 0.0
+
+# ── 消息分页 ──
+const PAGE_SIZE: int = 20
+const MAX_CACHE: int = 300  # 单次最多缓存消息数
+var _all_messages: Array = []  # 当前会话的完整消息缓存
+var _rendered_count: int = 0  # 已经渲染的消息条数
 
 # ── 滚动防抖 ──
 var _scroll_timer: float = 0.0
@@ -38,11 +86,92 @@ var _pending_questions: Dictionary = {}    # request_id → properties
 
 
 func _ready() -> void:
+	_apply_font_theme()
 	_init_api()
 	_init_sse()
 	_init_dialogs()
 	_init_session_picker()
+	_init_command_palette()
 	await _bootstrap()
+	_load_agent_info()
+	# 监听输入框输入，检测 / 命令
+	msg_input.text_changed.connect(_on_input_text_changed)
+
+
+func _apply_font_theme() -> void:
+	## 加载 JetBrains Mono 字体，设置全场景主题
+	var font_normal := load(font_path_normal)
+	var font_bold := load(font_path_bold)
+
+	if font_normal == null:
+		push_warning("无法加载字体: " + font_path_normal)
+		return
+
+	var theme := Theme.new()
+	# Label
+	theme.set_font("font", "Label", font_normal)
+	theme.set_font_size("font_size", "Label", font_size_base)
+	# RichTextLabel
+	theme.set_font("normal_font", "RichTextLabel", font_normal)
+	theme.set_font("bold_font", "RichTextLabel", font_bold)
+	theme.set_font_size("normal_font_size", "RichTextLabel", font_size_base)
+	theme.set_font_size("bold_font_size", "RichTextLabel", font_size_base)
+	# Button
+	theme.set_font("font", "Button", font_normal)
+	theme.set_font_size("font_size", "Button", font_size_base - 1)
+	# TextEdit
+	theme.set_font("font", "TextEdit", font_normal)
+	theme.set_font_size("font_size", "TextEdit", font_size_base)
+	# LineEdit
+	theme.set_font("font", "LineEdit", font_normal)
+	theme.set_font_size("font_size", "LineEdit", font_size_base)
+
+	self.theme = theme
+
+
+func _init_command_palette() -> void:
+	_cmd_palette = CommandPalette.new()
+	_cmd_palette.visible = false
+	_cmd_palette.command_selected.connect(_on_command_selected)
+	add_child(_cmd_palette)
+
+
+func _load_agent_info() -> void:
+	var agent := await _api.get_primary_agent()
+	if agent.is_empty():
+		return
+	_primary_agent_name = agent.get("name", "-")
+	var model: Dictionary = agent.get("model", {})
+	_primary_model_name = model.get("modelID", "-")
+	_update_info_bar()
+
+
+func _update_info_bar() -> void:
+	# 设置 InfoBar 背景样式（纯黑底部信息栏 + 上边框分隔线）
+	var info_bar := %InfoBar as PanelContainer
+	if info_bar:
+		var s := StyleBoxFlat.new()
+		s.bg_color = Color(0.06, 0.06, 0.06, 1)
+		s.content_margin_top = 2
+		s.corner_radius_bottom_left = 0
+		s.corner_radius_bottom_right = 0
+		info_bar.add_theme_stylebox_override("panel", s)
+
+	info_agent.text = "Agent: " + _primary_agent_name
+	info_model.text = "Model: " + _primary_model_name
+	var pct := 0.0
+	if _context_total > 0:
+		pct = float(_context_memory) / float(_context_total) * 100.0
+	info_ctx.text = "Ctx: " + _format_tokens(_context_memory) + " / " + _format_tokens(_context_total) + " (" + str(int(pct)) + "%)"
+	info_rate.text = "↑ " + str(_rate_tokens) + " tok/s" if _rate_time < 0.1 else "↑ " + str(int(float(_rate_tokens) / _rate_time)) + " tok/s"
+
+
+func _format_tokens(n: int) -> String:
+	if n >= 1000000:
+		return str(snapped(float(n) / 1000000.0, 0.1)) + "M"
+	if n >= 1000:
+		return str(snapped(float(n) / 1000.0, 0.1)) + "K"
+	return str(n)
 
 
 func _init_session_picker() -> void:
@@ -59,7 +188,6 @@ func _init_session_picker() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# 未处理的键盘快捷键
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
 		if event.ctrl_pressed and not _session_picker.visible:
 			_open_session_picker()
@@ -67,7 +195,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		if _session_picker.visible:
+		# 优先关闭命令面板
+		if _cmd_palette and _cmd_palette.visible:
+			_cmd_palette.hide_palette()
+			msg_input.text = ""
+			get_viewport().set_input_as_handled()
+			return
+		# 再关闭会话选择器
+		if _session_picker and _session_picker.visible:
 			_close_session_picker()
 			get_viewport().set_input_as_handled()
 
@@ -100,6 +235,45 @@ func _close_session_picker() -> void:
 func _on_session_picker_selected(sid: String) -> void:
 	await _open_session(sid)
 	_close_session_picker()
+
+
+func _on_command_selected(cmd_name: String) -> void:
+	# 选中命令后直接发送
+	_cmd_palette.hide_palette()
+	msg_input.text = cmd_name
+	_send_message_direct(msg_input.text)
+
+
+func _on_input_text_changed() -> void:
+	# TextEdit.text_changed 无参信号，用 msg_input.text 获取
+	var t := msg_input.text
+	# 输入 / 时立即弹出命令面板，不用等到按发送按钮
+	if t.begins_with("/") and not _cmd_palette.visible:
+		# 把 / 后面的内容传到面板搜索框，清空输入框
+		var filter := t
+		msg_input.text = ""
+		_cmd_palette.show_palette(filter)
+
+
+func _send_message_direct(text: String) -> void:
+	if msg_input.text.is_empty() or _current_session_id.is_empty():
+		return
+	msg_input.text = ""
+	_set_status("执行命令...")
+
+	_render_message({"role": "user", "parts": [{"type": "text", "text": text}]})
+
+	# 创建流式响应容器
+	_create_streaming_widget()
+
+	var result := await _api.send_message(_current_session_id, text)
+	if result.is_empty():
+		push_warning("send_message 返回空结果")
+	else:
+		# 用响应立即渲染最终消息，不依赖 SSE 补全
+		_finalize_streaming()
+		_render_message(result)
+	_set_status("")
 
 
 func _on_session_picker_dismissed() -> void:
@@ -209,33 +383,88 @@ func _refresh_sessions() -> void:
 		push_warning("[MainScene] 没有会话或请求失败, sessions=", str(sessions))
 
 
-## 刷新当前会话的消息列表
+
 func _open_session(sid: String) -> void:
-	# 清理旧流式状态
+	## 打开会话，一次加载最多 MAX_CACHE 条，分页渲染
 	_streaming_label = null
 
 	_current_session_id = sid
 	_clear_messages()
 	_set_status("加载消息...")
 
-	# 通过 API 层获取消息
-	var msgs = await _api.get_messages(sid)
-	if msgs.size() > 0:
-		for msg in msgs:
-			_render_message(msg)
+	# 一次加载最多 MAX_CACHE 条，全部缓存
+	_all_messages = await _api.get_messages(sid, MAX_CACHE)
+	if _all_messages.size() == 0:
+		_set_status("(无消息)")
+		return
 
+	# 渲染最近 PAGE_SIZE 条
+	_render_page_from_cache(max(0, _all_messages.size() - PAGE_SIZE))
+	_set_status(str(_all_messages.size()) + " 条消息，显示 " + str(_rendered_count) + " 条")
 	_scroll_to_bottom()
-	_set_status("")
 
 
 func _refresh_messages() -> void:
-	var msgs = await _api.get_messages(_current_session_id)
-	if msgs.size() == 0:
+	## 刷新全部消息（重新加载缓存并分页渲染）
+	_all_messages = await _api.get_messages(_current_session_id, MAX_CACHE)
+	if _all_messages.size() == 0:
 		return
 	_clear_messages()
-	for msg in msgs:
-		_render_message(msg)
-	_scroll_to_bottom()
+	_render_page_from_cache(max(0, _all_messages.size() - PAGE_SIZE))
+
+
+func _render_page_from_cache(start_idx: int) -> void:
+	## 从缓存 _all_messages 中渲染 start_idx 之后的所有消息
+	_rendered_count = _all_messages.size() - start_idx
+	for i in range(start_idx, _all_messages.size()):
+		_render_message(_all_messages[i])
+
+	# 如果有更早的消息，添加"加载更多"按钮
+	if start_idx > 0:
+		_add_load_more_button()
+
+
+func _add_load_more_button() -> void:
+	## 在消息列表顶部添加"加载更多"按钮
+	var btn := Button.new()
+	btn.text = "  加载更早的消息..."
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+	btn.flat = true
+	btn.pressed.connect(_load_more_messages)
+	msg_list.add_child(btn)
+	msg_list.move_child(btn, 0)
+
+
+func _load_more_messages() -> void:
+	## 加载更多历史消息（从缓存中取出更早的）
+	if _all_messages.size() == 0:
+		return
+
+	# 计算当前最早渲染的消息索引
+	var current_start := _all_messages.size() - _rendered_count
+	var next_start: int = max(0, current_start - PAGE_SIZE)
+
+	# 移除"加载更多"按钮
+	for c in msg_list.get_children():
+		if c is Button and c.text.begins_with("  加载"):
+			msg_list.remove_child(c)
+			c.queue_free()
+			break
+
+	# 逆序插入到列表头部
+	var insert_idx := 0
+	for i in range(next_start, current_start):
+		_render_message(_all_messages[i])
+		msg_list.move_child(msg_list.get_child(msg_list.get_child_count() - 1), insert_idx)
+		insert_idx += 1
+
+	_rendered_count = _all_messages.size() - next_start
+
+	# 如果还有更早的消息，重新添加按钮
+	if next_start > 0:
+		_add_load_more_button()
+	_set_status("")
 
 
 func _render_message(msg: Variant) -> void:
@@ -250,54 +479,124 @@ func _render_message(msg: Variant) -> void:
 
 	var parts: Array = d.get("parts", [])
 
-	var bbcode := ""
 	var is_user := role == "user"
 	var name_tag := "你" if is_user else "AI"
-	bbcode += "[b]" + name_tag + "[/b]\n"
 
+	# ── 提取文本和思考内容 ──
+	var text_parts := PackedStringArray()
+	var thinking_text := ""
 	for part in parts:
 		if not (part is Dictionary):
 			continue
 		var p: Dictionary = part as Dictionary
 		var ptype: String = p.get("type", "")
 		if ptype == "text":
-			bbcode += p.get("text", "")
+			text_parts.append(p.get("text", ""))
 		elif ptype == "reasoning":
-			bbcode += "[color=#888888]" + p.get("text", "") + "[/color]"
+			thinking_text += p.get("text", "")
 		elif ptype == "tool":
 			var tname: String = p.get("tool", "")
 			var state: Dictionary = p.get("state", {})
 			var stype: String = state.get("status", "")
 			var icon := "🛠" if stype != "done" else "✅"
-			bbcode += "\n" + icon + " [i]" + tname + "[/i]"
+			text_parts.append(icon + " [i]" + tname + "[/i]")
 
-	var bubble := PanelContainer.new()
-	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# ── 消息容器（VBox，包含名称 + 气泡） ──
+	var msg_vbox := VBoxContainer.new()
+	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	msg_vbox.add_theme_constant_override("separation", 2)
+
+	# ── 名称标签 ──
+	var name_label := RichTextLabel.new()
+	name_label.bbcode_enabled = true
+	name_label.fit_content = true
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("normal_font_size", font_size_base - 3)
+	name_label.add_theme_color_override("default_color", color_text_name)
+	name_label.append_text(name_tag)
+
+	# ── 创建气泡（用户 + AI 统一用 PanelContainer） ──
+	if is_user:
+		# ── 用户气泡：深灰背景 + 蓝色左边条 ──
+		var bubble := PanelContainer.new()
+		bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var style := StyleBoxFlat.new()
+		style.bg_color = bubble_user_bg
+		style.border_width_left = 3
+		style.border_color = bubble_user_border
+		style.corner_radius_bottom_right = 6
+		style.corner_radius_top_right = 6
+		style.content_margin_left = 10
+		style.content_margin_right = 10
+		style.content_margin_top = 6
+		style.content_margin_bottom = 6
+		bubble.add_theme_stylebox_override("panel", style)
+
+		var label := _make_msg_label()
+		label.append_text("\n".join(text_parts))
+		bubble.add_child(label)
+
+		msg_vbox.add_child(name_label)
+		msg_vbox.add_child(bubble)
+
+	else:
+		# ── AI 气泡：稍深背景 + 极浅灰色左边条 ──
+		msg_vbox.add_child(name_label)
+
+		# 思考内容直接显示（不折叠）
+		if not thinking_text.is_empty():
+			var think_content := RichTextLabel.new()
+			think_content.bbcode_enabled = true
+			think_content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			think_content.fit_content = true
+			think_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			think_content.add_theme_font_size_override("normal_font_size", font_size_base - 1)
+			# BBCode 灰色渲染思考文本 + "思考：" 前缀
+			var col_html := color_text_dim.to_html(true)
+			think_content.append_text("[color=#" + col_html + "]思考：" + thinking_text + "[/color]")
+			msg_vbox.add_child(think_content)
+
+		# 主回复气泡
+		if text_parts.size() > 0:
+			if not thinking_text.is_empty():
+				var spacing := ColorRect.new()
+				spacing.custom_minimum_size = Vector2(0, 4)
+				spacing.color = Color.TRANSPARENT
+				msg_vbox.add_child(spacing)
+
+			var bubble := PanelContainer.new()
+			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color(0.07, 0.07, 0.07, 1)  # 比纯黑稍亮
+			style.border_width_left = 3
+			style.border_color = Color(0.75, 0.75, 0.75, 0.35)  # 极浅灰
+			style.corner_radius_bottom_right = 6
+			style.corner_radius_top_right = 6
+			style.content_margin_left = 10
+			style.content_margin_right = 10
+			style.content_margin_top = 6
+			style.content_margin_bottom = 6
+			bubble.add_theme_stylebox_override("panel", style)
+
+			var label := _make_msg_label()
+			label.append_text("\n".join(text_parts))
+			bubble.add_child(label)
+			msg_vbox.add_child(bubble)
+
+	msg_list.add_child(msg_vbox)
+
+
+func _make_msg_label() -> RichTextLabel:
+	## 统一创建消息文本标签（调小字号、轻色）
 	var label := RichTextLabel.new()
 	label.bbcode_enabled = true
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.fit_content = true
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	var style := StyleBoxFlat.new()
-	if is_user:
-		style.bg_color = Color("#2b5278")
-	else:
-		style.bg_color = Color("#2d2d2d")
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_bottom_left = 6
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	bubble.add_theme_stylebox_override("panel", style)
-
-	bubble.add_child(label)
-	label.append_text(bbcode)
-	msg_list.add_child(bubble)
+	label.add_theme_font_size_override("normal_font_size", font_size_base)
+	label.add_theme_font_size_override("bold_font_size", font_size_base)
+	label.add_theme_color_override("default_color", color_text)
+	return label
 
 
 func _on_send_pressed() -> void:
@@ -310,45 +609,15 @@ func _on_send_pressed() -> void:
 
 	_render_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
-	_streaming_text = ""
-	_streaming_label = RichTextLabel.new()
-	_streaming_label.bbcode_enabled = true
-	_streaming_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_streaming_label.fit_content = true
-	_streaming_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_streaming_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# 创建流式响应容器
+	_create_streaming_widget()
 
-	var bubble := PanelContainer.new()
-	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#2d2d2d")
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_bottom_left = 6
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	bubble.add_theme_stylebox_override("panel", style)
-	bubble.add_child(_streaming_label)
-
-	var name_label := RichTextLabel.new()
-	name_label.bbcode_enabled = true
-	name_label.fit_content = true
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.append_text("[b]AI[/b]\n")
-	msg_list.add_child(name_label)
-	msg_list.add_child(bubble)
-	_scroll_to_bottom()
-
-	var result := await _api.send_message(_current_session_id, text)
-	if result.is_empty():
-		push_warning("send_message 返回空结果")
+	var res = await _api.send_message(_current_session_id, text)
+	if res.is_empty() or not (res is Dictionary):
+		push_warning("send_message 返回异常: " + str(res))
 	else:
-		# 用响应立即渲染最终消息，不依赖 SSE 补全
 		_finalize_streaming()
-		_render_message(result)
+		_render_message(res)
 	_set_status("")
 
 
@@ -359,19 +628,47 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			var status: Dictionary = properties.get("status", {})
 			if status.get("type") == "idle" and sid == _current_session_id:
 				_finalize_streaming()
+			# 更新上下文 Token 数
+			var mem: int = status.get("memory", _context_memory)
+			var ctx: int = status.get("context", _context_total)
+			if mem != _context_memory or ctx != _context_total:
+				_context_memory = mem
+				_context_total = ctx
+				_update_info_bar()
 
 		"message.part.delta":
 			var sid: String = properties.get("sessionID", "")
 			if sid != _current_session_id:
 				return
 			var field: String = properties.get("field", "")
+			var delta: String = properties.get("delta", "")
+
+			# 思考内容单独处理
+			if field == "reasoning":
+				if _streaming_thinking_label:
+					_streaming_thinking_text += delta
+					_streaming_thinking_label.visible = true
+					# 用 BBCode 渲染思考文字（灰色 + "思考：" 前缀）
+					var col_html := color_text_dim.to_html(true)
+					_streaming_thinking_label.clear()
+					_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + _streaming_thinking_text + "[/color]")
+					_scroll_to_bottom()
+				return
+
 			if field != "text":
 				return
-			var delta: String = properties.get("delta", "")
+
 			if _streaming_label:
 				_streaming_text += delta
 				_streaming_label.text = _streaming_text
 				_scroll_to_bottom()
+			# Token 速率追踪
+			_rate_tokens += delta.length()
+			if _rate_time < 0.001:
+				_rate_time = 0.001
+				_rate_tokens = 0
+			else:
+				_rate_time += 0.1  # 粗略估算
 
 		"message.updated":
 			# SSE 通知有新消息完成时，刷新当前会话的消息列表
@@ -449,8 +746,71 @@ func _on_question_rejected(request_id: String) -> void:
 	await _api.reply_question(request_id, [])
 
 
+func _create_streaming_widget() -> VBoxContainer:
+	## 创建流式响应的容器结构（名称 + 思考文本 + 气泡文本区）
+	# 重置流式状态
+	_streaming_text = ""
+	_streaming_thinking_text = ""
+
+	var msg_vbox := VBoxContainer.new()
+	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	msg_vbox.add_theme_constant_override("separation", 2)
+
+	# 名称标签
+	var name_label := RichTextLabel.new()
+	name_label.bbcode_enabled = true
+	name_label.fit_content = true
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("normal_font_size", font_size_base - 3)
+	name_label.add_theme_color_override("default_color", color_text_name)
+	name_label.append_text("AI")
+	msg_vbox.add_child(name_label)
+
+	# 思考标签（初始隐藏，SSE 推送时可见）
+	_streaming_thinking_label = RichTextLabel.new()
+	_streaming_thinking_label.bbcode_enabled = true
+	_streaming_thinking_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_streaming_thinking_label.fit_content = true
+	_streaming_thinking_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_streaming_thinking_label.add_theme_font_size_override("normal_font_size", font_size_base - 1)
+	_streaming_thinking_label.append_text("")
+	_streaming_thinking_label.visible = false
+	msg_vbox.add_child(_streaming_thinking_label)
+
+	# 主文本气泡
+	var bubble := PanelContainer.new()
+	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var style := StyleBoxFlat.new()
+	style.bg_color = bubble_ai_bg
+	style.border_width_left = 3
+	style.border_color = bubble_ai_border
+	style.corner_radius_bottom_right = 6
+	style.corner_radius_top_right = 6
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	bubble.add_theme_stylebox_override("panel", style)
+
+	_streaming_label = RichTextLabel.new()
+	_streaming_label.bbcode_enabled = true
+	_streaming_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_streaming_label.fit_content = true
+	_streaming_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_streaming_label.add_theme_font_size_override("normal_font_size", font_size_base)
+	_streaming_label.add_theme_color_override("default_color", color_text)
+
+	bubble.add_child(_streaming_label)
+	msg_vbox.add_child(bubble)
+
+	msg_list.add_child(msg_vbox)
+	_scroll_to_bottom()
+	return msg_vbox
+
+
 func _finalize_streaming() -> void:
 	_streaming_label = null
+	_streaming_thinking_label = null
 	_scroll_to_bottom()
 
 

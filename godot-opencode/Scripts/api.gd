@@ -48,12 +48,14 @@ func create_session(title: String = "") -> Dictionary:
 
 
 ## 获取指定会话的消息列表。返回 MessageV2 数组（Dictionary[]），失败返回 []。
-func get_messages(session_id: String) -> Array:
-	var url := _base_url + "/session/%s/message" % session_id
+func get_messages(session_id: String, limit: int = 50) -> Array:
+	## 获取会话消息列表，支持分页（默认取最近 50 条）
+	var url := _base_url + "/session/%s/message?limit=%d" % [session_id, limit]
 	var data = await _request(url, "GET")
 	if data is Array:
 		return data as Array
 	return []
+
 
 
 ## 发送消息到指定会话。返回响应 Dictionary（{info, parts}），失败返回 {}。
@@ -95,13 +97,28 @@ func reply_question(request_id: String, answers: Array) -> bool:
 func get_path_info() -> Variant:
 	return await _request(_base_url + "/path", "GET")
 
-## 获取 LSP 状态。返回 Array，失败返回 null。
 func get_lsp_info() -> Variant:
 	return await _request(_base_url + "/lsp", "GET")
 
-## 获取代理信息。返回 Array，失败返回 null。
 func get_agent_info() -> Variant:
 	return await _request(_base_url + "/agent", "GET")
+
+## 获取当前主 Agent（mode=primary）的信息字典，包含 name/model/options。
+## 返回 Dictionary {name, model:{providerID,modelID}}，失败返回 {}。
+func get_primary_agent() -> Dictionary:
+	var agents = await get_agent_info()
+	if agents is Array:
+		for a in agents:
+			if a is Dictionary and a.get("mode") == "primary":
+				return a as Dictionary
+	return {}
+
+## 获取全局配置。返回 Dictionary，失败返回 {}。
+func get_config() -> Dictionary:
+	var data = await _request(_base_url + "/global/config", "GET")
+	if data is Dictionary:
+		return data as Dictionary
+	return {}
 
 
 # ── 核心请求方法 ──

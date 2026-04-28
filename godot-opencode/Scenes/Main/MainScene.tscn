@@ -19,7 +19,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.12, 0.12, 0.12, 1)
+color = Color(0, 0, 0, 1)
 
 [node name="Layout" type="VBoxContainer" parent="." unique_id=147303012]
 layout_mode = 0
@@ -68,13 +68,12 @@ text = "初始化..."
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 0
+theme_override_constants/separation = 16
 
 [node name="ChatArea" type="VBoxContainer" parent="Layout/Body" unique_id=148382]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 0
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Layout/Body/ChatArea" unique_id=1886596840]
 unique_name_in_owner = true
@@ -90,6 +89,50 @@ size_flags_horizontal = 3
 size_flags_vertical = 0
 theme_override_constants/separation = 8
 
+[node name="InfoBar" type="PanelContainer" parent="Layout/Body/ChatArea" unique_id=262149538]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="InfoHBox" type="HBoxContainer" parent="Layout/Body/ChatArea/InfoBar" unique_id=333692892]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 16
+
+[node name="InfoAgent" type="Label" parent="Layout/Body/ChatArea/InfoBar/InfoHBox" unique_id=231954865]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "Agent: -"
+
+[node name="InfoModel" type="Label" parent="Layout/Body/ChatArea/InfoBar/InfoHBox" unique_id=1179573912]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "Model: -"
+
+[node name="InfoCtx" type="Label" parent="Layout/Body/ChatArea/InfoBar/InfoHBox" unique_id=1573502167]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "Ctx: -"
+
+[node name="InfoRate" type="Label" parent="Layout/Body/ChatArea/InfoBar/InfoHBox" unique_id=1260031328]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "| - tok/s"
+
 [node name="InputBg" type="ColorRect" parent="Layout/Body/ChatArea" unique_id=828186791]
 custom_minimum_size = Vector2(0, 1)
 layout_mode = 2
@@ -102,7 +145,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="InputBg" type="ColorRect" parent="Layout/Body/ChatArea/InputArea" unique_id=352664398]
+[node name="InputBg" type="ColorRect" parent="Layout/Body/ChatArea/InputArea" unique_id=943271515]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -135,6 +178,13 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 text = "发送"
+
+[node name="InputBlue" type="ColorRect" parent="Layout/Body/ChatArea/InputArea" unique_id=431297157]
+layout_mode = 0
+anchor_bottom = 1.0
+offset_right = 4.0
+mouse_filter = 2
+color = Color(0.3, 0.6, 1, 1)
 
 [node name="Sidebar" type="Panel" parent="Layout/Body" unique_id=1853716071]
 unique_name_in_owner = true
