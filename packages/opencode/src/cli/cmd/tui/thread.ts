@@ -100,6 +100,11 @@ export const TuiThreadCommand = cmd({
       .option("agent", {
         type: "string",
         describe: "agent to use",
+      })
+      .option("tui", {
+        type: "boolean",
+        describe: "force TUI (terminal user interface) mode",
+        default: false,
       }),
   handler: async (args) => {
     // Keep ENABLE_PROCESSED_INPUT cleared even if other code flips it.
@@ -207,7 +212,17 @@ export const TuiThreadCommand = cmd({
       }, 1000).unref?.()
 
       try {
-        await tui({
+        if (!args.tui) {
+          // Default headless mode — start server and keep alive
+          if (!external) {
+            const url = (await client.call("server", network)).url
+            console.log(`opencode server listening on ${url}`)
+          } else {
+            console.log(`opencode server: ${transport.url}`)
+          }
+          await new Promise(() => {})
+        } else {
+          await tui({
           url: transport.url,
           async onSnapshot() {
             const tui = writeHeapSnapshot("tui.heapsnapshot")
@@ -227,6 +242,7 @@ export const TuiThreadCommand = cmd({
             fork: args.fork,
           },
         })
+      }
       } finally {
         await stop()
       }

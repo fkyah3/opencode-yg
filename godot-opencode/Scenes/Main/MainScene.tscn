@@ -1,0 +1,232 @@
+[gd_scene format=3 uid="uid://b7yu22g3ewera"]
+
+[ext_resource type="Script" uid="uid://gpk6duweakev" path="res://Scenes/Main/MainScene.gd" id="1"]
+
+[node name="MainScene" type="Control" unique_id=1939686237]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="Bg" type="ColorRect" parent="." unique_id=1750236572]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.12, 0.12, 0.12, 1)
+
+[node name="Layout" type="VBoxContainer" parent="." unique_id=147303012]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="Panel" parent="Layout" unique_id=329819862]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HeaderBg" type="ColorRect" parent="Layout/Header" unique_id=1923570546]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.08, 0.08, 1)
+
+[node name="HBox" type="HBoxContainer" parent="Layout/Header" unique_id=1605111883]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Layout/Header/HBox" unique_id=965482998]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
+text = "OpenCode Client"
+
+[node name="Status" type="Label" parent="Layout/Header/HBox" unique_id=1472277341]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+text = "初始化..."
+
+[node name="Body" type="HBoxContainer" parent="Layout" unique_id=1891412577]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="ChatArea" type="VBoxContainer" parent="Layout/Body" unique_id=148382]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Layout/Body/ChatArea" unique_id=1886596840]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="MessageList" type="VBoxContainer" parent="Layout/Body/ChatArea/ScrollContainer" unique_id=1692659932]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 8
+
+[node name="InputBg" type="ColorRect" parent="Layout/Body/ChatArea" unique_id=828186791]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="InputArea" type="Panel" parent="Layout/Body/ChatArea" unique_id=676012409]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="InputBg" type="ColorRect" parent="Layout/Body/ChatArea/InputArea" unique_id=352664398]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.1, 0.1, 0.1, 1)
+
+[node name="HBox" type="HBoxContainer" parent="Layout/Body/ChatArea/InputArea" unique_id=907605567]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextInput" type="TextEdit" parent="Layout/Body/ChatArea/InputArea/HBox" unique_id=1216006281]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_colors/background_color = Color(0.08, 0.08, 0.08, 1)
+placeholder_text = "输入消息..."
+wrap_mode = 1
+
+[node name="SendBtn" type="Button" parent="Layout/Body/ChatArea/InputArea/HBox" unique_id=1797538610]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+text = "发送"
+
+[node name="Sidebar" type="Panel" parent="Layout/Body" unique_id=1853716071]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SidebarBg" type="ColorRect" parent="Layout/Body/Sidebar" unique_id=1110053070]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.14, 0.14, 0.14, 1)
+
+[node name="SidebarScroll" type="ScrollContainer" parent="Layout/Body/Sidebar" unique_id=1432446693]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SidebarContent" type="VBoxContainer" parent="Layout/Body/Sidebar/SidebarScroll" unique_id=1064642830]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="SessionHeader" type="Label" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=801017498]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_constants/outline_size = 0
+
+[node name="StatusHeader" type="Label" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1418557775]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+
+[node name="StatusMemory" type="Label" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1953073941]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+
+[node name="StatusContext" type="Label" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=910741554]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+
+[node name="Divider2" type="ColorRect" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1566252585]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.22, 0.22, 0.22, 1)
+
+[node name="LspHeader" type="Label" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1445944975]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+
+[node name="LspList" type="VBoxContainer" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1641941097]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Divider3" type="ColorRect" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1394708534]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.22, 0.22, 0.22, 1)
+
+[node name="InfoWorkdir" type="Label" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1111758899]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+
+[node name="InfoVersion" type="Label" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1708710605]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+
+[connection signal="pressed" from="Layout/Body/ChatArea/InputArea/HBox/SendBtn" to="." method="_on_send_pressed"]

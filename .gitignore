@@ -29,3 +29,16 @@ UPCOMING_CHANGELOG.md
 logs/
 *.bun-build
 tsconfig.tsbuildinfo
+
+# Godot opencode client project
+godot-opencode/.godot/
+godot-opencode/.gitattributes
+godot-opencode/.gitignore
+godot-opencode/icon.svg
+godot-opencode/icon.svg.import
+
+# External references (Godot docs, GodotOS, etc)
+external/
+
+# Project-specific specs (Godot dev workflow)
+specs/frankenstein-workflow-constraints/

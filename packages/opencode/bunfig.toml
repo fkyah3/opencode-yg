@@ -1,5 +1,4 @@
 preload = ["./node_modules/@opentui/solid/scripts/solid-plugin.ts"]
-# preload = ["@opentui/solid/preload"]
 
 [test]
 preload = ["./test/preload.ts"]
