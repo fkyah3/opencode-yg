@@ -1,8 +1,7 @@
-# preload 导致启动报错 "preload not found"，临时注释
+preload = ["./node_modules/@opentui/solid/scripts/solid-plugin.ts"]
 # preload = ["@opentui/solid/preload"]
 
 [test]
-# preload = ["@opentui/solid/preload", "./test/preload.ts"]
 preload = ["./test/preload.ts"]
 # timeout is not actually parsed from bunfig.toml (see src/bunfig.zig in oven-sh/bun)
 # using --timeout in package.json scripts instead

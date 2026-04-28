@@ -76,6 +76,10 @@ export const AuthMiddleware: MiddlewareHandler = (c, next) => {
   // These requests stay within the same process — no network exposure.
   if (c.req.header("x-opencode-internal")) return next()
 
+  // Localhost/loopback requests skip auth — TUI dashboard and local dev.
+  const host = c.req.header("host") ?? ""
+  if (host.startsWith("localhost:") || host.startsWith("127.0.0.1:")) return next()
+
   const password = getServerPassword()
   if (!password) return next()
 
