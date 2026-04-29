@@ -1,0 +1,1 @@
+{"version":3,"file":"drop-stale-reduce-calls.d.ts","sourceRoot":"","sources":["../../../src/hooks/magic-context/drop-stale-reduce-calls.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,gBAAgB,CAAC;AAIlD,wBAAgB,gBAAgB,CAAC,IAAI,EAAE,OAAO,GAAG,OAAO,CAoBvD;AAoBD,wBAAgB,oBAAoB,CAAC,QAAQ,EAAE,WAAW,EAAE,EAAE,cAAc,GAAE,MAAU,GAAG,OAAO,CAiCjG"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"types.d.ts","sourceRoot":"","sources":["../../../src/features/builtin-commands/types.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,kBAAkB,CAAC;AAE/C,eAAO,MAAM,2BAA2B,4EAM9B,CAAC;AAEX,MAAM,MAAM,uBAAuB,GAAG,CAAC,OAAO,2BAA2B,CAAC,CAAC,MAAM,CAAC,CAAC;AACnF,MAAM,MAAM,oBAAoB,GAAG,WAAW,CAAC,MAAM,CAAC,SAAS,CAAC,CAAC,CAAC"}

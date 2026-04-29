@@ -1,0 +1,1 @@
+{"version":3,"file":"constants.d.ts","sourceRoot":"","sources":["../../../../src/features/magic-context/memory/constants.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,SAAS,CAAC;AAE9C,eAAO,MAAM,qBAAqB,EAAE,cAAc,EAUjD,CAAC;AAEF,eAAO,MAAM,iBAAiB,EAAE,cAAc,EAU7C,CAAC;AAGF,eAAO,MAAM,oBAAoB,EAAE,OAAO,CAAC,MAAM,CAAC,cAAc,EAAE,MAAM,CAAC,CAGxE,CAAC"}
