@@ -1,154 +1,112 @@
-<p align="center"><b>fkyah3/opencode-fkyah3</b><br>
-<code>DeepSeek 优化 · Windows 适配 · AI 实现</code></p>
+<p align="center"><b>fkyah3/opencode-yg — 愚公</b><br>
+<code>DeepSeek 深度优化 · 全中文 AI Agent · 三位一体</code></p>
 
 <p align="center">
-  <a href="./SETUP.md"><b>🚀 从零搭建指南</b></a> · <a href="./README.en.md">English</a>
+  <a href="./SETUP.md"><b>🚀 从零搭建指南（中文）</b></a> · <a href="./README.md">English</a> · <a href="./README.zh.md">简体中文</a> · <a href="./README.zht.md">繁體中文</a>
 </p>
 
 ---
 
-## 🧠 语言锚定 —— LLM 多语言适配的系统方法
+## ⚠️ 分支状态 (2026-04-30)
 
-**核心发现**：LLM 会话的第一个主动输出语言，决定了整场对话的思维惯性。读中文 ≠ 用中文思考。
+| Branch | Status | 说明 |
+|--------|--------|------|
+| **`stable`** ✅ | **稳定版本（推荐）** | 已修复 6 项代码审计问题，性能优化（snapshot 增量），每日推进进度 |
+| `main` | ❌ **有冲突，不推荐** | 合并了 plan/build 模式砍除，TUI 可能不稳定 |
 
-| 阶段 | 效果 | 干预措施 |
-|------|------|---------|
-| 纯 prompt 约束（4 条语言规则） | ~70% | 仅修改 prompt 文本 |
+**开发完成时间待定，但每天都会推进。** 如果你是新用户，请使用 `stable` 分支。
+
+最新稳定 commit: `9e82ea751` — 6项代码审计修复
+
+---
+
+## 🧠 语言锚定（Language Anchoring）
+
+**核心发现：** LLM 的第一个主动输出语言决定了整场对话的思维语言。读 ≠ 想。
+
+| 阶段 | 中文保持率 | 干预措施 |
+|------|-----------|---------|
+| 纯 prompt 约束（4条语言规则） | ~70% | 仅修改 prompt 文本 |
 | + 翻译 16 个工具描述 | ~85% | 工具层中文对齐 |
-| + 翻译 50+ 文件注释（新对话验证） | ~95%+ | 代码层加固 |
-| + 锚定指令（7 行） | 接近全程中文 | 自回归惯性利用 |
+| + 翻译 50+ 文件注释 | ~95%+ | 代码层加固 |
+| + 锚定指令（7行） | 极大概率全程中文 | 自回归惯性利用 |
 
-锚定指令只有 7 行：
+### V2 对照实验（已验证）
 
-```
-## 语言锚定（硬性要求）
-收到用户的第一条消息后，在执行任何操作或开始推理之前，
-你必须先用中文写一段简短总结：
-1. 用户要你做什么
-2. 你计划用什么步骤完成
-3. 你还缺什么信息
-这段中文是你的第一个输出。完成这段输出后才能开始执行具体任务。
-```
+2026年4月 三组对照测试（温度=0，关闭 OMO 以避免提示词污染）：
 
-**学术对照**：Contextual Inertia（[arXiv 2603.04783](https://arxiv.org/abs/2603.04783)）、Cognitive Inertia（[arXiv 2503.01307](https://arxiv.org/abs/2503.01307)）——这些研究的是"如何打破有害惯性"。我们的贡献是正面利用同一机制。
+| 测试 | 条件 | 结果 |
+|------|------|------|
+| A | 纯英文提示词 + 英文指令 | 全程英文思考 |
+| B | 纯英文提示词 + 锚定指令 | 前期中文，约 1600 行后漂移回英文 |
+| C | 纯英文提示词 + "请用中文语言思维" | **全程中文，零漂移** |
 
-📖 [Discussion #1 — 语言锚定 RFC](https://github.com/fkyah3/opencode-fkyah3/discussions/1)
-💬 [Discussion #2 — 我对AI的看法（中文）](https://github.com/fkyah3/opencode-fkyah3/discussions/2)
-🌐 [Discussion #3 — How I Work with AI (English)](https://github.com/fkyah3/opencode-fkyah3/discussions/3)
+**核心结论：** 思维指令（"请用中文语言思维"）比输出锚定指令更稳定。环境对齐提供基线效果，思维指令提供了零漂移稳定性。
 
-### V2 对照实验（2026-04-27）
-
-我们在**纯英文环境**（关闭 OMO 插件，禁用所有中文提示词）中做了三组对照实验，验证锚定理论的独立性：
-
-| 测试 | 环境 | 指令 | 思考语言 | 漂移 |
-|------|------|------|---------|------|
-| 2 | 纯英文 | 无 | **英文**（全程稳定） | 无——符合预期 |
-| 3 | 纯英文 | 锚定指令（7行） | 中文 → **约1600行后漂回英文** | ✅ 显著漂移 |
-| 5 | 纯英文 | "请用中文语言思维"（一句话） | **中文**（全程稳定） | 无——零漂移 |
-
-**核心结论：**
-- 环境对齐提供了基线效果（约70-90%），不是锚定指令
-- 锚定指令（输出约束）在长对话中会**衰减**——尤其是在处理大量英文代码/工具结果时
-- 直接指定思维模式的指令（"用中文语言思维"）**远比锚定稳定**，零衰减
-- **思维语言 ≠ 输出语言**——锚定约束的是输出格式，思维指令直接作用于认知方式
-
-**完整实验报告：**[`specs/实验/语言对齐实验报告-v2.md`](./specs/实验/语言对齐实验报告-v2.md)
-
-这不推翻 v1 发现，而是将其拆分为三层：
-
-```
-环境对齐（中文上下文）        → 约 70-90% 效果
-输出锚定（首个输出约束）      → 约 30-50%，短期有效，会衰减
-思维模式指令（直接指定框架）  → 约 90%+，长对话稳定
-```
-
-原始主张（"锚定指令单独驱动中文输出"）过于粗粒度。细化的认识更实用：**最有效的方法是环境对齐 + 思维模式指令，按此顺序组合。**
+完整实验报告在 [`fkyah3_dev/实验/`](./fkyah3_dev/实验/)。  
+📖 [Discussion #6 — V2 对照实验](https://github.com/fkyah3/opencode-fkyah3/discussions/6)
 
 ---
 
-## ⚠️ 正在重构
+## 关于这个 Fork
 
-这个 fork 正在进行一次大幅度的提示词体系重构，预计 2026 年 5 月 5 日左右完成。
+这个 fork 是 **opencode 的中文完全体**——不仅翻译了提示词和工具描述，还内置了 OMO (oh-my-openagent) 和 Magic Context 插件，实现三位一体。
 
-我的做法和主流不一样。现在多数方案是给 AI 加一堆硬约束——"不许用英文"、"必须按格式输出"、"否则扣分"。我感觉这条路走不远。
+所有修复和优化均由 AI（**DeepSeek V4 Flash + Sisyphus/愚公**）在人类监督下完成。
 
-我的想法是：DeepSeek 的中文语料占比很高，它对"中国的思维方式"应该已经有了足够深的理解。问题不是它做不到，而是我们有没有用对方式去调动它。
-
-所以这次重构我会把硬约束全部去掉，换成基于问题框架和行为准则的指引——更多是"定义你是谁、你要解决什么问题"，而不是"你不能做什么"。这里面会融入一些我对中国文化中处理问题方式的理解。
-
-> **现阶段版本可以自己折腾，但不推荐作为主力工具。等我完成重构后再看效果。**
-
-具体进度会在 [`specs/`](./specs/) 更新，感兴趣可以关注。
+> **实现：** DeepSeek V4 Flash (thinking mode) / Sisyphus (愚公)  
+> **审核与方向：** fkyah3（人类）  
+> **这个 fork 是 AI 驱动软件开发的现场演示。**
 
 ---
 
-## 关于本项目
-
-这是 [anomalyco/opencode](https://github.com/anomalyco/opencode) 的个人 Fork。所有修复、优化、功能均由 AI 完成——**DeepSeek V4 Flash (thinking mode) / Sisyphus**——在人类监督下执行。
-
-上游是优秀项目。Windows 和 DeepSeek 并非他们的优先方向。我们自行处理。
-
-> **代码实现：DeepSeek V4 Flash (thinking mode) / Sisyphus（AI）**  
-> **人工审核与方向把控：fkyah3**  
-> This fork is a live demonstration of what AI-built software looks like.  
-> 详见 [`specs/`](./specs/)。
-
----
-
-## 修复列表
+## 修复清单
 
 | 修复项 | 领域 |
 |--------|------|
-| `reasoning_content` 丢失导致 API 400 —— DeepSeek 思考模式根因修复 | **核心** |
+| `reasoning_content` 多轮对话丢失 — DeepSeek thinking mode 400 错误的根源 | **Core** |
 | OpenRouter `@openrouter/ai-sdk-provider` providerOptions key 不匹配 | **Provider** |
-| 多窗口崩溃级联 —— OMO tool-pair-validator 增加熔断器 | **稳定性** |
-| 每会话独立日志（重启不再截断 dev.log） | **开发体验** |
-| Windows CJK 编码 —— 子进程管道三层 GBK/UTF-8 修复 | **Win32** |
-| TUI 插件加载 —— Magic Context 侧边栏空白（Zod strict 模式） | **TUI** |
-| MC 工具输出截断 —— `[truncated]` → `[tool: N lines, MKB \| preview]` 压缩展示 | **MC** |
-| DeepSeek V4 架构研究 → 配置对齐：400K 上下文、90% MC 阈值、CSA 对齐压缩 | **V4** |
-| 全局 Session 池 —— 任意目录下查看所有对话（2.0） | **Session** |
-| 全中文系统提示：Sisyphus、keyword-detector、系统消息、环境信息 | **i18n** |
-| **语言锚定** —— LLM 多语言适配的系统方法（含剂量关系验证数据） | **i18n** |
+| 多窗口崩溃级联 — OMO tool-pair-validator 加入断路器 | **Stability** |
+| 按会话隔离日志（不再有重启截断的 dev.log） | **DX** |
+| Windows CJK 编码 — 子进程管道三层 GBK/UTF-8 修复 | **Win32** |
+| TUI 插件加载 — Magic Context 侧边栏空白（Zod strict mode） | **TUI** |
+| MC 工具截断 — `[truncated]` → `[tool: N lines, MKB \| preview]` | **MC** |
+| DeepSeek V4 架构研究 → 配置对齐：400K 上下文、90% MC 阈值 | **V4** |
+| 全局会话池 — 从任意目录可见所有会话 (2.0) | **Session** |
+| 全中文系统提示：愚公、关键词检测器、系统消息、环境信息 | **i18n** |
+| 语言锚定 — 已验证的 LLM 多语言适配系统方法 | **i18n** |
+| `stable` 分支 6 项代码审计修复（异常退出、env 泄漏、Effect.die 等） | **Stability** |
+| Snapshot 增量优化 — add() 增量 + stat 缓存，track 从 3s 降到 200ms | **Perf** |
+
+---
 
 ## 快速启动
 
 ```powershell
+# 克隆后
 cd packages/opencode
+bun install
 bun run --conditions=browser src/index.ts
 ```
 
-## 模型配置参考
-
-### Flash（日常驱动——全部 Agent）
-
-```jsonc
-"deepseek-v4-flash": {
-  "limit": { "context": 400000, "output": 393216 },
-  "options": {
-    "reasoningEffort": "max",
-    "thinking": { "type": "enabled" }
-  },
-  "interleaved": { "field": "reasoning_content" }
-}
-```
-
-- **`reasoningEffort`**: `high`（默认）或 `max`。Agent 工具会自动设为 `max`。
-- **`interleaved`**: DeepSeek 思考模式通过 `@ai-sdk/openai-compatible` 时必须配置，否则 `reasoning_content` 不会转发。
-- **`thinking`**: 推理模型必须配置 `{ type: "enabled" }`。
-
-## 了解更多
-
-| 链接 | 内容 |
-|------|------|
-| [`specs/`](./specs/) | 修复详情、分析文档、问题跟踪 |
-| [`specs/internal/COMPLETION.md`](./specs/internal/COMPLETION.md) | 完成清单与当前状态 |
-| [上游 Issue #24104](https://github.com/anomalyco/opencode/issues/24104) | reasoning_content 根因讨论 |
-
-## Upstream
-
-基于 [anomalyco/opencode](https://github.com/anomalyco/opencode)（Apache 2.0）。定期合并上游变更。
+**建议使用 `stable` 分支。**
 
 ---
 
-<p align="center"><i>Crafted by AI. Curated by human. Built for the real world.</i></p>
+## 学习更多
+
+| 链接 | 内容 |
+|------|------|
+| [`fkyah3_dev/`](./fkyah3_dev/) | 修复细节、分析文档、问题追踪 |
+| [`fkyah3_dev/实验/`](./fkyah3_dev/实验/) | 语言锚定 V2 对照实验完整报告 |
+| [Discussion #1 — Language Anchoring RFC](https://github.com/fkyah3/opencode-fkyah3/discussions/1) | 技术方案 |
+| [Discussion #4 — 培养用户，而不是驯化用户](https://github.com/fkyah3/opencode-fkyah3/discussions/4) | 设计哲学 |
+| [Upstream issue #24104](https://github.com/anomalyco/opencode/issues/24104) | reasoning_content 根因讨论 |
+
+## 上游
+
+基于 [anomalyco/opencode](https://github.com/anomalyco/opencode) (Apache 2.0)。定期合并上游更新。
+
+---
+
+<p align="center"><i>由 AI 建造。由人类把关。为真实世界而生。</i></p>
