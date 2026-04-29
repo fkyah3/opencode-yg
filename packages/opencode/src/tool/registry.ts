@@ -132,6 +132,9 @@ export const layer: Layer.Layer<
                   directory: ctx.directory,
                   worktree: ctx.worktree,
                 }
+                if (args === undefined || args === null) {
+                  yield* Effect.logWarning(`Plugin tool ${id} called with null/undefined args`)
+                }
                 const result = yield* Effect.promise(() => def.execute(args as any, pluginCtx))
                 const output = typeof result === "string" ? result : result.output
                 const metadata = typeof result === "string" ? {} : (result.metadata ?? {})

@@ -36,31 +36,39 @@ export const registry = new Map<string, Definition>()
 let projectors: Map<Definition, ProjectorFunc> | undefined
 const versions = new Map<string, number>()
 let frozen = false
+let initializing = false
 let convertEvent: (type: string, event: Event["data"]) => Promise<Record<string, unknown>> | Record<string, unknown>
 
 export function reset() {
+  if (initializing) return
   frozen = false
   projectors = undefined
   convertEvent = (_, data) => data
 }
 
 export function init(input: { projectors: Array<[Definition, ProjectorFunc]>; convertEvent?: typeof convertEvent }) {
-  projectors = new Map(input.projectors)
+  if (initializing) return
+  initializing = true
+  try {
+    projectors = new Map(input.projectors)
 
-  // Install all the latest event defs to the bus. We only ever emit
-  // latest versions from code, and keep around old versions for
-  // replaying. Replaying does not go through the bus, and it
-  // simplifies the bus to only use unversioned latest events
-  for (let [type, version] of versions.entries()) {
-    let def = registry.get(versionedType(type, version))!
+    // Install all the latest event defs to the bus. We only ever emit
+    // latest versions from code, and keep around old versions for
+    // replaying. Replaying does not go through the bus, and it
+    // simplifies the bus to only use unversioned latest events
+    for (let [type, version] of versions.entries()) {
+      let def = registry.get(versionedType(type, version))!
 
-    BusEvent.define(def.type, def.properties || def.schema)
+      BusEvent.define(def.type, def.properties || def.schema)
+    }
+
+    // Freeze the system so it clearly errors if events are defined
+    // after `init` which would cause bugs
+    frozen = true
+    convertEvent = input.convertEvent || ((_, data) => data)
+  } finally {
+    initializing = false
   }
-
-  // Freeze the system so it clearly errors if events are defined
-  // after `init` which would cause bugs
-  frozen = true
-  convertEvent = input.convertEvent || ((_, data) => data)
 }
 
 export function versionedType<A extends string>(type: A): A

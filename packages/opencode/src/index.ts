@@ -46,12 +46,14 @@ process.on("unhandledRejection", (e) => {
   Log.Default.error("rejection", {
     e: errorMessage(e),
   })
+  process.exit(1)
 })
 
 process.on("uncaughtException", (e) => {
   Log.Default.error("exception", {
     e: errorMessage(e),
   })
+  process.exit(1)
 })
 
 const args = hideBin(process.argv)

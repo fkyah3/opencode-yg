@@ -169,9 +169,18 @@ export async function refresh(force = false) {
   })
 }
 
+let refreshTimer: ReturnType<typeof setInterval> | undefined
+
+export function stopRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+}
+
 if (!Flag.OPENCODE_DISABLE_MODELS_FETCH && !process.argv.includes("--get-yargs-completions")) {
   void refresh()
-  setInterval(
+  refreshTimer = setInterval(
     async () => {
       await refresh()
     },

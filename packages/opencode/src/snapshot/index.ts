@@ -318,22 +318,30 @@ export const layer: Layer.Layer<
         const patch = Effect.fnUntraced(function* (hash: string) {
           return yield* locked(
             Effect.gen(function* () {
-              yield* add()
-              const result = yield* git(
-                [...quote, ...args(["diff", "--cached", "--no-ext-diff", "--name-only", hash, "--", "."])],
-                {
-                  cwd: state.directory,
-                },
+              // Use working-tree diff instead of --cached to skip redundant add().
+              // track() just staged everything — the index hasn't changed.
+              const [diffResult, otherResult] = yield* Effect.all(
+                [
+                  git([...quote, ...args(["diff", "--no-ext-diff", "--name-only", hash, "--", "."])], {
+                    cwd: state.directory,
+                  }),
+                  git([...quote, ...args(["ls-files", "--others", "--exclude-standard", "-z", "--", "."])], {
+                    cwd: state.directory,
+                  }),
+                ],
+                { concurrency: 2 },
               )
-              if (result.code !== 0) {
-                log.warn("failed to get diff", { hash, exitCode: result.code })
+              if (diffResult.code !== 0) {
+                log.warn("failed to get diff", { hash, exitCode: diffResult.code })
                 return { hash, files: [] }
               }
-              const files = result.text
+              const tracked = diffResult.text
                 .trim()
                 .split("\n")
                 .map((x) => x.trim())
                 .filter(Boolean)
+              const untracked = otherResult.code === 0 ? otherResult.text.split("\0").filter(Boolean) : []
+              const files = [...tracked, ...untracked]
 
               // Hide ignored-file removals from the user-facing patch output.
               const ignored = yield* ignore(files)
@@ -492,8 +500,8 @@ export const layer: Layer.Layer<
         const diff = Effect.fnUntraced(function* (hash: string) {
           return yield* locked(
             Effect.gen(function* () {
-              yield* add()
-              const result = yield* git([...quote, ...args(["diff", "--cached", "--no-ext-diff", hash, "--", "."])], {
+              // Working-tree diff — no add() needed, index is already current from track().
+              const result = yield* git([...quote, ...args(["diff", "--no-ext-diff", hash, "--", "."])], {
                 cwd: state.worktree,
               })
               if (result.code !== 0) {
