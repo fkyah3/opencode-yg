@@ -10,4 +10,5 @@ $here = Get-Location
 # Ensure we're in the opencode package directory (works with any clone path)
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location "$scriptDir\packages\opencode"
+$env:OPENCODE_FKYAH3_GLOBAL_SESSIONS = "1"
 bun run --conditions=browser src/index.ts $here
