@@ -525,6 +525,7 @@ export const layer: Layer.Layer<
         const error = parse(e)
         if (MessageV2.ContextOverflowError.isInstance(error)) {
           ctx.needsCompaction = true
+          yield* status.set(ctx.sessionID, { type: "idle" })
           yield* bus.publish(Session.Event.Error, { sessionID: ctx.sessionID, error })
           return
         }
