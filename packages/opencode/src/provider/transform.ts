@@ -215,6 +215,22 @@ function normalizeMessages(
     )
 
   if (hasReasoningContent) {
+    // @ai-sdk/deepseek 原生处理 reasoning，不走 providerOptions 注入。
+    // convertToDeepSeekChatMessages() 直接从 content 中读取 reasoning part，
+    // 不要剥离，保留在 content 数组里。
+    if (model.api.npm === "@ai-sdk/deepseek") {
+      return msgs.map((msg) => ({
+        ...msg,
+        providerOptions: {
+          ...msg.providerOptions,
+          [key]: {
+            ...msg.providerOptions?.[key],
+            thinking: { type: "enabled" },
+          },
+        },
+      }))
+    }
+
     return msgs.map((msg) => {
       if (msg.role === "assistant" && Array.isArray(msg.content)) {
         const reasoningParts = msg.content.filter((part: any) => part.type === "reasoning")
