@@ -105,6 +105,7 @@ const BUNDLED_PROVIDERS: Record<string, () => Promise<(opts: any) => BundledSDK>
   "@ai-sdk/mistral": () => import("@ai-sdk/mistral").then((m) => m.createMistral),
   "@ai-sdk/groq": () => import("@ai-sdk/groq").then((m) => m.createGroq),
   "@ai-sdk/deepinfra": () => import("@ai-sdk/deepinfra").then((m) => m.createDeepInfra),
+  "@ai-sdk/deepseek": () => import("@ai-sdk/deepseek").then((m) => m.createDeepSeek),
   "@ai-sdk/cerebras": () => import("@ai-sdk/cerebras").then((m) => m.createCerebras),
   "@ai-sdk/cohere": () => import("@ai-sdk/cohere").then((m) => m.createCohere),
   "@ai-sdk/gateway": () => import("@ai-sdk/gateway").then((m) => m.createGateway),
