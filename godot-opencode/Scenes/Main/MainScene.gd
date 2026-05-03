@@ -737,15 +737,25 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 			var fpath: String = state.get("input", {}).get("filePath", "")
 			var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
 			text_parts.append("**" + icon + " " + tname.trim_suffix(".md") + "**")
-			# 变化型工具（write/edit/bash）展示输入或输出内容；静止型（read）只显示路径
-			var mutation: bool = tool_name in ["write", "edit", "bash", "shell"]
-			if mutation:
-				var raw: String = state.get("input", {}).get("content", "")
-				var out: String = state.get("output", "")
-				if not raw.is_empty():
-					text_parts.append("\n```\n" + raw.left(1500) + "\n```")
-				elif not out.is_empty():
-					text_parts.append("\n```\n" + out.left(1500) + "\n```")
+			# 工具类型细分显示
+			if tool_name == "edit":
+				# edit: 左右对照 diff，红删绿增
+				var old_str: String = state.get("input", {}).get("oldString", "")
+				var new_str: String = state.get("input", {}).get("newString", "")
+				if not old_str.is_empty() or not new_str.is_empty():
+					var old_esc := old_str.replace("[", "[lb]")
+					var new_esc := new_str.replace("[", "[lb]")
+					text_parts.append("[table=2 border=true][cell][bgcolor=#331111][color=#ff5555]" + old_esc + "[/color][/bgcolor][/cell][cell][bgcolor=#113311][color=#55ff55]" + new_esc + "[/color][/bgcolor][/cell][/table]")
+			else:
+				# read 只显示路径；write/bash/shell 展示内容
+				var mutation: bool = tool_name in ["write", "bash", "shell"]
+				if mutation:
+					var raw: String = state.get("input", {}).get("content", "")
+					var out: String = state.get("output", "")
+					if not raw.is_empty():
+						text_parts.append("\n```\n" + raw.left(1500) + "\n```")
+					elif not out.is_empty():
+						text_parts.append("\n```\n" + out.left(1500) + "\n```")
 
 	# ── 更新思考标签 ──
 	if not thinking_text.is_empty():
