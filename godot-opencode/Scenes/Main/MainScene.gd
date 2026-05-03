@@ -22,22 +22,7 @@ class_name MainScene
 
 
 # ═══════════════════ 导出变量（可在 Inspector 中调整） ═══════════════════
-@export_group("字体设置")
-@export var font_path_normal: String = "res://fonts/JetBrains_Mono/static/JetBrainsMono-Regular.ttf"
-@export var font_path_bold: String = "res://fonts/JetBrains_Mono/static/JetBrainsMono-Bold.ttf"
-@export var font_size_base: int = 16
-
-@export_group("文字颜色")
-@export var color_text: Color = Color(0.93, 0.93, 0.93, 1.0)
-@export var color_text_dim: Color = Color(0.37, 0.37, 0.37, 1.0)
-@export var color_text_name: Color = Color(0.75, 0.75, 0.75, 1.0)
-@export var color_text_info: Color = Color(0.5, 0.5, 0.5, 1.0)
-
-@export_group("气泡颜色")
-@export var bubble_user_bg: Color = Color(0.13, 0.13, 0.13, 1.0)
-@export var bubble_user_border: Color = Color(0.3, 0.6, 1.0, 1.0)
-@export var bubble_ai_bg: Color = Color(0.07, 0.07, 0.07, 1.0)
-@export var bubble_ai_border: Color = Color(0.75, 0.75, 0.75, 0.35)
+@export var theme_config: ThemeConfig
 
 
 # ── 会话选择器 ──
@@ -114,31 +99,31 @@ func _ready() -> void:
 func _apply_font_theme() -> void:
 	print("→ _apply_font_theme")
 	## 加载 JetBrains Mono 字体，设置全场景主题
-	var font_normal := load(font_path_normal)
-	var font_bold := load(font_path_bold)
+	var font_normal := load(theme_config.font_path_normal)
+	var font_bold := load(theme_config.font_path_bold)
 
 	if font_normal == null:
-		push_warning("无法加载字体: " + font_path_normal)
+		push_warning("无法加载字体: " + theme_config.font_path_normal)
 		return
 
 	var theme := Theme.new()
 	# Label
 	theme.set_font("font", "Label", font_normal)
-	theme.set_font_size("font_size", "Label", font_size_base)
+	theme.set_font_size("font_size", "Label", theme_config.font_size_base)
 	# RichTextLabel
 	theme.set_font("normal_font", "RichTextLabel", font_normal)
 	theme.set_font("bold_font", "RichTextLabel", font_bold)
-	theme.set_font_size("normal_font_size", "RichTextLabel", font_size_base)
-	theme.set_font_size("bold_font_size", "RichTextLabel", font_size_base)
+	theme.set_font_size("normal_font_size", "RichTextLabel", theme_config.font_size_base)
+	theme.set_font_size("bold_font_size", "RichTextLabel", theme_config.font_size_base)
 	# Button
 	theme.set_font("font", "Button", font_normal)
-	theme.set_font_size("font_size", "Button", font_size_base - 1)
+	theme.set_font_size("font_size", "Button", theme_config.font_size_base - 1)
 	# TextEdit
 	theme.set_font("font", "TextEdit", font_normal)
-	theme.set_font_size("font_size", "TextEdit", font_size_base)
+	theme.set_font_size("font_size", "TextEdit", theme_config.font_size_base)
 	# LineEdit
 	theme.set_font("font", "LineEdit", font_normal)
-	theme.set_font_size("font_size", "LineEdit", font_size_base)
+	theme.set_font_size("font_size", "LineEdit", theme_config.font_size_base)
 
 	self.theme = theme
 
@@ -649,8 +634,8 @@ func _build_message_row() -> Control:
 	name_label.bbcode_enabled = true
 	name_label.fit_content = true
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("normal_font_size", font_size_base - 3)
-	name_label.add_theme_color_override("default_color", color_text_name)
+	name_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 3)
+	name_label.add_theme_color_override("default_color", theme_config.color_text_name)
 	row.add_child(name_label)
 
 	# ── 第 1 子节点：思考标签（默认隐藏） ──
@@ -659,8 +644,8 @@ func _build_message_row() -> Control:
 	thinking_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	thinking_label.fit_content = true
 	thinking_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	thinking_label.add_theme_font_size_override("normal_font_size", font_size_base - 1)
-	thinking_label.add_theme_color_override("default_color", color_text_dim)
+	thinking_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 1)
+	thinking_label.add_theme_color_override("default_color", theme_config.color_text_dim)
 	thinking_label.visible = false
 	row.add_child(thinking_label)
 
@@ -682,8 +667,8 @@ func _build_message_row() -> Control:
 	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text_label.fit_content = true
 	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text_label.add_theme_font_size_override("normal_font_size", font_size_base)
-	text_label.add_theme_color_override("default_color", color_text)
+	text_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base)
+	text_label.add_theme_color_override("default_color", theme_config.color_text)
 	bubble.add_child(text_label)
 	row.add_child(bubble)
 
@@ -776,7 +761,7 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 
 	# ── 更新思考标签 ──
 	if not thinking_text.is_empty():
-		var col := color_text_dim.to_html(false)
+		var col := theme_config.color_text_dim.to_html(false)
 		var escaped := thinking_text.replace("[", "[lb]")
 		thinking_label.visible = true
 		thinking_label.clear()
@@ -787,8 +772,8 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 	# ── 更新气泡文本 + 颜色 ──
 	if not bbcode_fragments.is_empty():
 		var style: StyleBoxFlat = bubble.get_theme_stylebox("panel")
-		style.bg_color = bubble_user_bg if is_user else bubble_ai_bg
-		style.border_color = bubble_user_border if is_user else bubble_ai_border
+		style.bg_color = theme_config.bubble_user_bg if is_user else theme_config.bubble_ai_bg
+		style.border_color = theme_config.bubble_user_border if is_user else theme_config.bubble_ai_border
 
 		# 拼接 BBCode 片段
 		var bbcode: String = msg.get("_bbcode", "")
@@ -964,7 +949,7 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 				if _streaming_thinking_label:
 					_streaming_thinking_text += delta
 					_streaming_thinking_label.visible = true
-					var col_html := color_text_dim.to_html(false)
+					var col_html := theme_config.color_text_dim.to_html(false)
 					var escaped := _streaming_thinking_text.replace("[", "[lb]")
 					_streaming_thinking_label.clear()
 					_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + escaped + "[/color]")
@@ -1087,8 +1072,8 @@ func _create_streaming_widget() -> VBoxContainer:
 	name_label.bbcode_enabled = true
 	name_label.fit_content = true
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("normal_font_size", font_size_base - 3)
-	name_label.add_theme_color_override("default_color", color_text_name)
+	name_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 3)
+	name_label.add_theme_color_override("default_color", theme_config.color_text_name)
 	name_label.append_text("AI")
 	msg_vbox.add_child(name_label)
 
@@ -1098,7 +1083,7 @@ func _create_streaming_widget() -> VBoxContainer:
 	_streaming_thinking_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_streaming_thinking_label.fit_content = true
 	_streaming_thinking_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_streaming_thinking_label.add_theme_font_size_override("normal_font_size", font_size_base - 1)
+	_streaming_thinking_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 1)
 	_streaming_thinking_label.append_text("")
 	_streaming_thinking_label.visible = false
 	msg_vbox.add_child(_streaming_thinking_label)
@@ -1107,9 +1092,9 @@ func _create_streaming_widget() -> VBoxContainer:
 	var bubble := PanelContainer.new()
 	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var style := StyleBoxFlat.new()
-	style.bg_color = bubble_ai_bg
+	style.bg_color = theme_config.bubble_ai_bg
 	style.border_width_left = 3
-	style.border_color = bubble_ai_border
+	style.border_color = theme_config.bubble_ai_border
 	style.corner_radius_bottom_right = 6
 	style.corner_radius_top_right = 6
 	style.content_margin_left = 10
@@ -1123,8 +1108,8 @@ func _create_streaming_widget() -> VBoxContainer:
 	_streaming_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_streaming_label.fit_content = true
 	_streaming_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_streaming_label.add_theme_font_size_override("normal_font_size", font_size_base)
-	_streaming_label.add_theme_color_override("default_color", color_text)
+	_streaming_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base)
+	_streaming_label.add_theme_color_override("default_color", theme_config.color_text)
 
 	bubble.add_child(_streaming_label)
 	msg_vbox.add_child(bubble)
