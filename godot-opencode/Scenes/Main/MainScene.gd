@@ -78,6 +78,12 @@ var _row_assignments: Dictionary = {}        # idx → Control（当前分配给
 var _free_nodes: Array[Control] = []         # 空闲池节点（自由列表，O(1) 取用）
 var _overscan: int = 4                       # 可见区域外的缓冲行数
 
+# ── 滚动到底参数（导出到 Inspector 方便调试） ──
+@export var scroll_sample_count: int = 20    # 采样行数
+@export var scroll_stable_frames: int = 3    # max_value 稳定判定帧数
+@export var scroll_safety_max: int = 60      # 推底循环安全锁上限
+@export var scroll_step_ratio: float = 1.0   # 每帧推的视口倍数（1.0=100%）
+
 # ── 滚动防抖 ──
 var _scroll_timer: float = 0.0
 var _scroll_pending: bool = false
@@ -1206,6 +1212,7 @@ func _scroll_to_bottom() -> void:
 
 func _push_scroll_bottom_deferred() -> void:
 	## 采样 → 推到底(稳定检测) → 强制测量残差 → 推真底
+	## 参数可在 Inspector 中实时调试
 	if _row_data.is_empty():
 		return
 	if _row_data.size() <= 1:
@@ -1214,8 +1221,8 @@ func _push_scroll_bottom_deferred() -> void:
 
 	var n := _row_data.size()
 
-	# — Ⅰ 采样：均匀取 20 行，累加 actual/est 比值 —
-	var skip := maxi(1, n / 20)
+	# — Ⅰ 采样：均匀取 scroll_sample_count 行 —
+	var skip := maxi(1, n / scroll_sample_count)
 	var sum_actual := 0.0
 	var sum_est := 0.0
 	for i in range(0, n, skip):
@@ -1248,15 +1255,16 @@ func _push_scroll_bottom_deferred() -> void:
 	virtual_content.custom_minimum_size.y = cursor
 	_update_visible_rows(scroll.scroll_vertical)
 
-	# — Ⅱ 推到底(稳定检测) —
-	var vp_h: float = maxf(scroll.size.y, 100)
+	# — Ⅱ 推到底（稳定检测） —
+	var vp_h: float = maxf(scroll.size.y, 100) * scroll_step_ratio
 	scroll.scroll_vertical = 0
 	await get_tree().process_frame
 
 	var last_max: float = -1.0
 	var stable_frames: int = 0
-	var safety: int = 60
-	while stable_frames < 3 and safety > 0:
+	var safety: int = scroll_safety_max
+	var n_max := scroll_stable_frames
+	while stable_frames < n_max and safety > 0:
 		safety -= 1
 		var vbar := scroll.get_v_scroll_bar()
 		var cur_max: float = vbar.max_value if vbar != null else 0.0
@@ -1271,13 +1279,18 @@ func _push_scroll_bottom_deferred() -> void:
 		last_max = cur_max
 		await get_tree().process_frame
 
-	# — Ⅲ 强制测量所有未渲染的行 —
+	# — Ⅲ 回收全部池节点 → 强制测量所有未渲染行 —
+	# （稳定推到假底后，池节点全被可见区占用，_free_nodes 为空）
+	for key in _row_assignments.keys():
+		var nd: Control = _row_assignments[key]
+		nd.visible = false
+		_free_nodes.append(nd)
+	_row_assignments.clear()
+
 	var measured_any := false
 	for i in range(n):
-		if _row_assignments.has(i):
-			continue
 		if _free_nodes.is_empty():
-			break
+			break  # 不应发生，已回收全部
 		var node: Control = _free_nodes.pop_back()
 		_row_assignments[i] = node
 		_prepare_row_node(node, _row_data[i], i)
@@ -1296,6 +1309,22 @@ func _push_scroll_bottom_deferred() -> void:
 			_y_offsets[j] = cursor
 			cursor += _row_heights[j]
 		virtual_content.custom_minimum_size.y = cursor
+
+		# 高度变了 → 第二轮推到底（此时每行都已测量，直接推）
+		scroll.scroll_vertical = 0
+		await get_tree().process_frame
+		safety = scroll_safety_max
+		while safety > 0:
+			safety -= 1
+			var vbar := scroll.get_v_scroll_bar()
+			var cur_max: float = vbar.max_value if vbar != null else 0.0
+			if cur_max <= 0:
+				break
+			if scroll.scroll_vertical >= cur_max - 2.0:
+				break
+			var target := int(min(scroll.scroll_vertical + vp_h, cur_max))
+			scroll.scroll_vertical = target
+			await get_tree().process_frame
 
 	scroll.scroll_vertical = 99999
 
