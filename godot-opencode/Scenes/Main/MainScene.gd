@@ -429,8 +429,6 @@ func _process(delta: float) -> void:
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
-			# 布局完成后（本帧末尾）重新渲染可见行，此时 label 已有正确宽度
-			call_deferred("_update_visible_rows", scroll.scroll_vertical)
 
 
 func _bootstrap() -> void:
@@ -532,6 +530,8 @@ func _load_session_messages(sid: String) -> void:
 	_set_status("渲染 " + str(messages.size()) + " 条消息...")
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
+	# ⭐ 等一帧——布局完成后 label 宽度正确，BBCode 几何初始化直接使用正确宽度
+	await get_tree().process_frame
 	_update_visible_rows(0)
 
 	# 同步实测所有行的高度（利用池节点循环遍历，BBCode 在此过程中被缓存）
