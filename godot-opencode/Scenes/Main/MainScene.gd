@@ -474,8 +474,8 @@ func _load_session_messages(sid: String) -> void:
 	_update_visible_rows(scroll.scroll_vertical)
 
 	_set_status(str(_row_data.size()) + " 条消息")
+	await _push_scroll_bottom_deferred()
 	_hide_loading()
-	_push_scroll_bottom_deferred()
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
@@ -1205,17 +1205,16 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 采样式测量：每 N 行取一个样本实测高度，修正总高后直接推到底
+	## 采样矫正行高 → 迭代推到底
 	if _row_data.is_empty():
 		return
 	if _row_data.size() <= 1:
 		scroll.scroll_vertical = 99999
 		return
 
-	# 采样率：最多测 30 行，均匀分布在全部数据中
+	# — Ⅰ 采样：均匀取 ~30 行，实测高度 —
 	var n := _row_data.size()
 	var sample_step := maxi(1, n / 30)
-	var measured := 0
 	for i in range(0, n, sample_step):
 		if _row_assignments.has(i):
 			continue
@@ -1224,31 +1223,41 @@ func _push_scroll_bottom_deferred() -> void:
 		var node: Control = _free_nodes.pop_back()
 		_row_assignments[i] = node
 		_prepare_row_node(node, _row_data[i], i)
-		node.visible = true  # ★ 测量前必须可见，否则 Container 返回 0
-		var h: float = node.get_combined_minimum_size().y
+		node.visible = true
+		var actual_h: float = node.get_combined_minimum_size().y
 		node.visible = false
-		if h > 0 and abs(h - _row_heights[i]) > 2.0:
-			_row_heights[i] = h
-			measured += 1
+		if actual_h > 0 and abs(actual_h - _row_heights[i]) > 2.0:
+			_row_heights[i] = actual_h
 		_free_nodes.append(node)
 		_row_assignments.erase(i)
 
-	if measured == 0:
-		# 所有行都被渲染过（或没可用池节点），估算为准
-		scroll.scroll_vertical = 99999
-		return
-
-	# 用修正后的 _row_heights 重新计算总高和偏移
-	var total_h: float = 0.0
-	for h in _row_heights:
-		total_h += h
-	virtual_content.custom_minimum_size.y = total_h
+	# 重算总高与偏移（混合了实测+估算）
 	var cursor: float = 0.0
 	for j in _row_heights.size():
 		_y_offsets[j] = cursor
 		cursor += _row_heights[j]
+	virtual_content.custom_minimum_size.y = cursor
 
-	# 推到底
+	# — Ⅱ 迭代滚动：while + max_value 安全锁 —
+	var vp_h: float = maxf(scroll.size.y, 100)
+	var step: float = vp_h * 0.66
+	var max_iter: int = ceili(virtual_content.custom_minimum_size.y / maxf(step, 1)) * 2
+	scroll.scroll_vertical = 0
+	await get_tree().process_frame
+
+	var iter: int = 0
+	while iter < max_iter:
+		iter += 1
+		var vbar := scroll.get_v_scroll_bar()
+		if vbar == null or vbar.max_value <= 0:
+			break
+		var cur: float = scroll.scroll_vertical
+		var max_v: float = vbar.max_value
+		if cur >= max_v - 2.0:
+			break
+		scroll.scroll_vertical = int(cur + step)
+		await get_tree().process_frame
+
 	scroll.scroll_vertical = 99999
 
 
