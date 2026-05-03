@@ -523,11 +523,12 @@ func _load_session_messages(sid: String) -> void:
 	# 同步实测所有行的高度（利用池节点循环遍历，BBCode 在此过程中被缓存）
 	_measure_all_heights_sync()
 
-	# 实测后重算总高，滚动到底（最新消息在底部）
+	# 实测后重算总高，标记滚动到底（_process 在 Layout Pass 后执行）
 	var total_y: float = _y_offsets.back() + _row_heights.back() if not _row_heights.is_empty() else 0.0
 	virtual_content.custom_minimum_size.y = total_y
 	_update_visible_rows(0)
-	scroll.scroll_vertical = int(total_y)
+	if not _scroll_pending:
+		_scroll_pending = true
 
 	_set_status(str(_row_data.size()) + " 条消息")
 
@@ -1160,7 +1161,6 @@ func _set_status(text: String) -> void:
 
 
 func _scroll_to_newest() -> void:
-	## 滚动到最新消息（正常顺序：最新在末尾，scroll=最大值到底）
-	var bar := scroll.get_v_scroll_bar()
-	if bar != null and bar.max_value > 0:
-		scroll.scroll_vertical = int(bar.max_value)
+	## 标记滚动到底（_process 在 Layout Pass 后检测 max_value 就绪再执行）
+	if not _scroll_pending:
+		_scroll_pending = true
