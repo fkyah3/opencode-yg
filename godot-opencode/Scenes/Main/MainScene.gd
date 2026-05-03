@@ -552,7 +552,7 @@ func _render_message(msg: Variant) -> void:
 			
 			text_parts.append(tline)
 			
-			# 工具完成时附加内容预览
+			# 工具完成时附加内容预览（包在代码围栏内，保留原始 Markdown 格式）
 			if stype == "completed" or stype == "error":
 				var preview := ""
 				if stype == "error":
@@ -568,7 +568,7 @@ func _render_message(msg: Variant) -> void:
 						preview += "..."
 				
 				if not preview.is_empty():
-					text_parts.append(preview)
+					text_parts.append("```\n" + preview + "\n```")
 
 	# ── 消息容器（VBox，包含名称 + 气泡） ──
 	var msg_vbox := VBoxContainer.new()
