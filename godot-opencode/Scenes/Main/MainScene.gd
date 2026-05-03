@@ -376,15 +376,11 @@ func _process(delta: float) -> void:
 
 func _bootstrap() -> void:
 	print("→ _bootstrap")
-	# 创建加载覆盖面板
-	_ensure_loading_overlay()
-	_show_loading("连接服务器...")
 	_set_status("连接服务器...")
 
 	var ok := await _api.health_check()
 	if not ok:
 		_set_status("❌ 服务器不可用 (点 [连接] 按钮修改地址重试)")
-		_show_loading("服务器不可用 (点 [连接] 按钮重试)")
 		return
 
 	_set_status("获取会话列表...")
@@ -465,25 +461,22 @@ func _load_session_messages(sid: String) -> void:
 	_streaming_label = null
 	_current_session_id = sid
 	_clear_messages()
-	_show_loading("加载消息...")
 	_set_status("加载消息...")
 
 	var messages = await _api.get_messages(sid, 300)
 	if messages.is_empty():
 		_set_status("(无消息)")
-		_hide_loading()
 		return
 
 	# 数据准备
 	_row_data = messages
-	_show_loading("渲染 " + str(messages.size()) + " 条消息...")
+	_set_status("渲染 " + str(messages.size()) + " 条消息...")
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
 	_update_visible_rows(scroll.scroll_vertical)
 
 	_set_status(str(_row_data.size()) + " 条消息")
 	await _push_scroll_bottom_deferred()
-	_hide_loading()
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
@@ -988,7 +981,6 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			_on_question_asked(properties)
 
 		"server.connected":
-			_hide_loading()
 			_set_status("服务器已连接")
 
 		"server.heartbeat":
@@ -1163,49 +1155,6 @@ func _set_status(text: String) -> void:
 
 # ── 加载覆盖面板 ──
 
-var _loading_overlay: Control = null
-
-func _ensure_loading_overlay() -> void:
-	## 创建/获取加载覆盖面板（覆盖整个消息区，在 scroll 之上）
-	if _loading_overlay != null:
-		return
-	
-	# 用 CanvasLayer 确保覆盖在 scroll 之上且不受布局影响
-	var layer := CanvasLayer.new()
-	layer.layer = 50  # 高于普通控件
-	
-	var panel := Panel.new()
-	panel.name = "LoadingPanel"
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var pstyle := StyleBoxFlat.new()
-	pstyle.bg_color = Color(0, 0, 0, 0.85)
-	panel.add_theme_stylebox_override("panel", pstyle)
-	
-	var lbl := Label.new()
-	lbl.name = "LoadingLabel"
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font_size", 20)
-	lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1))
-	panel.add_child(lbl)
-	
-	layer.add_child(panel)
-	# 挂在 scroll 的父节点（ChatArea）上，覆盖消息区域
-	scroll.get_parent().add_child(layer)
-	_loading_overlay = panel
-	_loading_overlay.hide()
-
-func _show_loading(text: String) -> void:
-	_ensure_loading_overlay()
-	var lbl := _loading_overlay.get_node("LoadingLabel") as Label
-	if lbl != null:
-		lbl.text = text
-	_loading_overlay.show()
-
-func _hide_loading() -> void:
-	if _loading_overlay != null:
-		_loading_overlay.hide()
 
 
 func _scroll_to_bottom() -> void:
