@@ -51,12 +51,12 @@ var _sse: SSEClient
 
 # ── 会话状态 ──
 var _current_session_id: String = ""
-var _streaming_text: String = ""
-var _streaming_label: RichTextLabel
-var _streaming_thinking_text: String = ""  # 思考内容
-var _streaming_thinking_label: RichTextLabel  # 思考标签
-var _streaming_bubble: PanelContainer  # 流式气泡容器（用于插入思考区域）
 var _cached_sessions: Array = []  # 缓存的会话列表，避免重复 HTTP 请求
+
+# ── 流式渲染（按 Part 渲染，不全局累积） ──
+var _streaming_root: VBoxContainer  # 流式消息的根容器（含名称标签）
+var _streaming_parts: Dictionary = {}  # partID → {type, text, widget, container}
+var _streaming_part_order: Array[String] = []  # 有序 partID 列表
 
 # ── Agent/模型信息 ──
 var _primary_agent_name: String = "-"
@@ -324,6 +324,7 @@ func _launch_headless_server() -> void:
 
 
 var _pending_refresh: bool = false  # 由 _process 处理的异步刷新请求
+var _refresh_coroutine: Variant = null  # 持有协程引用，防止 GC
 
 
 func _process(delta: float) -> void:
@@ -338,7 +339,7 @@ func _process(delta: float) -> void:
 	# 延迟异步刷新（避让信号处理器中的 await GC 陷阱）
 	if _pending_refresh:
 		_pending_refresh = false
-		_refresh_messages()
+		_refresh_coroutine = _refresh_messages()
 
 
 func _bootstrap() -> void:
@@ -417,7 +418,7 @@ func _refresh_sessions() -> void:
 
 func _open_session(sid: String) -> void:
 	## 打开会话，一次加载最多 MAX_CACHE 条，分页渲染
-	_streaming_label = null
+	_finalize_streaming()  # 清理仍在运行的流式状态
 
 	_current_session_id = sid
 	_clear_messages()
@@ -683,44 +684,40 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			var sid: String = properties.get("sessionID", "")
 			if sid != _current_session_id:
 				return
+			var part_id: String = properties.get("partID", "")
 			var field: String = properties.get("field", "")
 			var delta: String = properties.get("delta", "")
-
-			# 思考内容单独处理
-			if field == "reasoning":
-				if _streaming_thinking_label:
-					_streaming_thinking_text += delta
-					_streaming_thinking_label.visible = true
-					# 父级 panel 同步可见
-					var parent := _streaming_thinking_label.get_parent()
-					if parent is PanelContainer:
-						parent.visible = true
-					# 用 BBCode 渲染思考文字（灰色 + "思考：" 前缀）
-					var col_html := color_text_dim.to_html(false)
-					_streaming_thinking_label.clear()
-					_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + _streaming_thinking_text + "[/color]")
-					_scroll_to_bottom()
+			
+			if part_id.is_empty() or field.is_empty():
 				return
-
-			if field != "text":
-				return
-
-			if _streaming_label:
-				_streaming_text += delta
-				_streaming_label.text = _streaming_text
-				_scroll_to_bottom()
-			# Token 速率追踪
-			_rate_tokens += delta.length()
-			if _rate_time < 0.001:
-				_rate_time = 0.001
-				_rate_tokens = 0
-			else:
-				_rate_time += 0.1  # 粗略估算
+			
+			# 首次遇到 partID → 创建部件
+			if not _streaming_parts.has(part_id):
+				_create_streaming_part(part_id, field, _streaming_root)
+			
+			var part: Dictionary = _streaming_parts[part_id]
+			part.text += delta
+			
+			# 更新对应部件的文本
+			match part.type:
+				"reasoning":
+					var col := color_text_dim.to_html(false)
+					part.widget.clear()
+					part.widget.append_text("[color=#" + col + "]思考：" + part.text + "[/color]")
+					part.widget.visible = true
+					if part.container is PanelContainer:
+						part.container.visible = true
+				"text":
+					part.widget.text = part.text
+				"tool":
+					part.widget.text = "🛠 " + part.text
+				
+			_scroll_to_bottom()
 
 		"message.updated":
 			# SSE 通知有新消息完成时，刷新当前会话的消息列表
 			var sid: String = properties.get("sessionID", "")
-			if sid == _current_session_id and not _streaming_label:
+			if sid == _current_session_id and _streaming_parts.size() == 0:
 				# 非流式场景下刷新消息列表
 				_refresh_messages()
 
@@ -794,15 +791,14 @@ func _on_question_rejected(request_id: String) -> void:
 
 
 func _create_streaming_widget() -> VBoxContainer:
-	## 创建流式响应的容器结构（名称 + 思考文本 + 气泡文本区）
-	# 重置流式状态
-	_streaming_text = ""
-	_streaming_thinking_text = ""
-
+	## 创建流式消息的根容器。SSE PartDelta 到达时动态追加子部件。
+	_streaming_parts.clear()
+	_streaming_part_order.clear()
+	
 	var msg_vbox := VBoxContainer.new()
 	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	msg_vbox.add_theme_constant_override("separation", 2)
-
+	
 	# 名称标签
 	var name_label := RichTextLabel.new()
 	name_label.bbcode_enabled = true
@@ -812,106 +808,130 @@ func _create_streaming_widget() -> VBoxContainer:
 	name_label.add_theme_color_override("default_color", color_text_name)
 	name_label.append_text("AI")
 	msg_vbox.add_child(name_label)
-
-	# 思考标签区域（包在带左边条的容器内，与回复气泡视觉区分）
-	_streaming_thinking_label = RichTextLabel.new()
-	_streaming_thinking_label.bbcode_enabled = true
-	_streaming_thinking_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_streaming_thinking_label.fit_content = true
-	_streaming_thinking_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_streaming_thinking_label.add_theme_font_size_override("normal_font_size", font_size_base - 1)
-	_streaming_thinking_label.add_theme_color_override("default_color", color_text_dim)
-	_streaming_thinking_label.append_text("")
-	_streaming_thinking_label.visible = false
-
-	# 用半透明 PanelContainer 包裹 thinking，左边条 + 透明背景
-	var think_panel := PanelContainer.new()
-	think_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var think_style := StyleBoxFlat.new()
-	think_style.bg_color = Color(0.37, 0.37, 0.37, 0.07)  # 极淡灰底
-	think_style.border_width_left = 2
-	think_style.border_color = Color(0.37, 0.37, 0.37, 0.35)  # 深灰左边条
-	think_style.content_margin_left = 8
-	think_style.content_margin_right = 4
-	think_style.content_margin_top = 2
-	think_style.content_margin_bottom = 2
-	think_panel.add_theme_stylebox_override("panel", think_style)
-	think_panel.add_child(_streaming_thinking_label)
-	msg_vbox.add_child(think_panel)
-
-	# 主文本气泡
-	var bubble := PanelContainer.new()
-	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var style := StyleBoxFlat.new()
-	style.bg_color = bubble_ai_bg
-	style.border_width_left = 3
-	style.border_color = bubble_ai_border
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_top_right = 6
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
-	bubble.add_theme_stylebox_override("panel", style)
-
-	_streaming_label = RichTextLabel.new()
-	_streaming_label.bbcode_enabled = true
-	_streaming_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_streaming_label.fit_content = true
-	_streaming_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_streaming_label.add_theme_font_size_override("normal_font_size", font_size_base)
-	_streaming_label.add_theme_color_override("default_color", color_text)
-
-	_streaming_bubble = bubble
-	bubble.add_child(_streaming_label)
-	msg_vbox.add_child(bubble)
-
+	
+	_streaming_root = msg_vbox
 	msg_list.add_child(msg_vbox)
 	_scroll_to_bottom()
 	return msg_vbox
 
 
+func _create_streaming_part(part_id: String, field: String, parent: VBoxContainer) -> void:
+	## 按 field 类型创建流式部件并加入 parent 末尾。
+	## reasoning → 带左边条的半透明面板
+	## text     → AI 气泡
+	## tool     → 单行工具名称
+	var type: String = field
+	var container: Control
+	var widget: RichTextLabel
+	
+	match type:
+		"reasoning":
+			var panel := PanelContainer.new()
+			panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			panel.visible = false
+			var pstyle := StyleBoxFlat.new()
+			pstyle.bg_color = Color(0.37, 0.37, 0.37, 0.07)
+			pstyle.border_width_left = 2
+			pstyle.border_color = Color(0.37, 0.37, 0.37, 0.35)
+			pstyle.content_margin_left = 8
+			pstyle.content_margin_right = 4
+			pstyle.content_margin_top = 2
+			pstyle.content_margin_bottom = 2
+			panel.add_theme_stylebox_override("panel", pstyle)
+			
+			widget = RichTextLabel.new()
+			widget.bbcode_enabled = true
+			widget.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			widget.fit_content = true
+			widget.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			widget.add_theme_font_size_override("normal_font_size", font_size_base - 1)
+			widget.add_theme_color_override("default_color", color_text_dim)
+			
+			panel.add_child(widget)
+			container = panel
+		
+		"text":
+			var bubble := PanelContainer.new()
+			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var bstyle := StyleBoxFlat.new()
+			bstyle.bg_color = Color(0.07, 0.07, 0.07, 1)
+			bstyle.border_width_left = 3
+			bstyle.border_color = Color(0.75, 0.75, 0.75, 0.35)
+			bstyle.corner_radius_bottom_right = 6
+			bstyle.corner_radius_top_right = 6
+			bstyle.content_margin_left = 10
+			bstyle.content_margin_right = 10
+			bstyle.content_margin_top = 6
+			bstyle.content_margin_bottom = 6
+			bubble.add_theme_stylebox_override("panel", bstyle)
+			
+			widget = RichTextLabel.new()
+			widget.bbcode_enabled = true
+			widget.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			widget.fit_content = true
+			widget.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			widget.add_theme_font_size_override("normal_font_size", font_size_base)
+			widget.add_theme_color_override("default_color", color_text)
+			
+			bubble.add_child(widget)
+			container = bubble
+		
+		_:
+			# tool 及其它类型：简单 RichTextLabel 行
+			widget = RichTextLabel.new()
+			widget.bbcode_enabled = true
+			widget.fit_content = true
+			widget.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			widget.add_theme_font_size_override("normal_font_size", font_size_base)
+			widget.add_theme_color_override("default_color", color_text)
+			container = widget
+	
+	parent.add_child(container)
+	
+	_streaming_parts[part_id] = {
+		type = type,
+		text = "",
+		widget = widget,
+		container = container,
+	}
+	_streaming_part_order.append(part_id)
+
+
 func _finalize_streaming() -> void:
-	_streaming_label = null
-	_streaming_thinking_label = null
+	## 流式完成后清理流式状态
+	_streaming_root = null
+	_streaming_parts.clear()
+	_streaming_part_order.clear()
 	_scroll_to_bottom()
 
 
 func _finalize_streaming_content() -> void:
-	## 流式完成后，将流式标签就地替换为 MarkdownLabel（不依赖异步刷新）
-	var final_text := _streaming_text
-	var final_thinking := _streaming_thinking_text
-	
-	# ── 气泡 text 标签替换 ──
-	if is_instance_valid(_streaming_bubble):
-		var inner := _streaming_bubble.get_child(0) if _streaming_bubble.get_child_count() > 0 else null
-		if inner is RichTextLabel:
-			var md := MarkdownLabel.new()
-			md.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			md.fit_content = true
-			md.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			md.add_theme_font_size_override("normal_font_size", font_size_base)
-			md.add_theme_font_size_override("bold_font_size", font_size_base)
-			md.add_theme_color_override("default_color", color_text)
-			md.text = final_text
-			_streaming_bubble.remove_child(inner)
-			inner.queue_free()
-			_streaming_bubble.add_child(md)
-	
-	# ── thinking 标签替换 ──
-	if is_instance_valid(_streaming_thinking_label) and not final_thinking.is_empty():
-		var pp := _streaming_thinking_label.get_parent()
-		if pp is PanelContainer:
-			var md := MarkdownLabel.new()
-			md.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			md.fit_content = true
-			md.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			md.add_theme_font_size_override("normal_font_size", font_size_base - 1)
-			md.add_theme_color_override("default_color", color_text_dim)
-			md.text = "思考：" + final_thinking
-			pp.remove_child(_streaming_thinking_label)
-			_streaming_thinking_label.queue_free()
-			pp.add_child(md)
+	## 流式完成后，将 text 类型的 RichTextLabel 替换为 MarkdownLabel
+	for part_id in _streaming_parts:
+		var part: Dictionary = _streaming_parts[part_id]
+		if part.type != "text":
+			continue
+		
+		var old_label: RichTextLabel = part.widget
+		var parent: Control = part.container
+		
+		var md := MarkdownLabel.new()
+		md.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		md.fit_content = true
+		md.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		md.add_theme_font_size_override("normal_font_size", font_size_base)
+		md.add_theme_font_size_override("bold_font_size", font_size_base)
+		md.add_theme_color_override("default_color", color_text)
+		md.text = part.text
+		
+		# 替换气泡内标签
+		if parent is PanelContainer and old_label in parent.get_children():
+			parent.remove_child(old_label)
+			old_label.queue_free()
+			parent.add_child(md)
+		else:
+			# 兜底：直接替换父节点
+			parent.visible = false
 	
 	_scroll_to_bottom()
 
