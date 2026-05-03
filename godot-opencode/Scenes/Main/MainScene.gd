@@ -429,6 +429,8 @@ func _process(delta: float) -> void:
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
+			# 布局完成后（本帧末尾）重新渲染可见行，此时 label 已有正确宽度
+			call_deferred("_update_visible_rows", scroll.scroll_vertical)
 
 
 func _bootstrap() -> void:
@@ -789,6 +791,7 @@ func _build_message_row() -> Control:
 	var text_label := RichTextLabel.new()
 	text_label.bbcode_enabled = true
 	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text_label.fit_content = true
 	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base)
