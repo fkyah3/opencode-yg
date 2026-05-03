@@ -15,7 +15,6 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 	var hc := config.heading_color.to_html(false)
 	var bc := config.bold_color.to_html(false)
 	var cc := config.code_color.to_html(false)
-	var cbg := "#1e1e1e"  # 代码块背景色（深灰）
 	
 	var lines := text.split("\n")
 	var result := PackedStringArray()
@@ -34,9 +33,9 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 				in_code_block = true
 				continue
 		
-		if in_code_block:
-			result.append("[color=#%s][bgcolor=%s]" % [cc, cbg] + _escape_bbcode(line) + "[/bgcolor][/color]")
-			continue
+	if in_code_block:
+		result.append("[color=#%s]    %s[/color]" % [cc, _escape_bbcode(line)])
+		continue
 		
 		# ── 标题 # ──
 		if trimmed.begins_with("#") and trimmed.length() > 1 and trimmed[1] in [" ", "#"]:
@@ -51,7 +50,7 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 		
 		# ── 行内代码 `code` ──
 		var inline_re := RegEx.create_from_string("`([^`]+)`")
-		line = inline_re.sub(line, "[color=#%s][bgcolor=#1e1e1e]$1[/bgcolor][/color]" % cc, true)
+		line = inline_re.sub(line, "[color=#%s]$1[/color]" % cc, true)
 		
 		# ── 粗体 **text** ──
 		var bold_re := RegEx.create_from_string("\\*\\*(.+?)\\*\\*")
