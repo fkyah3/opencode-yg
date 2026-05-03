@@ -733,12 +733,18 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 			var state: Dictionary = p.get("state", {})
 			var status: String = state.get("status", "")
 			var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
-			var preview := ""
-			var content: String = state.get("input", {}).get("content", "")
-			if not content.is_empty():
-				# 内容预览用 fenced code block 包裹，_convert_markdown 会转成 [code]
-				preview = "\n```\n" + content.left(300) + "\n```"
-			text_parts.append("**" + icon + " " + tool_name + "**" + preview)
+			# 工具行标题: 工具名 + 文件路径（如果有）
+			var ttitle: String = state.get("title", "")
+			var fpath: String = state.get("input", {}).get("filePath", "")
+			var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
+			text_parts.append("**" + icon + " " + tname.trim_suffix(".md") + "**")
+			# 工具输入内容预览（write 工具的故事/bug 报告等）
+			var raw: String = state.get("input", {}).get("content", "")
+			var out: String = state.get("output", "")
+			if not raw.is_empty():
+				text_parts.append("\n```\n" + raw.left(1500) + "\n```")
+			elif not out.is_empty():
+				text_parts.append("\n```\n" + out.left(1500) + "\n```")
 
 	# ── 更新思考标签 ──
 	if not thinking_text.is_empty():
