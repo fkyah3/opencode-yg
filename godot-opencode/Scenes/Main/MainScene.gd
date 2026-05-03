@@ -262,8 +262,19 @@ func _on_input_text_changed() -> void:
 
 
 func _send_message_direct(text: String) -> void:
-	if msg_input.text.is_empty() or _current_session_id.is_empty():
+	if text.is_empty():
 		return
+
+	# 自动创建会话
+	if _current_session_id.is_empty():
+		var title := text.substr(0, min(text.length(), 30))
+		var created := await _api.create_session(title)
+		var sid: String = created.get("id", "")
+		if sid.is_empty():
+			_set_status("创建会话失败")
+			return
+		_current_session_id = sid
+
 	msg_input.text = ""
 	_set_status("执行命令...")
 
@@ -711,8 +722,19 @@ func _on_scroll_resized() -> void:
 
 func _on_send_pressed() -> void:
 	var text := msg_input.text.strip_edges()
-	if text.is_empty() or _current_session_id.is_empty():
+	if text.is_empty():
 		return
+
+	# 自动创建会话
+	if _current_session_id.is_empty():
+		var title := text.substr(0, min(text.length(), 30))
+		var created := await _api.create_session(title)
+		var sid: String = created.get("id", "")
+		if sid.is_empty():
+			_set_status("创建会话失败")
+			msg_input.text = text
+			return
+		_current_session_id = sid
 
 	msg_input.text = ""
 	_set_status("发送中...")
@@ -780,6 +802,23 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 				_rate_tokens = 0
 			else:
 				_rate_time += 0.1  # 粗略估算
+
+		"sync":
+			# SyncEvent: 工具调用状态更新（PartUpdated）
+			var sync_data: Dictionary = properties.get("syncEvent", {})
+			var sync_type: String = sync_data.get("type", "")
+			if sync_type == "message.part.updated":
+				var data: Dictionary = sync_data.get("data", {})
+				var part: Dictionary = data.get("part", {})
+				var part_type: String = part.get("type", "")
+				if part_type == "tool" and _streaming_label != null:
+					var tool_name: String = part.get("tool", "?")
+					var state: Dictionary = part.get("state", {})
+					var status: String = state.get("status", "running")
+					var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
+					_streaming_text += "\n**" + icon + " " + tool_name + "**"
+					_streaming_label.text = _streaming_text
+					_scroll_to_bottom()
 
 		"message.updated":
 			# SSE 通知有新消息完成时，刷新当前会话的消息列表
