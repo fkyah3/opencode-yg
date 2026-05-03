@@ -81,8 +81,6 @@ var _overscan: int = 4                       # 可见区域外的缓冲行数
 # ── 滚动防抖 ──
 var _scroll_timer: float = 0.0
 var _scroll_pending: bool = false
-var _pending_scroll_bottom: bool = false  # 布局稳定后推到底
-var _scroll_bottom_remaining: int = 0     # 还差几次推动
 
 # ── 权限 / 问题对话框 ──
 var _permission_dialog: PermissionDialog
@@ -377,7 +375,8 @@ func _bootstrap() -> void:
 
 	var ok := await _api.health_check()
 	if not ok:
-		_set_status("❌ 服务器不可用")
+		_set_status("❌ 服务器不可用 (点 [连接] 按钮修改地址重试)")
+		_show_loading("服务器不可用 (点 [连接] 按钮重试)")
 		return
 
 	_set_status("获取会话列表...")
@@ -476,10 +475,8 @@ func _load_session_messages(sid: String) -> void:
 
 	_set_status(str(_row_data.size()) + " 条消息")
 	_hide_loading()
-	# 标记首次加载需滚动到底部，标记生效倒计 5 次 resize
-	_pending_scroll_bottom = true
-	_scroll_bottom_remaining = 5
-	_on_scroll_resized()
+	# 等布局链稳定，推到底
+	await _push_scroll_bottom_deferred()
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
@@ -805,10 +802,6 @@ func _on_scroll_resized() -> void:
 	# 更新流式节点的宽度
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.size.x = virtual_content.size.x
-	# 首次加载时持续推到底部，resize 链稳定后（~5 次）自动停
-	if _scroll_bottom_remaining > 0:
-		scroll.scroll_vertical = 99999
-		_scroll_bottom_remaining -= 1
 
 
 # ── 连接对话框 ──
@@ -1201,6 +1194,13 @@ func _hide_loading() -> void:
 
 func _scroll_to_bottom() -> void:
 	_scroll_pending = true
+
+
+func _push_scroll_bottom_deferred() -> void:
+	## 等布局链稳定，推到底部 8 次（每帧一次）
+	for _i in range(8):
+		scroll.scroll_vertical = 99999
+		await get_tree().process_frame
 
 
 func _do_scroll_to_bottom() -> void:
