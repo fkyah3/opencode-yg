@@ -79,10 +79,12 @@ var _free_nodes: Array[Control] = []         # 空闲池节点（自由列表，
 var _overscan: int = 4                       # 可见区域外的缓冲行数
 
 # ── 滚动到底参数（导出到 Inspector 方便调试） ──
+@export_group("滚动到底参数")
 @export var scroll_sample_count: int = 20    # 采样行数
 @export var scroll_stable_frames: int = 3    # max_value 稳定判定帧数
 @export var scroll_safety_max: int = 60      # 推底循环安全锁上限
 @export var scroll_step_ratio: float = 1.0   # 每帧推的视口倍数（1.0=100%）
+@export_group("")
 
 # ── 滚动防抖 ──
 var _scroll_timer: float = 0.0
