@@ -1205,22 +1205,27 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 分批渲染所有行以实测高度 → 最后推到底
+	## 迭代滚动：从顶一次推一段，直到 scroll 无法再推（已到真底）
 	if _row_data.size() <= 1:
 		scroll.scroll_vertical = 99999
 		return
 
 	var vp_h: float = maxf(scroll.size.y, 100)
-	var y_back: float = _y_offsets.back() if not _y_offsets.is_empty() else 0.0
-	var h_back: float = _row_heights.back() if not _row_heights.is_empty() else 0.0
-	var total_h: float = vp_h if (y_back <= 0 and h_back <= 0) else y_back + h_back
+	var step: float = vp_h * 0.66  # 每次推 2/3 视口高度，避免跳过行的测量
 	scroll.scroll_vertical = 0
 	await get_tree().process_frame
-	# 从顶开始按视口高度分段滚动，每段渲染并测量一批行的高度
-	for y in range(int(vp_h), int(total_h), int(vp_h)):
-		scroll.scroll_vertical = y
+
+	while true:
+		var vbar := scroll.get_v_scroll_bar()
+		if vbar == null or vbar.max_value <= 0:
+			break
+		var cur: float = scroll.scroll_vertical
+		var max_v: float = vbar.max_value
+		if cur >= max_v - 2.0:
+			break  # 已到真底
+		scroll.scroll_vertical = int(cur + step)
 		await get_tree().process_frame
-	# 所有行已测量完毕 → 推到真底
+	# 最后再推一次确保到底（高度在实测中逐渐趋准）
 	scroll.scroll_vertical = 99999
 
 
