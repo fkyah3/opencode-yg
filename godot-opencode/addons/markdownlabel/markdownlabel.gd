@@ -55,6 +55,12 @@ signal task_checkbox_clicked(id: int, line: int, checked: bool, task_string: Str
 ## Formatting options for level-6 headers
 @export var h6 := H6Format.new() : set = _set_h6_format
 
+@export_group("Element colors")
+## Custom color for bold (**text**) and italic (*text*) formatting. If null, uses default text color.
+@export var bold_color: Color = Color("#FF9500")
+## Custom color for inline code (`code`) and fenced code blocks (```...```). If null, uses default text color.
+@export var code_color: Color = Color("#4CD964")
+
 @export_group("Task lists")
 ## Whether task list checkboxes are clickable or not.
 @export var enable_checkbox_clicks := true :
@@ -304,12 +310,12 @@ func _convert_markdown(source_text: String = "") -> String:
 				if _count_fence_chars(line, "`") >= current_code_block_char_count:
 					_converted_text = _converted_text.trim_suffix("\n")
 					_current_paragraph -= 1
-					_converted_text += "[/code]"
+					_converted_text += "[/code][/color]"
 					within_backtick_block = false
 					_debug("... closing backtick block")
 					continue
 			else:
-				_converted_text += "[code]"
+				_converted_text += "[color=#%s][code]" % code_color.to_html()
 				within_backtick_block = true
 				current_code_block_char_count = _count_fence_chars(line, "`")
 				_debug("... opening backtick block")
@@ -319,12 +325,12 @@ func _convert_markdown(source_text: String = "") -> String:
 				if _count_fence_chars(line, "~") >= current_code_block_char_count:
 					_converted_text = _converted_text.trim_suffix("\n")
 					_current_paragraph -= 1
-					_converted_text += "[/code]"
+					_converted_text += "[/code][/color]"
 					within_tilde_block = false
 					_debug("... closing tilde block")
 					continue
 			else:
-				_converted_text += "[code]"
+				_converted_text += "[color=#%s][code]" % code_color.to_html()
 				within_tilde_block = true
 				current_code_block_char_count = _count_fence_chars(line, "~")
 				_debug("... opening tilde block")
@@ -516,7 +522,7 @@ func _process_inline_code_syntax(line: String) -> String:
 		var unescaped_content := _reset_escaped_chars(result.get_string(2), true)
 		unescaped_content = _escape_bbcode(unescaped_content)
 		unescaped_content = _escape_chars(unescaped_content)
-		processed_line = processed_line.erase(_start, _end - _start).insert(_start, "[code]%s[/code]" % unescaped_content)
+		processed_line = processed_line.erase(_start, _end - _start).insert(_start, "[color=#%s][code]%s[/code][/color]" % [code_color.to_html(), unescaped_content])
 		_debug("... in-line code: " + unescaped_content)
 	return processed_line
 
@@ -623,17 +629,17 @@ func _process_link_syntax(line: String) -> String:
 
 func _process_text_formatting_syntax(line: String) -> String:
 	var processed_line := line
-	# Bold text
+	# Bold text — 包颜色标签
 	var regex := RegEx.create_from_string("(\\*\\*|\\_\\_)(.+?)\\1")
 	while true:
 		var result := regex.search(processed_line)
 		if not result:
 			break
-		var _start := result.get_start()
-		var _end := result.get_end()
-		processed_line = processed_line.erase(_start, 2).insert(_start, "[b]")
-		processed_line = processed_line.erase(_end - 1, 2).insert(_end - 1, "[/b]")
-		_debug("... bold text: "+result.get_string(2))
+		var content := result.get_string(2)
+		var before := processed_line.left(result.get_start())
+		var after := processed_line.right(result.get_end())
+		processed_line = before + "[color=#%s][b]%s[/b][/color]" % [bold_color.to_html(), content] + after
+		_debug("... bold text: "+content)
 	
 	# Italic text
 	while true:

@@ -656,7 +656,8 @@ func _render_message(msg: Variant) -> void:
 
 
 func _make_msg_label() -> MarkdownLabel:
-	## 统一创建消息文本标签（调小字号、轻色），使用 MarkdownLabel 渲染 Markdown 内容
+	## 统一创建消息文本标签，使用 MarkdownLabel 渲染 Markdown 内容
+	## 配色方案：标题→紫 #C77DFF，加粗→橙（依赖 theme 默认），代码→绿（依赖 mono 字体）
 	var label := MarkdownLabel.new()
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.fit_content = true
@@ -664,6 +665,17 @@ func _make_msg_label() -> MarkdownLabel:
 	label.add_theme_font_size_override("normal_font_size", font_size_base)
 	label.add_theme_font_size_override("bold_font_size", font_size_base)
 	label.add_theme_color_override("default_color", color_text)
+	
+	# 标题颜色：紫色 — 重新赋值触发 header format 的 queue_update
+	var heading_color := Color("#C77DFF")
+	for level in [1, 2, 3, 4, 5, 6]:
+		var h: Resource = label.get("h" + str(level))
+		if h:
+			h.override_font_color = true
+			h.font_color = heading_color
+			# 重新设回去触发 MarkdownLabel 的 h_setter → queue_update
+			label.set("h" + str(level), h)
+	
 	return label
 
 
