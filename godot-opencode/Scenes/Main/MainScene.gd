@@ -24,8 +24,74 @@ class_name MainScene
 # ═══════════════════ 导出变量（可在 Inspector 中调整） ═══════════════════
 @export var theme_config: ThemeConfig
 
-# ── 子模块（注入 ThemeConfig 后初始化，顺序：theme_config → PartRenderer） ──
+# ── 子模块（注入 ThemeConfig 后初始化，顺序：theme_config → PartRenderer → SSEHandler） ──
 @onready var part_renderer: PartRenderer = PartRenderer.new(theme_config)
+@onready var sse_handler: SSEHandler = _create_sse_handler()
+
+
+func _create_sse_handler() -> SSEHandler:
+	var h := SSEHandler.new()
+	h.on_part_delta = func(sid: String, _part_id: String, field: String, delta: String) -> void:
+		if sid != _current_session_id:
+			return
+		if field == "reasoning":
+			if _streaming_thinking_label == null:
+				return
+			_streaming_thinking_text += delta
+			_streaming_thinking_label.visible = true
+			var col_html := theme_config.color_text_dim.to_html(false)
+			var escaped := _streaming_thinking_text.replace("[", "[lb]")
+			_streaming_thinking_label.clear()
+			_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + escaped + "[/color]")
+			_scroll_to_newest()
+		elif field == "text":
+			if _streaming_label == null:
+				return
+			_streaming_text += delta
+			_streaming_label.text = _streaming_text
+			_scroll_to_newest()
+			# Token 速率追踪
+			_rate_tokens += delta.length()
+			if _rate_time < 0.001:
+				_rate_time = 0.001
+				_rate_tokens = 0
+			else:
+				_rate_time += 0.1
+
+	h.on_session_status = func(sid: String, status: Dictionary) -> void:
+		if status.get("type") == "idle" and sid == _current_session_id:
+			_finalize_streaming()
+		var mem: int = status.get("memory", _context_memory)
+		var ctx: int = status.get("context", _context_total)
+		if mem != _context_memory or ctx != _context_total:
+			_context_memory = mem
+			_context_total = ctx
+			_update_info_bar()
+
+	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String) -> void:
+		if sid != _current_session_id or _streaming_label == null:
+			return
+		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
+		_streaming_text += "\n**" + icon + " " + tool_name + "**"
+		_streaming_label.text = _streaming_text
+		_scroll_to_newest()
+
+	h.on_message_updated = func(sid: String) -> void:
+		if sid == _current_session_id and _streaming_label == null:
+			_refresh_messages()
+
+	h.on_permission_asked = func(props: Dictionary) -> void:
+		_on_permission_asked(props)
+
+	h.on_question_asked = func(props: Dictionary) -> void:
+		_on_question_asked(props)
+
+	h.on_server_connected = func() -> void:
+		_update_info_bar()
+		if _api and is_instance_valid(_api):
+			_refresh_sessions()
+
+	return h
 
 
 # ── 会话选择器 ──
@@ -878,73 +944,7 @@ func _on_send_pressed() -> void:
 
 func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 	print("→ _on_sse_event type=" + event_type)
-	match event_type:
-		"session.status":
-			var sid: String = properties.get("sessionID", "")
-			var status: Dictionary = properties.get("status", {})
-			if status.get("type") == "idle" and sid == _current_session_id:
-				_finalize_streaming()
-			# 更新上下文 Token 数
-			var mem: int = status.get("memory", _context_memory)
-			var ctx: int = status.get("context", _context_total)
-			if mem != _context_memory or ctx != _context_total:
-				_context_memory = mem
-				_context_total = ctx
-				_update_info_bar()
-
-		"message.part.delta":
-			var sid: String = properties.get("sessionID", "")
-			if sid != _current_session_id:
-				return
-			var field: String = properties.get("field", "")
-			var delta: String = properties.get("delta", "")
-
-			# 思考内容单独处理（纯色灰文字，无 markdown 转换）
-			if field == "reasoning":
-				if _streaming_thinking_label:
-					_streaming_thinking_text += delta
-					_streaming_thinking_label.visible = true
-					var col_html := theme_config.color_text_dim.to_html(false)
-					var escaped := _streaming_thinking_text.replace("[", "[lb]")
-					_streaming_thinking_label.clear()
-					_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + escaped + "[/color]")
-					_scroll_to_newest()
-				return
-
-			if field != "text":
-				return
-
-			if _streaming_label:
-				_streaming_text += delta
-				_streaming_label.text = _streaming_text
-				_scroll_to_newest()
-			# Token 速率追踪
-			_rate_tokens += delta.length()
-			if _rate_time < 0.001:
-				_rate_time = 0.001
-				_rate_tokens = 0
-			else:
-				_rate_time += 0.1  # 粗略估算
-
-		"sync":
-			# SyncEvent: 工具调用状态更新（PartUpdated）
-			var sync_data: Dictionary = properties.get("syncEvent", {})
-			var sync_type: String = sync_data.get("type", "")
-			if sync_type == "message.part.updated":
-				var data: Dictionary = sync_data.get("data", {})
-				var part: Dictionary = data.get("part", {})
-				var part_type: String = part.get("type", "")
-				if part_type == "tool" and _streaming_label != null:
-					var tool_name: String = part.get("tool", "?")
-					var state: Dictionary = part.get("state", {})
-					var status: String = state.get("status", "running")
-					var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
-					_streaming_text += "\n**" + icon + " " + tool_name + "**"
-					_streaming_label.text = _streaming_text
-					_scroll_to_newest()
-
-			"server.heartbeat":
-			pass
+	sse_handler.handle_event(event_type, properties)
 
 
 # ── 权限处理 ──
