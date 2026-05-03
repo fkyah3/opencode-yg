@@ -380,7 +380,8 @@ func _bootstrap() -> void:
 	_refresh_sidebar_info()
 
 	# 连接按钮
-	connect_btn.pressed.connect(_open_connection_dialog)
+	if connect_btn != null:
+		connect_btn.pressed.connect(_open_connection_dialog)
 
 	_set_status("")
 	_sse.start()
