@@ -1205,7 +1205,7 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 采样系数矫正 → 固定轮数推进 → 推到底
+	## 采样系数矫正 → 持续推底直到 max_value 稳定
 	if _row_data.is_empty():
 		return
 	if _row_data.size() <= 1:
@@ -1241,7 +1241,6 @@ func _push_scroll_bottom_deferred() -> void:
 	if abs(ratio - 1.0) > 0.01:
 		for j in _row_heights.size():
 			_row_heights[j] *= ratio
-
 	var cursor: float = 0.0
 	for j in _row_heights.size():
 		_y_offsets[j] = cursor
@@ -1249,20 +1248,30 @@ func _push_scroll_bottom_deferred() -> void:
 	virtual_content.custom_minimum_size.y = cursor
 	_update_visible_rows(scroll.scroll_vertical)
 
-	# — 固定轮数推进：行数 × 5%，最少 2 轮，最多 20 轮 —
-	var max_iter: int = clampi(ceili(n * 0.05), 2, 20)
+	# — 持续推底直到 max_value 稳定 —
+	# 每帧推一个视口高度，记录当前 max_value。
+	# 连续 3 帧 max_value 不变 → 所有行已测量 → 底是稳的
 	var vp_h: float = maxf(scroll.size.y, 100)
-
 	scroll.scroll_vertical = 0
 	await get_tree().process_frame
 
-	var iter: int = 0
-	while iter < max_iter:
-		iter += 1
+	var last_max: float = -1.0
+	var stable_frames: int = 0
+	var safety: int = 60  # ~1 秒安全锁
+
+	while stable_frames < 3 and safety > 0:
+		safety -= 1
 		var vbar := scroll.get_v_scroll_bar()
-		if vbar != null and vbar.max_value > 0 and scroll.scroll_vertical >= vbar.max_value - 2.0:
+		var cur_max: float = vbar.max_value if vbar != null else 0.0
+		if cur_max <= 0:
 			break
-		scroll.scroll_vertical = int(scroll.scroll_vertical + vp_h)
+		if abs(cur_max - last_max) < 1.0 and scroll.scroll_vertical >= cur_max - 2.0:
+			stable_frames += 1
+		else:
+			stable_frames = 0
+			var target := int(min(scroll.scroll_vertical + vp_h, cur_max))
+			scroll.scroll_vertical = target
+		last_max = cur_max
 		await get_tree().process_frame
 
 	scroll.scroll_vertical = 99999
