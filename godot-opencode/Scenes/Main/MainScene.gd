@@ -700,9 +700,13 @@ func _update_visible_rows(scroll_y: float) -> void:
 		if _free_nodes.is_empty():
 			_grow_pool(1)
 		var found: Control = _free_nodes.pop_back()
+		found.size.x = virtual_content.size.x
+		# 确保 text_label 在 BBCode 解析前有非零宽度
+		var _bubble: PanelContainer = found.get_child(2)
+		var _text_label: RichTextLabel = _bubble.get_child(0)
+		_text_label.size.x = maxf(found.size.x - 26, 100)
 		_prepare_row_node(found, _row_data[row_idx], row_idx)
 		found.position.y = _y_offsets[row_idx] if row_idx < _y_offsets.size() else 0
-		found.size.x = virtual_content.size.x
 		found.visible = true
 		# 渲染后测量高度，修正 _row_heights 和 _y_offsets
 		if not _row_heights.is_empty() and row_idx < _row_heights.size():
