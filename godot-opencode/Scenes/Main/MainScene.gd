@@ -531,8 +531,44 @@ func _render_message(msg: Variant) -> void:
 			var tname: String = p.get("tool", "")
 			var state: Dictionary = p.get("state", {})
 			var stype: String = state.get("status", "")
-			var icon := "🛠" if stype != "done" else "✅"
-			text_parts.append(icon + " [i]" + tname + "[/i]")
+			var input_dict: Dictionary = state.get("input", {})
+			var output_str: String = state.get("output", "")
+			var title_str: String = state.get("title", "")
+			
+			var icon := "🔧"
+			if stype == "completed":
+				icon = "✅"
+			elif stype == "error":
+				icon = "❌"
+			
+			# 构建工具行：icon + 工具名 + 文件路径
+			var tline := icon + " " + tname
+			if input_dict.has("filePath"):
+				tline += " " + str(input_dict["filePath"])
+			elif input_dict.has("command"):
+				tline += " $" + str(input_dict["command"]).left(60)
+			elif not title_str.is_empty():
+				tline += " " + title_str
+			
+			text_parts.append(tline)
+			
+			# 工具完成时附加内容预览
+			if stype == "completed" or stype == "error":
+				var preview := ""
+				if stype == "error":
+					preview = state.get("error", "")
+				elif input_dict.has("content"):
+					var raw: String = str(input_dict["content"])
+					preview = raw.left(200)
+					if raw.length() > 200:
+						preview += "..."
+				elif not output_str.is_empty():
+					preview = output_str.left(200)
+					if output_str.length() > 200:
+						preview += "..."
+				
+				if not preview.is_empty():
+					text_parts.append(preview)
 
 	# ── 消息容器（VBox，包含名称 + 气泡） ──
 	var msg_vbox := VBoxContainer.new()
