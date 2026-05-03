@@ -4,8 +4,8 @@ class_name MarkdownBBCode
 ## 覆盖移山需要的最小 Markdown 子集：
 ##   标题 # → [font_size=][color]
 ##   粗体 ** → [color][b]
-##   行内代码 ` → [color][code]
-##   围栏代码块 ``` → 块级 [color][code]
+##   行内代码 ` → [color][bgcolor]
+##   围栏代码块 ``` → [color] + 行级[bgcolor]
 ##   转义反斜杠 \\ → 透传
 ##
 ## 其它内容原样透传（BBCode 兼容）。
@@ -15,6 +15,7 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 	var hc := config.heading_color.to_html(false)
 	var bc := config.bold_color.to_html(false)
 	var cc := config.code_color.to_html(false)
+	var cbg := "#1e1e1e"  # 代码块背景色（深灰）
 	
 	var lines := text.split("\n")
 	var result := PackedStringArray()
@@ -27,16 +28,16 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 		var trimmed := line.strip_edges()
 		if trimmed.begins_with("```"):
 			if in_code_block:
-				result.append("[/code][/color]")
+				result.append("[/color]")
 				in_code_block = false
 				continue
 			else:
-				result.append("[color=#%s][code]" % cc)
+				result.append("[color=#%s]" % cc)
 				in_code_block = true
 				continue
 		
 		if in_code_block:
-			result.append(_escape_bbcode(line))
+			result.append("[bgcolor=%s]" % cbg + _escape_bbcode(line) + "[/bgcolor]")
 			continue
 		
 		# ── 标题 # ──
@@ -52,7 +53,7 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 		
 		# ── 行内代码 `code` ──
 		var inline_re := RegEx.create_from_string("`([^`]+)`")
-		line = inline_re.sub(line, "[color=#%s][code]$1[/code][/color]" % cc, true)
+		line = inline_re.sub(line, "[color=#%s][bgcolor=#1e1e1e]$1[/bgcolor][/color]" % cc, true)
 		
 		# ── 粗体 **text** ──
 		var bold_re := RegEx.create_from_string("\\*\\*(.+?)\\*\\*")
@@ -62,7 +63,7 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 	
 	# 关闭未闭合的围栏
 	if in_code_block:
-		result.append("[/code][/color]")
+		result.append("[/color]")
 	
 	return "\n".join(result)
 
