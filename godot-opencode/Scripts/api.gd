@@ -53,13 +53,33 @@ func create_session(title: String = "") -> Dictionary:
 
 
 ## 获取指定会话的消息列表。返回 MessageV2 数组（Dictionary[]），失败返回 []。
-func get_messages(session_id: String, limit: int = 50) -> Array:
-	## 获取会话消息列表，支持分页（默认取最近 50 条）
+## before: 可选游标，用于加载更旧的下一页消息。
+func get_messages(session_id: String, limit: int = 50, before: String = "") -> Array:
 	var url := _base_url + "/session/%s/message?limit=%d" % [session_id, limit]
+	if not before.is_empty():
+		url += "&before=" + before
 	var data = await _request(url, "GET")
 	if data is Array:
 		return data as Array
 	return []
+
+
+## 分页取消息，返回 {items, cursor, more}。cursor 为空时没有更多数据。
+func get_messages_page(session_id: String, limit: int = 50, before: String = "") -> Dictionary:
+	var url := _base_url + "/session/%s/message?limit=%d" % [session_id, limit]
+	if not before.is_empty():
+		url += "&before=" + before
+	var resp = await _request_full(url, "GET")
+	if resp.is_empty() or not (resp.result is Array):
+		return {"items": [], "cursor": "", "more": false}
+	var cursor := ""
+	for h in resp.headers:
+		if h is String:
+			var hstr: String = h as String
+			var trimmed: String = hstr.strip_edges()
+			if trimmed.begins_with("X-Next-Cursor: "):
+				cursor = trimmed.trim_prefix("X-Next-Cursor: ")
+	return {"items": resp.result as Array, "cursor": cursor, "more": not cursor.is_empty()}
 
 
 
@@ -195,3 +215,33 @@ func _request(url: String, method: String, body: String = "") -> Variant:
 		return null
 
 	return parsed
+
+
+## 与 _request 相同但返回完整响应 {result, headers}。
+## 用于需要读取响应头（如 X-Next-Cursor）的分页请求。
+func _request_full(url: String, method: String, body: String = "") -> Dictionary:
+	_lazy_init_http()
+	_http.cancel_request()
+	var headers := PackedStringArray()
+	var http_method: int
+	if method == "GET":
+		http_method = HTTPClient.METHOD_GET
+	else:
+		headers = PackedStringArray(["Content-Type: application/json"])
+		http_method = HTTPClient.METHOD_POST if method == "POST" else HTTPClient.METHOD_PATCH
+	var err = _http.request(url, headers, http_method, body)
+	if err != OK:
+		push_error("[OpenCodeAPI] _request_full ", method, " 失败: ", url, " error=", err)
+		return {}
+	var resp = await _http.request_completed
+	var req_result: int = resp[0]
+	var resp_code: int = resp[1]
+	var resp_headers: PackedStringArray = resp[2]
+	var resp_body: PackedByteArray = resp[3]
+	if req_result != HTTPRequest.RESULT_SUCCESS or resp_code != 200:
+		return {}
+	var body_text := resp_body.get_string_from_utf8()
+	var parsed = JSON.parse_string(body_text)
+	if parsed == null:
+		return {}
+	return {"result": parsed, "headers": resp_headers}

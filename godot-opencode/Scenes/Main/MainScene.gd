@@ -35,14 +35,11 @@ func _create_sse_handler() -> SSEHandler:
 		if sid != _current_session_id:
 			return
 		if field == "reasoning":
-			if _streaming_thinking_label == null:
+			if _streaming_label == null:
 				return
-			_streaming_thinking_text += delta
-			_streaming_thinking_label.visible = true
 			var col_html := theme_config.color_text_dim.to_html(false)
-			var escaped := _streaming_thinking_text.replace("[", "[lb]")
-			_streaming_thinking_label.clear()
-			_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + escaped + "[/color]")
+			_streaming_text += "[color=#" + col_html + "]思考：" + delta + "[/color]"
+			_streaming_label.text = _streaming_text
 			_scroll_to_newest()
 		elif field == "text":
 			if _streaming_label == null:
@@ -108,11 +105,13 @@ var _sse: SSEClient
 var _current_session_id: String = ""
 var _streaming_text: String = ""
 var _streaming_label: RichTextLabel
-var _streaming_thinking_text: String = ""  # 思考内容
-var _streaming_thinking_label: RichTextLabel  # 思考标签
-var _streaming_bubble: PanelContainer  # 流式气泡容器（用于插入思考区域）
 var _streaming_node: Control          # 流式容器的根节点（虚拟内容中的临时行）
 var _cached_sessions: Array = []  # 缓存的会话列表，避免重复 HTTP 请求
+
+# ── 懒加载状态 ──
+var _lazy_cursor: String = ""  # 下一页游标
+var _lazy_loading: bool = false  # 正在加载更多，防止并发重复请求
+var _has_loaded_all: bool = false  # 所有消息已加载完毕
 
 # ── Agent/模型信息 ──
 var _primary_agent_name: String = "-"
@@ -351,6 +350,11 @@ func _send_message_direct(text: String) -> void:
 	if text.is_empty():
 		return
 
+	# ⭐ 前置系统时间到用户消息
+	var now := Time.get_datetime_dict_from_system()
+	var time_tag := "当前时间为 %04d年%02d月%02d日 %02d:%02d:%02d\n" % [now.year, now.month, now.day, now.hour, now.minute, now.second]
+	text = time_tag + text
+
 	# 自动创建会话
 	if _current_session_id.is_empty():
 		var title := text.substr(0, min(text.length(), 30))
@@ -520,10 +524,17 @@ func _load_session_messages(sid: String) -> void:
 	_clear_messages()
 	_set_status("加载消息...")
 
-	var messages = await _api.get_messages(sid, 300)
-	if messages.is_empty():
+	var page = await _api.get_messages_page(sid, 50)
+	if page.is_empty() or page.get("items", []).is_empty():
 		_set_status("(无消息)")
+		_has_loaded_all = true
 		return
+	var messages: Array = page.items
+	# get_messages_page 返回 items 已经是旧→新顺序
+	# 所以不需要 reverse
+	_lazy_cursor = page.get("cursor", "")
+	if _lazy_cursor.is_empty():
+		_has_loaded_all = true
 
 	# 数据准备：正常顺序（msg[0]=最旧，msg[N]=最新），滚到底展示最新
 	_row_data = messages
@@ -584,10 +595,12 @@ func _refresh_messages() -> void:
 	## 重新加载当前会话消息
 	if _current_session_id.is_empty():
 		return
-	var messages = await _api.get_messages(_current_session_id, 300)
-	if messages.is_empty():
+	var page = await _api.get_messages_page(_current_session_id, 50, _lazy_cursor)
+	if page.is_empty() or page.get("items", []).is_empty():
 		return
-	_row_data = messages
+	var msgs: Array = page.items
+	# get_messages_page 已按时间正序（旧→新），不需要 reverse
+	_row_data = msgs
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
 	_update_visible_rows(scroll.scroll_vertical)
@@ -669,6 +682,35 @@ func _on_scroll_changed(_value: float) -> void:
 	print("→ _on_scroll_changed value=" + str(_value))
 	## 滚动时更新可见行
 	_update_visible_rows(scroll.scroll_vertical)
+	
+	# 懒加载：拉到顶部时加载更旧的消息
+	if _lazy_cursor.is_empty() or _lazy_loading:
+		return
+	if scroll.scroll_vertical > 5:
+		return
+	_lazy_loading = true
+	_set_status("加载更早的消息...")
+	var page = await _api.get_messages_page(_current_session_id, 50, _lazy_cursor)
+	if page.is_empty() or page.get("items", []).is_empty():
+		_lazy_loading = false
+		if page.get("cursor", "") == "":
+			_has_loaded_all = true
+		_set_status("")
+		return
+	var items: Array = page.items
+	# items 已是旧→新顺序，插入到 _row_data 头部
+	for j in range(items.size() - 1, -1, -1):
+		_row_data.insert(0, items[j])
+		_row_heights.insert(0, _estimate_row_height(items[j]))
+	_compute_heights_and_offsets()
+	virtual_content.custom_minimum_size.y = _row_heights.back() + _y_offsets.back()
+	_adjust_pool_size()
+	_update_visible_rows(scroll.scroll_vertical)
+	_lazy_cursor = page.get("cursor", "")
+	if _lazy_cursor.is_empty():
+		_has_loaded_all = true
+	_lazy_loading = false
+	_set_status("")
 
 func _update_visible_rows(scroll_y: float) -> void:
 	print("→ _update_visible_rows scroll_y=" + str(scroll_y))
@@ -764,18 +806,7 @@ func _build_message_row() -> Control:
 	name_label.add_theme_color_override("default_color", theme_config.color_text_name)
 	row.add_child(name_label)
 
-	# ── 第 1 子节点：思考标签（默认隐藏） ──
-	var thinking_label := RichTextLabel.new()
-	thinking_label.bbcode_enabled = true
-	thinking_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	thinking_label.fit_content = true
-	thinking_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	thinking_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 1)
-	thinking_label.add_theme_color_override("default_color", theme_config.color_text_dim)
-	thinking_label.visible = false
-	row.add_child(thinking_label)
-
-	# ── 第 2 子节点：主气泡 ──
+	# ── 第 1 子节点：主气泡（含所有 part：思考/文字/工具共用同一标签） ──
 	var bubble := PanelContainer.new()
 	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var style := StyleBoxFlat.new()
@@ -792,7 +823,6 @@ func _build_message_row() -> Control:
 	text_label.bbcode_enabled = true
 	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text_label.fit_content = true
-	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base)
 	text_label.add_theme_color_override("default_color", theme_config.color_text)
@@ -812,17 +842,15 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 
 	# 解包行结构的预构建子节点
 	var name_label: RichTextLabel = row.get_child(0)
-	var thinking_label: RichTextLabel = row.get_child(1)
-	var bubble: PanelContainer = row.get_child(2)
+	var bubble: PanelContainer = row.get_child(1)
 	var text_label: RichTextLabel = bubble.get_child(0)
 
 	# ── 更新名称 ──
 	name_label.clear()
 	name_label.append_text("你" if is_user else "AI")
 
-	# ── 按 Part 类型分流渲染 ──
-	var thinking_text := ""
-	var bbcode_fragments := PackedStringArray()
+	# ── 合并所有 part 到单个 BBCode 字符串 ──
+	var parts_bbcode := PackedStringArray()
 
 	for p in parts:
 		var pt: String = p.get("type", "")
@@ -830,39 +858,29 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 			"text":
 				var txt: String = p.get("text", "")
 				if not txt.is_empty():
-					bbcode_fragments.append(part_renderer.render_part_text(txt))
+					parts_bbcode.append(part_renderer.render_part_text(txt))
 			"reasoning":
 				var rt: String = p.get("text", "")
 				if not rt.is_empty():
-					thinking_text += rt
+					var col := theme_config.color_text_dim.to_html(false)
+					var escaped := rt.replace("[", "[lb]")
+					parts_bbcode.append("[color=#" + col + "]思考：" + escaped + "[/color]")
 			"tool", "tool-call":
-				bbcode_fragments.append(part_renderer.render_part_tool(p))
-
-	# ── 更新思考标签 ──
-	if not thinking_text.is_empty():
-		var col := theme_config.color_text_dim.to_html(false)
-		var escaped := thinking_text.replace("[", "[lb]")
-		thinking_label.visible = true
-		thinking_label.clear()
-		thinking_label.append_text("[color=#" + col + "]思考：" + escaped + "[/color]")
-	else:
-		thinking_label.visible = false
+				parts_bbcode.append(part_renderer.render_part_tool(p))
 
 	# ── 更新气泡文本 + 颜色 ──
-	if not bbcode_fragments.is_empty():
+	if not parts_bbcode.is_empty():
 		var style: StyleBoxFlat = bubble.get_theme_stylebox("panel")
 		style.bg_color = theme_config.bubble_user_bg if is_user else theme_config.bubble_ai_bg
 		style.border_color = theme_config.bubble_user_border if is_user else theme_config.bubble_ai_border
 
-		# 拼接 BBCode 片段
 		var bbcode: String = msg.get("_bbcode", "")
 		if bbcode.is_empty():
-			bbcode = "\n".join(bbcode_fragments)
+			bbcode = "\n".join(parts_bbcode)
 			msg["_bbcode"] = bbcode
 
 		text_label.clear()
 		text_label.append_text(bbcode)
-		print("→ _prepare_row_node: append_text done")
 		bubble.visible = true
 	else:
 		bubble.visible = false
@@ -875,7 +893,7 @@ func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
 			_streaming_node.queue_free()
 		_streaming_node = null
 		_streaming_label = null
-		_streaming_thinking_label = null
+
 
 	_row_data.append(msg)
 	var h: float = _estimate_row_height(msg)
@@ -983,6 +1001,11 @@ func _on_send_pressed() -> void:
 			return
 		_current_session_id = sid
 
+	# ⭐ 前置系统时间到用户消息
+	var now := Time.get_datetime_dict_from_system()
+	var time_tag := "当前时间为 %04d年%02d月%02d日 %02d:%02d:%02d\n" % [now.year, now.month, now.day, now.hour, now.minute, now.second]
+	text = time_tag + text
+
 	msg_input.text = ""
 	_set_status("发送中...")
 
@@ -1075,7 +1098,6 @@ func _create_streaming_widget() -> VBoxContainer:
 	## 创建流式响应的容器结构（名称 + 思考文本 + 气泡文本区）
 	# 重置流式状态
 	_streaming_text = ""
-	_streaming_thinking_text = ""
 
 	var msg_vbox := VBoxContainer.new()
 	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1091,18 +1113,7 @@ func _create_streaming_widget() -> VBoxContainer:
 	name_label.append_text("AI")
 	msg_vbox.add_child(name_label)
 
-	# 思考标签（初始隐藏，SSE 推送时可见）
-	_streaming_thinking_label = RichTextLabel.new()
-	_streaming_thinking_label.bbcode_enabled = true
-	_streaming_thinking_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_streaming_thinking_label.fit_content = true
-	_streaming_thinking_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_streaming_thinking_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 1)
-	_streaming_thinking_label.append_text("")
-	_streaming_thinking_label.visible = false
-	msg_vbox.add_child(_streaming_thinking_label)
-
-	# 主文本气泡
+	# 主文本气泡（思考 + 文字合并输出）
 	var bubble := PanelContainer.new()
 	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var style := StyleBoxFlat.new()
@@ -1141,7 +1152,6 @@ func _finalize_streaming() -> void:
 	print("→ _finalize_streaming")
 	## 完成流式响应（不删除节点，由 _append_message 清理）
 	_streaming_label = null
-	_streaming_thinking_label = null
 	_scroll_to_newest()
 
 
@@ -1156,7 +1166,6 @@ func _clear_messages() -> void:
 		_streaming_node.queue_free()
 		_streaming_node = null
 		_streaming_label = null
-		_streaming_thinking_label = null
 	for node in _free_nodes:
 		if is_instance_valid(node):
 			node.queue_free()
