@@ -597,6 +597,16 @@ func _build_message_row() -> Control:
 	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.add_theme_font_size_override("normal_font_size", font_size_base)
 	text_label.add_theme_color_override("default_color", color_text)
+	# Markdown 转 BBCode 时的颜色主题（_convert_markdown 会读取这些属性）
+	var heading_color := Color("#C77DFF")
+	text_label.h1.override_font_color = true; text_label.h1.font_color = heading_color
+	text_label.h2.override_font_color = true; text_label.h2.font_color = heading_color
+	text_label.h3.override_font_color = true; text_label.h3.font_color = heading_color
+	text_label.h4.override_font_color = true; text_label.h4.font_color = heading_color
+	text_label.h5.override_font_color = true; text_label.h5.font_color = heading_color
+	text_label.h6.override_font_color = true; text_label.h6.font_color = heading_color
+	text_label.code_color = Color("#4CD964")
+	text_label.bold_color = Color("#FF9500")
 	bubble.add_child(text_label)
 	row.add_child(bubble)
 
@@ -622,7 +632,7 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 	name_label.append_text("你" if is_user else "AI")
 
 	# ── 提取文本 + 思考 ──
-	var text_parts := PackedStringArray()
+	var text_parts := PackedStringArray()  # raw markdown/fmt
 	var thinking_text := ""
 	for p in parts:
 		var pt: String = p.get("type", "")
@@ -630,12 +640,17 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 			var txt: String = p.get("text", "")
 			if not txt.is_empty():
 				text_parts.append(txt)
-		elif pt == "tool-call":
-			var tool_name: String = p.get("name", p.get("function", {}).get("name", ""))
-			var args: String = p.get("arguments", "")
-			if args.length() > 100:
-				args = args.left(100) + "..."
-			text_parts.append("🔧 [%s] %s" % [tool_name, args])
+		elif pt == "tool" or pt == "tool-call":
+			var tool_name: String = p.get("tool", p.get("name", p.get("function", {}).get("name", "?")))
+			var state: Dictionary = p.get("state", {})
+			var status: String = state.get("status", "")
+			var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
+			var preview := ""
+			var content: String = state.get("input", {}).get("content", "")
+			if not content.is_empty():
+				# 内容预览用 fenced code block 包裹，_convert_markdown 会转成 [code]
+				preview = "\n```\n" + content.left(300) + "\n```"
+			text_parts.append("**" + icon + " " + tool_name + "**" + preview)
 
 	# ── 更新思考标签 ──
 	if not thinking_text.is_empty():
@@ -651,11 +666,16 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 		var style: StyleBoxFlat = bubble.get_theme_stylebox("panel")
 		style.bg_color = bubble_user_bg if is_user else bubble_ai_bg
 		style.border_color = bubble_user_border if is_user else bubble_ai_border
-		# 直接操作 RichTextLabel 方法绕过 MarkdownLabel._set_text
-		# .text = 会触发 _dirty → _process → _update → markdown 全文解析，
-		# 在滚动时与 fit_content 形成循环布局，导致内存膨胀
+
+		# 拼接 raw markdown → 用 _convert_markdown 转为 BBCode（纯字符串，不触发布局）
+		var raw_md: String = "\n".join(text_parts)
+		var bbcode: String = msg.get("_bbcode", "")
+		if bbcode.is_empty():
+			bbcode = text_label._convert_markdown(raw_md)
+			msg["_bbcode"] = bbcode
+
 		text_label.clear()
-		text_label.append_text("\n".join(text_parts))
+		text_label.append_text(bbcode)
 		bubble.visible = true
 	else:
 		bubble.visible = false
