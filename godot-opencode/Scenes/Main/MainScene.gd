@@ -852,7 +852,17 @@ func _on_input_gui_input(event: InputEvent) -> void:
 		_on_send_pressed()
 	elif key_event.keycode == KEY_TAB:
 		accept_event()
-		msg_input.insert_text_at_cursor("\n")
+		var cl := msg_input.get_caret_line()
+		var cc := msg_input.get_caret_column()
+		var lines := msg_input.text.split("\n")
+		if cl >= lines.size():
+			return
+		var cur := lines[cl]
+		lines[cl] = cur.left(cc)
+		lines.insert(cl + 1, cur.right(cc))
+		msg_input.text = "\n".join(lines)
+		msg_input.set_caret_line(cl + 1)
+		msg_input.set_caret_column(0)
 
 
 func _on_send_pressed() -> void:
@@ -1149,16 +1159,21 @@ func _set_status(text: String) -> void:
 var _loading_overlay: Control = null
 
 func _ensure_loading_overlay() -> void:
-	## 创建/获取加载覆盖面板（透明灰底 + 居中标签）
+	## 创建/获取加载覆盖面板（覆盖整个消息区，在 scroll 之上）
 	if _loading_overlay != null:
 		return
-	_loading_overlay = Panel.new()
-	_loading_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_loading_overlay.anchor_right = 1.0
-	_loading_overlay.anchor_bottom = 1.0
+	
+	# 用 CanvasLayer 确保覆盖在 scroll 之上且不受布局影响
+	var layer := CanvasLayer.new()
+	layer.layer = 50  # 高于普通控件
+	
+	var panel := Panel.new()
+	panel.name = "LoadingPanel"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var pstyle := StyleBoxFlat.new()
-	pstyle.bg_color = Color(0, 0, 0, 0.8)
-	_loading_overlay.add_theme_stylebox_override("panel", pstyle)
+	pstyle.bg_color = Color(0, 0, 0, 0.85)
+	panel.add_theme_stylebox_override("panel", pstyle)
 	
 	var lbl := Label.new()
 	lbl.name = "LoadingLabel"
@@ -1166,9 +1181,12 @@ func _ensure_loading_overlay() -> void:
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.add_theme_font_size_override("font_size", 20)
 	lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1))
-	_loading_overlay.add_child(lbl)
+	panel.add_child(lbl)
 	
-	scroll.add_child(_loading_overlay)
+	layer.add_child(panel)
+	# 挂在 scroll 的父节点（ChatArea）上，覆盖消息区域
+	scroll.get_parent().add_child(layer)
+	_loading_overlay = panel
 	_loading_overlay.hide()
 
 func _show_loading(text: String) -> void:
