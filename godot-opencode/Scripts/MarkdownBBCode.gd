@@ -25,7 +25,7 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 		
 		# ── 围栏代码块检测 ──
 		var trimmed := line.strip_edges()
-		if trimmed.begins_with("\`\`\`"):
+			if trimmed.begins_with("```"):
 			if in_code_block:
 				result.append("[/code][/color]")
 				in_code_block = false
@@ -52,7 +52,7 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 			line = line.replace(trimmed, "[color=#%s][font_size=%d]%s[/font_size][/color]" % [hc, size, after_hash])
 		
 		# ── 行内代码 `code` ──
-		var inline_re := RegEx.create_from_string("\`([^\`]+)\`")
+		var inline_re := RegEx.create_from_string("`([^`]+)`")
 		line = inline_re.sub(line, "[color=#%s][code]$1[/code][/color]" % cc, true)
 		
 		# ── 粗体 **text** ──
