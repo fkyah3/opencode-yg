@@ -513,8 +513,9 @@ func _load_session_messages(sid: String) -> void:
 		_set_status("(无消息)")
 		return
 
-	# 数据准备（正常顺序：msg[0]=最旧，msg[N]=最新）
+	# 数据准备：msg[0]=最新，msg[N]=最旧（scroll=0 直接展示最新内容）
 	_row_data = messages
+	_row_data.reverse()
 	_set_status("渲染 " + str(messages.size()) + " 条消息...")
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
@@ -523,11 +524,11 @@ func _load_session_messages(sid: String) -> void:
 	# 同步实测所有行的高度（利用池节点循环遍历，BBCode 在此过程中被缓存）
 	_measure_all_heights_sync()
 
-	# 实测后重算总高，直接滚到底
+	# 实测后重算总高
 	var total_y: float = _y_offsets.back() + _row_heights.back() if not _row_heights.is_empty() else 0.0
 	virtual_content.custom_minimum_size.y = total_y
 	_update_visible_rows(0)
-	scroll.scroll_vertical = int(total_y)
+	scroll.scroll_vertical = 0
 
 	_set_status(str(_row_data.size()) + " 条消息")
 
@@ -572,6 +573,7 @@ func _refresh_messages() -> void:
 	var messages = await _api.get_messages(_current_session_id, 300)
 	if messages.is_empty():
 		return
+	messages.reverse()
 	_row_data = messages
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
@@ -853,7 +855,7 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 
 func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
 	print("→ _append_message remove_streaming=" + str(remove_streaming))
-	## 追加一条消息到虚拟滚动（正常顺序：新消息追加到末尾）
+	## 追加一条消息到虚拟滚动（倒序：新消息插入到 _row_data 最前）
 	if remove_streaming or _streaming_node != null:
 		if _streaming_node != null and is_instance_valid(_streaming_node):
 			_streaming_node.queue_free()
@@ -861,15 +863,16 @@ func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
 		_streaming_label = null
 		_streaming_thinking_label = null
 
-	_row_data.append(msg)
+	_row_data.insert(0, msg)
 	var h: float = _estimate_row_height(msg)
-	_row_heights.append(h)
-	# 追加到末尾
-	if _y_offsets.is_empty():
-		_y_offsets.append(0.0)
-	else:
-		_y_offsets.append(_y_offsets.back() + _row_heights[_row_heights.size() - 2])
-	var total_y: float = _y_offsets.back() + h
+	_row_heights.insert(0, h)
+	# 新消息在最前：所有现有偏移增加一个 h
+	var old_off: float = 0.0
+	for j in range(1, _y_offsets.size()):
+		old_off = _y_offsets[j]
+		_y_offsets[j] = old_off + h
+	_y_offsets.insert(0, 0.0)
+	var total_y: float = _y_offsets.back() + _row_heights.back() if not _row_heights.is_empty() else h
 	virtual_content.custom_minimum_size.y = total_y
 
 	_adjust_pool_size()
@@ -1116,7 +1119,8 @@ func _create_streaming_widget() -> VBoxContainer:
 	_streaming_node = msg_vbox
 	msg_vbox.position.y = virtual_content.custom_minimum_size.y
 	msg_vbox.size.x = virtual_content.size.x
-	virtual_content.add_child(msg_vbox)
+	msg_vbox.position.y = 0
+	virtual_content.add_child(msg_vbox, false, 0)
 	_scroll_to_newest()
 	return msg_vbox
 
@@ -1160,9 +1164,7 @@ func _set_status(text: String) -> void:
 
 
 func _scroll_to_newest() -> void:
-	## 防抖标记：最新消息在底部（正常顺序，scroll=最大值）
-	var bar := scroll.get_v_scroll_bar()
-	if bar != null and bar.max_value > 0:
-		scroll.scroll_vertical = int(bar.max_value)
+	## 滚动到最新消息（reverse 后 msg[0]=最新，scroll=0）
+	scroll.scroll_vertical = 0
 	else:
 		_scroll_pending = true
