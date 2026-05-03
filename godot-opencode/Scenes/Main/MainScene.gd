@@ -1205,42 +1205,50 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 快速测量所有未渲染行的实际高度 → 直接推到底
+	## 采样式测量：每 N 行取一个样本实测高度，修正总高后直接推到底
 	if _row_data.is_empty():
 		return
 	if _row_data.size() <= 1:
 		scroll.scroll_vertical = 99999
 		return
 
-	# 遍历未渲染的行，借池节点临时渲染→测量→归还
-	for i in _row_data.size():
+	# 采样率：最多测 30 行，均匀分布在全部数据中
+	var n := _row_data.size()
+	var sample_step := maxi(1, n / 30)
+	var measured := 0
+	for i in range(0, n, sample_step):
 		if _row_assignments.has(i):
-			continue  # 已渲染（可见区），已经测量过
+			continue
 		if _free_nodes.is_empty():
-			break  # 池节点用完了
+			break
 		var node: Control = _free_nodes.pop_back()
 		_row_assignments[i] = node
 		_prepare_row_node(node, _row_data[i], i)
+		node.visible = true  # ★ 测量前必须可见，否则 Container 返回 0
 		var h: float = node.get_combined_minimum_size().y
+		node.visible = false
 		if h > 0 and abs(h - _row_heights[i]) > 2.0:
 			_row_heights[i] = h
-		# 归还池
-		node.visible = false
+			measured += 1
 		_free_nodes.append(node)
 		_row_assignments.erase(i)
 
-	# 用 _row_heights（实测 + 估算混合）计算准确总高
+	if measured == 0:
+		# 所有行都被渲染过（或没可用池节点），估算为准
+		scroll.scroll_vertical = 99999
+		return
+
+	# 用修正后的 _row_heights 重新计算总高和偏移
 	var total_h: float = 0.0
 	for h in _row_heights:
 		total_h += h
 	virtual_content.custom_minimum_size.y = total_h
-	# 重建 _y_offsets
 	var cursor: float = 0.0
-	for i in _row_heights.size():
-		_y_offsets[i] = cursor
-		cursor += _row_heights[i]
+	for j in _row_heights.size():
+		_y_offsets[j] = cursor
+		cursor += _row_heights[j]
 
-	# 直接推到底
+	# 推到底
 	scroll.scroll_vertical = 99999
 
 
