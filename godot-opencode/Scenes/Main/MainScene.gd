@@ -533,20 +533,29 @@ func _load_session_messages(sid: String) -> void:
 
 
 func _measure_all_heights_sync() -> void:
-	## 用池节点遍历所有未测量的行，实测高度填入 _row_heights
+	## 回收全部池节点，遍历所有行实测高度
+	## 同一个 14 节点池通过 pop → measure → append 循环可测量任意行数
+	# 回收已分配行
+	var assigned := _row_assignments.keys()
+	for idx in assigned:
+		var node: Control = _row_assignments[idx]
+		node.visible = false
+		_free_nodes.append(node)
+		_row_assignments.erase(idx)
+
+	# 逐行测量（节点池循环复用）
 	for i in _row_data.size():
-		if _row_assignments.has(i):
-			continue  # 已经在可视区，高度正确
 		if _free_nodes.is_empty():
-			break  # 池节点用尽
+			break  # 不应发生——回收后池应有 14+ 节点
 		var node: Control = _free_nodes.pop_back()
 		_prepare_row_node(node, _row_data[i], i)
 		node.visible = true
-		var h := node.get_combined_minimum_size().y
+		var h: float = node.get_combined_minimum_size().y
 		if h > 0.0:
 			_row_heights[i] = h
 		node.visible = false
 		_free_nodes.append(node)
+
 	# 重算偏移和总高
 	var cursor: float = 0.0
 	for j in _row_heights.size():
@@ -860,7 +869,7 @@ func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
 		_y_offsets.append(0.0)
 	else:
 		_y_offsets.append(_y_offsets.back() + _row_heights[_row_heights.size() - 2])
-	var total_y := _y_offsets.back() + h
+	var total_y: float = _y_offsets.back() + h
 	virtual_content.custom_minimum_size.y = total_y
 
 	_adjust_pool_size()
@@ -1109,6 +1118,10 @@ func _create_streaming_widget() -> VBoxContainer:
 	msg_vbox.size.x = virtual_content.size.x
 	virtual_content.add_child(msg_vbox)
 	_scroll_to_newest()
+	return msg_vbox
+
+
+func _finalize_streaming() -> void:
 	print("→ _finalize_streaming")
 	## 完成流式响应（不删除节点，由 _append_message 清理）
 	_streaming_label = null
