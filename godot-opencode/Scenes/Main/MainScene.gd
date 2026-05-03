@@ -89,6 +89,7 @@ var _pending_questions: Dictionary = {}    # request_id → properties
 
 
 func _ready() -> void:
+	print("→ _ready")
 	_apply_font_theme()
 	_init_api()
 	_init_sse()
@@ -105,6 +106,7 @@ func _ready() -> void:
 
 
 func _apply_font_theme() -> void:
+	print("→ _apply_font_theme")
 	## 加载 JetBrains Mono 字体，设置全场景主题
 	var font_normal := load(font_path_normal)
 	var font_bold := load(font_path_bold)
@@ -136,6 +138,7 @@ func _apply_font_theme() -> void:
 
 
 func _init_command_palette() -> void:
+	print("→ _init_command_palette")
 	_cmd_palette = CommandPalette.new()
 	_cmd_palette.visible = false
 	_cmd_palette.command_selected.connect(_on_command_selected)
@@ -143,6 +146,7 @@ func _init_command_palette() -> void:
 
 
 func _load_agent_info() -> void:
+	print("→ _load_agent_info")
 	var agent := await _api.get_primary_agent()
 	if agent.is_empty():
 		return
@@ -153,6 +157,7 @@ func _load_agent_info() -> void:
 
 
 func _update_info_bar() -> void:
+	print("→ _update_info_bar")
 	# 设置 InfoBar 背景样式（纯黑底部信息栏 + 上边框分隔线）
 	var info_bar := %InfoBar as PanelContainer
 	if info_bar:
@@ -181,6 +186,7 @@ func _format_tokens(n: int) -> String:
 
 
 func _init_session_picker() -> void:
+	print("→ _init_session_picker")
 	_session_picker = SessionPicker.new()
 	_session_picker.visible = false
 	_session_picker.session_selected.connect(_on_session_picker_selected)
@@ -194,6 +200,7 @@ func _init_session_picker() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	print("→ _unhandled_input")
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
 		if event.ctrl_pressed and not _session_picker.visible:
 			_open_session_picker()
@@ -214,11 +221,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_session_header_input(event: InputEvent) -> void:
+	print("→ _on_session_header_input")
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_open_session_picker()
 
 
 func _open_session_picker() -> void:
+	print("→ _open_session_picker")
 	# 移到场景树末尾，确保渲染在最前
 	move_child(_session_picker, get_child_count())
 
@@ -235,15 +244,18 @@ func _open_session_picker() -> void:
 
 
 func _close_session_picker() -> void:
+	print("→ _close_session_picker")
 	_session_picker.visible = false
 
 
 func _on_session_picker_selected(sid: String) -> void:
+	print("→ _on_session_picker_selected sid=" + sid)
 	await _open_session(sid)
 	_close_session_picker()
 
 
 func _on_command_selected(cmd_name: String) -> void:
+	print("→ _on_command_selected cmd=" + cmd_name)
 	# 选中命令后直接发送
 	_cmd_palette.hide_palette()
 	msg_input.text = cmd_name
@@ -251,6 +263,7 @@ func _on_command_selected(cmd_name: String) -> void:
 
 
 func _on_input_text_changed() -> void:
+	# print("→ _on_input_text_changed")
 	# TextEdit.text_changed 无参信号，用 msg_input.text 获取
 	var t := msg_input.text
 	# 输入 / 时立即弹出命令面板，不用等到按发送按钮
@@ -262,6 +275,7 @@ func _on_input_text_changed() -> void:
 
 
 func _send_message_direct(text: String) -> void:
+	print("→ _send_message_direct")
 	if text.is_empty():
 		return
 
@@ -295,10 +309,12 @@ func _send_message_direct(text: String) -> void:
 
 
 func _on_session_picker_dismissed() -> void:
+	print("→ _on_session_picker_dismissed")
 	_close_session_picker()
 
 
 func _init_dialogs() -> void:
+	print("→ _init_dialogs")
 	# 权限请求对话框
 	_permission_dialog = PermissionDialog.new()
 	add_child(_permission_dialog)
@@ -314,17 +330,20 @@ func _init_dialogs() -> void:
 
 
 func _init_api() -> void:
+	print("→ _init_api")
 	_api = OpenCodeAPI.new()
 	add_child(_api)
 
 
 func _init_sse() -> void:
+	print("→ _init_sse")
 	_sse = SSEClient.new()
 	add_child(_sse)
 	_sse.event_received.connect(_on_sse_event)
 
 
 func _process(delta: float) -> void:
+	# print("→ _process")
 	# 防抖滚动: 每 0.1s 最多触发一次
 	if _scroll_pending:
 		_scroll_timer += delta
@@ -335,6 +354,7 @@ func _process(delta: float) -> void:
 
 
 func _bootstrap() -> void:
+	print("→ _bootstrap")
 	_set_status("连接服务器...")
 
 	var ok := await _api.health_check()
@@ -353,6 +373,7 @@ func _bootstrap() -> void:
 
 
 func _refresh_sidebar_info() -> void:
+	print("→ _refresh_sidebar_info")
 	var path_data = await _api.get_path_info()
 	if path_data is Dictionary:
 		var dir_path: String = path_data.get("directory", "")
@@ -372,6 +393,7 @@ func _refresh_sidebar_info() -> void:
 
 
 func _update_lsp_list(lsp_data: Array) -> void:
+	print("→ _update_lsp_list")
 	for child in lsp_list.get_children():
 		child.queue_free()
 
@@ -393,6 +415,7 @@ func _update_lsp_list(lsp_data: Array) -> void:
 
 
 func _refresh_sessions() -> void:
+	print("→ _refresh_sessions")
 	var sessions = await _api.list_sessions()
 	if sessions is Array and sessions.size() > 0:
 		_cached_sessions = sessions.duplicate()
@@ -403,10 +426,12 @@ func _refresh_sessions() -> void:
 
 
 func _open_session(sid: String) -> void:
+	print("→ _open_session sid=" + sid)
 	## 打开会话：加载消息并初始化虚拟滚动
 	await _load_session_messages(sid)
 
 func _load_session_messages(sid: String) -> void:
+	print("→ _load_session_messages sid=" + sid)
 	## 从 API 加载消息，初始化虚拟滚动
 	_streaming_label = null
 	_current_session_id = sid
@@ -428,6 +453,7 @@ func _load_session_messages(sid: String) -> void:
 	_scroll_to_bottom()
 
 func _refresh_messages() -> void:
+	print("→ _refresh_messages")
 	## 重新加载当前会话消息
 	if _current_session_id.is_empty():
 		return
@@ -443,6 +469,7 @@ func _refresh_messages() -> void:
 # ═══════════════════ 虚拟滚动核心 ═══════════════════
 
 func _compute_heights_and_offsets() -> void:
+	print("→ _compute_heights_and_offsets")
 	## 按内容估算每行高度，计算 Y 偏移数组
 	_y_offsets.clear()
 	_row_heights.clear()
@@ -473,6 +500,7 @@ func _estimate_row_height(msg: Dictionary) -> float:
 const MAX_POOL_SIZE: int = 50  # 硬上限：池行不超过 50 个节点
 
 func _grow_pool(amount: int) -> void:
+	print("→ _grow_pool amount=" + str(amount))
 	var can_add: int = MAX_POOL_SIZE - _free_nodes.size()
 	if amount > can_add:
 		push_error("POOL_OVERFLOW: 池要膨胀 %d 行但超过上限 %d，_row_data.size=%d" % [
@@ -487,6 +515,7 @@ func _grow_pool(amount: int) -> void:
 		_free_nodes.append(row)
 
 func _adjust_pool_size() -> void:
+	print("→ _adjust_pool_size pool=" + str(_free_nodes.size()) + " row_data=" + str(_row_data.size()))
 	## 确保空闲池足够
 	var viewport_h: float = scroll.size.y
 	var n_rows: int = _row_data.size()
@@ -506,10 +535,12 @@ func _find_row_by_node(node: Control) -> int:
 	return -1
 
 func _on_scroll_changed(_value: float) -> void:
+	print("→ _on_scroll_changed value=" + str(_value))
 	## 滚动时更新可见行
 	_update_visible_rows(scroll.scroll_vertical)
 
 func _update_visible_rows(scroll_y: float) -> void:
+	print("→ _update_visible_rows scroll_y=" + str(scroll_y))
 	## 更新可见窗口内的行（回收不可见 + 分配可见）
 	if _row_data.is_empty():
 		for node in _free_nodes:
@@ -573,6 +604,7 @@ func _row_idx_at_y(y: float) -> int:
 	return lo
 
 func _build_message_row() -> Control:
+	print("→ _build_message_row")
 	## 创建固定结构的消息行（子节点不变，只通过 _prepare_row_node 更新内容）
 	var row := VBoxContainer.new()
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -634,6 +666,7 @@ func _build_message_row() -> Control:
 
 
 func _prepare_row_node(row: Control, msg: Dictionary) -> void:
+	print("→ _prepare_row_node")
 	## 用消息数据填充已有行结构（不创建/删除子节点）
 	var d: Dictionary = msg as Dictionary
 	# 第二版使用字典作为基础数组类型
@@ -701,6 +734,7 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 		bubble.visible = false
 
 func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
+	print("→ _append_message remove_streaming=" + str(remove_streaming))
 	## 追加一条消息到虚拟滚动（用于用户/ AI 响应消息）
 	if remove_streaming or _streaming_node != null:
 		if _streaming_node != null and is_instance_valid(_streaming_node):
@@ -721,6 +755,7 @@ func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
 
 
 func _on_scroll_resized() -> void:
+	print("→ _on_scroll_resized")
 	## 滚动容器大小变化时重新调整
 	_adjust_pool_size()
 	_update_visible_rows(scroll.scroll_vertical)
@@ -730,6 +765,7 @@ func _on_scroll_resized() -> void:
 
 
 func _on_send_pressed() -> void:
+	print("→ _on_send_pressed")
 	var text := msg_input.text.strip_edges()
 	if text.is_empty():
 		return
@@ -764,6 +800,7 @@ func _on_send_pressed() -> void:
 
 
 func _on_sse_event(event_type: String, properties: Dictionary) -> void:
+	print("→ _on_sse_event type=" + event_type)
 	match event_type:
 		"session.status":
 			var sid: String = properties.get("sessionID", "")
@@ -849,6 +886,7 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 # ── 权限处理 ──
 
 func _on_permission_asked(properties: Dictionary) -> void:
+	print("→ _on_permission_asked")
 	## 收到 permission.asked SSE 事件，弹出权限对话框
 	var request_id: String = properties.get("id", "")
 	var permission: String = properties.get("permission", "")
@@ -869,6 +907,7 @@ func _on_permission_asked(properties: Dictionary) -> void:
 
 
 func _on_permission_replied(request_id: String, reply_type: String, message: String) -> void:
+	print("→ _on_permission_replied")
 	## 用户回应了权限请求，发送到服务器
 	_pending_permissions.erase(request_id)
 	await _api.reply_permission(request_id, reply_type, message)
@@ -877,6 +916,7 @@ func _on_permission_replied(request_id: String, reply_type: String, message: Str
 # ── 问题处理 ──
 
 func _on_question_asked(properties: Dictionary) -> void:
+	print("→ _on_question_asked")
 	## 收到 question.asked SSE 事件，弹出问题对话框
 	var request_id: String = properties.get("id", "")
 	var question: String = properties.get("question", "")
@@ -893,12 +933,14 @@ func _on_question_asked(properties: Dictionary) -> void:
 
 
 func _on_question_replied(request_id: String, answers: Array) -> void:
+	print("→ _on_question_replied")
 	## 用户回答了问题，发送到服务器
 	_pending_questions.erase(request_id)
 	await _api.reply_question(request_id, answers)
 
 
 func _on_question_rejected(request_id: String) -> void:
+	print("→ _on_question_rejected")
 	## 用户跳过了问题
 	_pending_questions.erase(request_id)
 	# 发送空回答表示跳过
@@ -906,6 +948,7 @@ func _on_question_rejected(request_id: String) -> void:
 
 
 func _create_streaming_widget() -> VBoxContainer:
+	print("→ _create_streaming_widget")
 	## 创建流式响应的容器结构（名称 + 思考文本 + 气泡文本区）
 	# 重置流式状态
 	_streaming_text = ""
@@ -973,6 +1016,7 @@ func _create_streaming_widget() -> VBoxContainer:
 
 
 func _finalize_streaming() -> void:
+	print("→ _finalize_streaming")
 	## 完成流式响应（不删除节点，由 _append_message 清理）
 	_streaming_label = null
 	_streaming_thinking_label = null
@@ -980,6 +1024,7 @@ func _finalize_streaming() -> void:
 
 
 func _clear_messages() -> void:
+	print("→ _clear_messages")
 	## 清除虚拟滚动所有状态
 	_row_data.clear()
 	_y_offsets.clear()
@@ -1009,5 +1054,7 @@ func _scroll_to_bottom() -> void:
 
 
 func _do_scroll_to_bottom() -> void:
-	var max_v = scroll.get_v_scroll_bar().max_value
-	scroll.set_deferred("scroll_vertical", max_v)
+	## 实际执行滚动到底部，由 _process 防抖调用
+	var max_y: float = virtual_content.custom_minimum_size.y
+	if max_y > 0:
+		scroll.scroll_vertical = int(max_y)
