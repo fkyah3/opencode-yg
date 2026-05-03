@@ -267,6 +267,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F6:
+		# 调试：触发 value_changed 信号模拟一次滚动刷新
+		_set_status("刷新...")
+		var bar := scroll.get_v_scroll_bar()
+		if bar != null and bar.max_value > 0:
+			var sv := scroll.scroll_vertical
+			scroll.scroll_vertical = clampi(sv + 1, 0, int(bar.max_value))
+			scroll.scroll_vertical = sv
+		_set_status("刷新完成 (" + str(_row_assignments.size()) + " 行)")
+		get_viewport().set_input_as_handled()
+		return
+
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		# 优先关闭命令面板
 		if _cmd_palette and _cmd_palette.visible:
@@ -701,10 +713,6 @@ func _update_visible_rows(scroll_y: float) -> void:
 			_grow_pool(1)
 		var found: Control = _free_nodes.pop_back()
 		found.size.x = virtual_content.size.x
-		# 确保 text_label 在 BBCode 解析前有非零宽度
-		var _bubble: PanelContainer = found.get_child(2)
-		var _text_label: RichTextLabel = _bubble.get_child(0)
-		_text_label.size.x = maxf(found.size.x - 26, 100)
 		_prepare_row_node(found, _row_data[row_idx], row_idx)
 		found.position.y = _y_offsets[row_idx] if row_idx < _y_offsets.size() else 0
 		found.visible = true
@@ -781,7 +789,7 @@ func _build_message_row() -> Control:
 	var text_label := RichTextLabel.new()
 	text_label.bbcode_enabled = true
 	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text_label.fit_content = true
+	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base)
 	text_label.add_theme_color_override("default_color", theme_config.color_text)
