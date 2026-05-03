@@ -651,7 +651,11 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 		var style: StyleBoxFlat = bubble.get_theme_stylebox("panel")
 		style.bg_color = bubble_user_bg if is_user else bubble_ai_bg
 		style.border_color = bubble_user_border if is_user else bubble_ai_border
-		text_label.text = "\n".join(text_parts)
+		# 直接操作 RichTextLabel 方法绕过 MarkdownLabel._set_text
+		# .text = 会触发 _dirty → _process → _update → markdown 全文解析，
+		# 在滚动时与 fit_content 形成循环布局，导致内存膨胀
+		text_label.clear()
+		text_label.append_text("\n".join(text_parts))
 		bubble.visible = true
 	else:
 		bubble.visible = false
