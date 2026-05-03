@@ -467,8 +467,9 @@ func _load_session_messages(sid: String) -> void:
 	_update_visible_rows(scroll.scroll_vertical)
 
 	_set_status(str(_row_data.size()) + " 条消息")
-	# 滚动到底部（最新消息）
-	scroll.scroll_vertical = int(virtual_content.custom_minimum_size.y) if virtual_content.custom_minimum_size.y > 0 else 99999
+	# 等一帧确保布局完成，滚动到底部
+	await get_tree().process_frame
+	scroll.scroll_vertical = 99999
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
