@@ -735,11 +735,9 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			_scroll_to_bottom()
 
 		"message.updated":
-			# SSE 通知有新消息完成时，刷新当前会话的消息列表
-			var sid: String = properties.get("sessionID", "")
-			if sid == _current_session_id and _streaming_parts.size() == 0:
-				# 非流式场景下刷新消息列表
-				_refresh_messages()
+			# SSE 通知有新消息完成——不再直接刷新，由 session.status/idle
+			# 事件通过 _pending_refresh 触发单次刷新，避免双刷新闪屏
+			pass
 
 		"permission.asked":
 			_on_permission_asked(properties)
