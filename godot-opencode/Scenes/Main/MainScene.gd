@@ -852,16 +852,7 @@ func _on_input_gui_input(event: InputEvent) -> void:
 		_on_send_pressed()
 	elif key_event.keycode == KEY_TAB:
 		accept_event()
-		# 在光标位置插入换行
-		var line := msg_input.get_caret_line()
-		var col := msg_input.get_caret_column()
-		var content := msg_input.text
-		var lines_array := content.split("\n")
-		var current := lines_array[line]
-		lines_array[line] = current.left(col) + "\n" + current.right(col)
-		msg_input.text = "\n".join(lines_array)
-		msg_input.set_caret_line(line + 1)
-		msg_input.set_caret_column(0)
+		msg_input.insert_text_at_cursor("\n")
 
 
 func _on_send_pressed() -> void:
