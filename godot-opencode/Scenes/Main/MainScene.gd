@@ -470,7 +470,16 @@ func _estimate_row_height(msg: Dictionary) -> float:
 	var thinking_lines := maxi(0, ceili(thinking_len / cpl))
 	return 36.0 + text_lines * lh + thinking_lines * lh * 0.5
 
+const MAX_POOL_SIZE: int = 50  # 硬上限：池行不超过 50 个节点
+
 func _grow_pool(amount: int) -> void:
+	var can_add: int = MAX_POOL_SIZE - _free_nodes.size()
+	if amount > can_add:
+		push_error("POOL_OVERFLOW: 池要膨胀 %d 行但超过上限 %d，_row_data.size=%d" % [
+			amount, MAX_POOL_SIZE, _row_data.size()])
+		amount = can_add
+	if amount <= 0:
+		return
 	for i in amount:
 		var row := _build_message_row()
 		row.visible = false
