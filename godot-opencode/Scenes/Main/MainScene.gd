@@ -1205,18 +1205,23 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 采样矫正行高 → 迭代推到底
+	## 采样→系数矫正→迭代滚动→最终推到底
 	if _row_data.is_empty():
 		return
 	if _row_data.size() <= 1:
 		scroll.scroll_vertical = 99999
 		return
 
-	# — Ⅰ 采样：均匀取 ~30 行，实测高度 —
+	# — Ⅰ 采样：均匀取 ~20 行，累加实际高度与估算高度 —
 	var n := _row_data.size()
-	var sample_step := maxi(1, n / 30)
-	for i in range(0, n, sample_step):
+	var skip := maxi(1, n / 20)
+	var sum_actual := 0.0
+	var sum_est := 0.0
+	for i in range(0, n, skip):
 		if _row_assignments.has(i):
+			# 已渲染：_row_heights[i] 已经是实测值
+			sum_actual += _row_heights[i]
+			sum_est += _row_heights[i]  # 维持比率为 1
 			continue
 		if _free_nodes.is_empty():
 			break
@@ -1224,19 +1229,27 @@ func _push_scroll_bottom_deferred() -> void:
 		_row_assignments[i] = node
 		_prepare_row_node(node, _row_data[i], i)
 		node.visible = true
-		var actual_h: float = node.get_combined_minimum_size().y
+		var h: float = node.get_combined_minimum_size().y
 		node.visible = false
-		if actual_h > 0 and abs(actual_h - _row_heights[i]) > 2.0:
-			_row_heights[i] = actual_h
 		_free_nodes.append(node)
 		_row_assignments.erase(i)
+		if h > 0 and _row_heights[i] > 0:
+			sum_actual += h
+			sum_est += _row_heights[i]
 
-	# 重算总高与偏移（混合了实测+估算）
+	var ratio := sum_actual / sum_est if sum_est > 0 else 1.0
+	if abs(ratio - 1.0) > 0.01:
+		for j in _row_heights.size():
+			_row_heights[j] *= ratio
+
+	# 重算总高与偏移
 	var cursor: float = 0.0
 	for j in _row_heights.size():
 		_y_offsets[j] = cursor
 		cursor += _row_heights[j]
 	virtual_content.custom_minimum_size.y = cursor
+	# 重新渲染当前视口 → 可见行回到实测值
+	_update_visible_rows(scroll.scroll_vertical)
 
 	# — Ⅱ 迭代滚动：while + max_value 安全锁 —
 	var vp_h: float = maxf(scroll.size.y, 100)
