@@ -737,6 +737,15 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 			var fpath: String = state.get("input", {}).get("filePath", "")
 			var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
 			text_parts.append("**" + icon + " " + tname.trim_suffix(".md") + "**")
+			# 变化型工具（write/edit/bash）展示输入或输出内容；静止型（read）只显示路径
+			var mutation: bool = tool_name in ["write", "edit", "bash", "shell"]
+			if mutation:
+				var raw: String = state.get("input", {}).get("content", "")
+				var out: String = state.get("output", "")
+				if not raw.is_empty():
+					text_parts.append("\n```\n" + raw.left(1500) + "\n```")
+				elif not out.is_empty():
+					text_parts.append("\n```\n" + out.left(1500) + "\n```")
 
 	# ── 更新思考标签 ──
 	if not thinking_text.is_empty():
