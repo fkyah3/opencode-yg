@@ -724,9 +724,7 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 		var raw_md: String = "\n".join(text_parts)
 		var bbcode: String = msg.get("_bbcode", "")
 		if bbcode.is_empty():
-			print("→ _prepare_row_node: convert start len=" + str(raw_md.length()))
-			bbcode = text_label._convert_markdown(raw_md)
-			print("→ _prepare_row_node: convert done")
+			bbcode = raw_md
 			msg["_bbcode"] = bbcode
 
 		print("→ _prepare_row_node: append_text start")
