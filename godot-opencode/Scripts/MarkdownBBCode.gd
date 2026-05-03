@@ -24,20 +24,20 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 		var line := line_raw.trim_suffix("\r")
 		
 		# ── 围栏代码块检测 ──
-		var trimmed := line.strip_edges()
-		if trimmed.begins_with("```"):
-			if in_code_block:
-				in_code_block = false
-				continue
-			else:
-				in_code_block = true
-				continue
-		
+	var trimmed := line.strip_edges()
+	if trimmed.begins_with("```"):
+		if in_code_block:
+			in_code_block = false
+			continue
+		else:
+			in_code_block = true
+			continue
+	
 	if in_code_block:
 		result.append("[color=#%s]    %s[/color]" % [cc, _escape_bbcode(line)])
 		continue
-		
-		# ── 标题 # ──
+	
+	# ── 标题 # ──
 		if trimmed.begins_with("#") and trimmed.length() > 1 and trimmed[1] in [" ", "#"]:
 			var n := 0
 			while n < trimmed.length() and trimmed[n] == "#":
