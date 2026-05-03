@@ -491,10 +491,14 @@ func _estimate_row_height(msg: Dictionary) -> float:
 			text_len += len(p.get("text", ""))
 		elif p.get("type") == "reasoning":
 			thinking_len += len(p.get("reasoning_text", p.get("text", "")))
+	# 按字符数估算行高（基础：80 chars/line, 22px line-height）
+	# BBCode 包装标签使渲染文本比 raw markdown 长约 1.2-1.5 倍，
+	# 乘以 1.35 矫正（经验值）。
 	var cpl := 80.0
 	var lh := 22.0
-	var text_lines := maxi(1, ceili(text_len / cpl))
-	var thinking_lines := maxi(0, ceili(thinking_len / cpl))
+	var bbcode_factor := 1.35
+	var text_lines := maxi(1, ceili(text_len / cpl * bbcode_factor))
+	var thinking_lines := maxi(0, ceili(thinking_len / cpl * bbcode_factor))
 	return 36.0 + text_lines * lh + thinking_lines * lh * 0.5
 
 const MAX_POOL_SIZE: int = 50  # 硬上限：池行不超过 50 个节点
@@ -583,10 +587,24 @@ func _update_visible_rows(scroll_y: float) -> void:
 		if _free_nodes.is_empty():
 			_grow_pool(1)
 		var found: Control = _free_nodes.pop_back()
-		_prepare_row_node(found, _row_data[row_idx])
+		_prepare_row_node(found, _row_data[row_idx], row_idx)
 		found.position.y = _y_offsets[row_idx] if row_idx < _y_offsets.size() else 0
 		found.size.x = virtual_content.size.x
 		found.visible = true
+		# 渲染后测量高度，修正 _row_heights 和 _y_offsets
+		if not _row_heights.is_empty() and row_idx < _row_heights.size():
+			var _actual_h := found.get_combined_minimum_size().y
+			if _actual_h > 0:
+				var diff: float = _actual_h - _row_heights[row_idx]
+				if abs(diff) > 2.0:
+					_row_heights[row_idx] = _actual_h
+					var cms := virtual_content.custom_minimum_size
+					cms.y += diff
+					virtual_content.custom_minimum_size = cms
+					for j in range(row_idx + 1, _y_offsets.size()):
+						_y_offsets[j] += diff
+						if _row_assignments.has(j):
+							_row_assignments[j].position.y = _y_offsets[j]
 		_row_assignments[row_idx] = found
 
 func _row_idx_at_y(y: float) -> int:
@@ -656,7 +674,7 @@ func _build_message_row() -> Control:
 	return row
 
 
-func _prepare_row_node(row: Control, msg: Dictionary) -> void:
+func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void:
 	print("→ _prepare_row_node")
 	## 用消息数据填充已有行结构（不创建/删除子节点）
 	var d: Dictionary = msg as Dictionary
