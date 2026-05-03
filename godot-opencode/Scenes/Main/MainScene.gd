@@ -1205,7 +1205,7 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 采样系数矫正 → 持续推底直到 max_value 稳定
+	## 采样 → 推到底(稳定检测) → 强制测量残差 → 推真底
 	if _row_data.is_empty():
 		return
 	if _row_data.size() <= 1:
@@ -1214,7 +1214,7 @@ func _push_scroll_bottom_deferred() -> void:
 
 	var n := _row_data.size()
 
-	# — 采样：均匀取 20 行，累加 actual/est 比值 —
+	# — Ⅰ 采样：均匀取 20 行，累加 actual/est 比值 —
 	var skip := maxi(1, n / 20)
 	var sum_actual := 0.0
 	var sum_est := 0.0
@@ -1248,17 +1248,14 @@ func _push_scroll_bottom_deferred() -> void:
 	virtual_content.custom_minimum_size.y = cursor
 	_update_visible_rows(scroll.scroll_vertical)
 
-	# — 持续推底直到 max_value 稳定 —
-	# 每帧推一个视口高度，记录当前 max_value。
-	# 连续 3 帧 max_value 不变 → 所有行已测量 → 底是稳的
+	# — Ⅱ 推到底(稳定检测) —
 	var vp_h: float = maxf(scroll.size.y, 100)
 	scroll.scroll_vertical = 0
 	await get_tree().process_frame
 
 	var last_max: float = -1.0
 	var stable_frames: int = 0
-	var safety: int = 60  # ~1 秒安全锁
-
+	var safety: int = 60
 	while stable_frames < 3 and safety > 0:
 		safety -= 1
 		var vbar := scroll.get_v_scroll_bar()
@@ -1273,6 +1270,32 @@ func _push_scroll_bottom_deferred() -> void:
 			scroll.scroll_vertical = target
 		last_max = cur_max
 		await get_tree().process_frame
+
+	# — Ⅲ 强制测量所有未渲染的行 —
+	var measured_any := false
+	for i in range(n):
+		if _row_assignments.has(i):
+			continue
+		if _free_nodes.is_empty():
+			break
+		var node: Control = _free_nodes.pop_back()
+		_row_assignments[i] = node
+		_prepare_row_node(node, _row_data[i], i)
+		node.visible = true
+		var h: float = node.get_combined_minimum_size().y
+		node.visible = false
+		if h > 0 and abs(h - _row_heights[i]) > 2.0:
+			_row_heights[i] = h
+			measured_any = true
+		_free_nodes.append(node)
+		_row_assignments.erase(i)
+
+	if measured_any:
+		cursor = 0.0
+		for j in _row_heights.size():
+			_y_offsets[j] = cursor
+			cursor += _row_heights[j]
+		virtual_content.custom_minimum_size.y = cursor
 
 	scroll.scroll_vertical = 99999
 
