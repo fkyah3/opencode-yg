@@ -14,6 +14,11 @@ var _base_url: String = "http://127.0.0.1:4096"
 var _http: HTTPRequest
 
 
+## 修改服务器地址。调用后后续请求使用新地址。
+func set_base_url(url: String) -> void:
+	_base_url = url.trim_suffix("/")
+
+
 ## 健康检查。成功返回 true。
 func health_check() -> bool:
 	var url := _base_url + "/global/health"

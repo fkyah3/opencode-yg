@@ -15,6 +15,21 @@ var host: String = "127.0.0.1"
 var port: int = 4096
 var event_path: String = "/global/event"
 
+
+## 修改服务器地址。断开当前连接，后续 start() 使用新地址。
+func set_url(url: String) -> void:
+	if _should_run:
+		stop()
+	var trimmed := url.trim_suffix("/")
+	if trimmed.begins_with("http://"):
+		trimmed = trimmed.trim_prefix("http://")
+	elif trimmed.begins_with("https://"):
+		trimmed = trimmed.trim_prefix("https://")
+	var parts := trimmed.split(":")
+	host = parts[0]
+	port = int(parts[1]) if parts.size() > 1 else 4096
+
+
 var is_connected: bool:
 	get:
 		return _client != null and _client.get_status() == HTTPClient.STATUS_BODY

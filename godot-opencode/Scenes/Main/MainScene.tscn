@@ -64,6 +64,12 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
 text = "初始化..."
 
+[node name="ConnectBtn" type="Button" parent="Layout/Header/HBox" unique_id=1928374610]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+text = "连接"
+
 [node name="Body" type="HBoxContainer" parent="Layout" unique_id=1891412577]
 layout_mode = 2
 size_flags_horizontal = 3

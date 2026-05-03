@@ -12,6 +12,7 @@ class_name MainScene
 @onready var lsp_list: VBoxContainer = %LspList
 @onready var info_workdir: Label = %InfoWorkdir
 @onready var info_version: Label = %InfoVersion
+@onready var connect_btn: Button = %ConnectBtn
 
 # ── 信息栏（输入框上方） ──
 @onready var info_agent: Label = %InfoAgent
@@ -86,6 +87,9 @@ var _permission_dialog: PermissionDialog
 var _question_dialog: QuestionDialog
 var _pending_permissions: Dictionary = {}  # request_id → properties
 var _pending_questions: Dictionary = {}    # request_id → properties
+
+# ── 连接对话框 ──
+var _connection_dialog: ConnectionDialog
 
 
 func _ready() -> void:
@@ -328,6 +332,13 @@ func _init_dialogs() -> void:
 	_question_dialog.question_rejected.connect(_on_question_rejected)
 	_question_dialog.visible = false
 
+	# 连接对话框
+	var conn_dlg := ConnectionDialog.new()
+	add_child(conn_dlg)
+	conn_dlg.connected.connect(_on_connection_dialog_connected)
+	conn_dlg.visible = false
+	_connection_dialog = conn_dlg
+
 
 func _init_api() -> void:
 	print("→ _init_api")
@@ -367,6 +378,9 @@ func _bootstrap() -> void:
 
 	# 异步加载侧边栏信息，不阻塞主流程
 	_refresh_sidebar_info()
+
+	# 连接按钮
+	connect_btn.pressed.connect(_open_connection_dialog)
 
 	_set_status("")
 	_sse.start()
@@ -776,6 +790,42 @@ func _on_scroll_resized() -> void:
 	# 更新流式节点的宽度
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.size.x = virtual_content.size.x
+
+
+# ── 连接对话框 ──
+
+func _open_connection_dialog() -> void:
+	## 手动修改服务器地址
+	_connection_dialog.popup_connect()
+
+
+func _on_connection_dialog_connected(url: String) -> void:
+	## 用户确认新地址后，重置 api 和 sse 并重新连接
+	print("→ _on_connection_dialog_connected: " + url)
+	_set_status("连接 " + url + "...")
+	
+	_api.set_base_url(url)
+	_sse.set_url(url)
+	
+	# 清空会话状态
+	_current_session_id = ""
+	_row_data = []
+	_clear_messages()
+	_compute_heights_and_offsets()
+	_adjust_pool_size(0)
+	_update_visible_rows(scroll.scroll_vertical)
+	
+	# 重新健康检查 + 引导
+	var ok := await _api.health_check()
+	if not ok:
+		_set_status("❌ 连接失败")
+		return
+	
+	_set_status("获取会话列表...")
+	await _refresh_sessions()
+	_refresh_sidebar_info()
+	_set_status("已连接 " + url)
+	_sse.start()
 
 
 func _on_send_pressed() -> void:
