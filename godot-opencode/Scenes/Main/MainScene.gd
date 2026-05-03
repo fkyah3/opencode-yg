@@ -710,8 +710,8 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 					if part.container is PanelContainer:
 						part.container.visible = true
 				"text":
-					var prev_in_code := part.get("_code_in_fence", false)
-					var now_in_code := _is_streaming_code_block(part.text)
+					var prev_in_code: bool = part.get("_code_in_fence", false)
+					var now_in_code: bool = _is_streaming_code_block(part.text)
 					part._code_in_fence = now_in_code
 					
 					if now_in_code:

@@ -215,13 +215,8 @@ export function Session() {
     if (part.state.status !== "completed") return
     if (part.id === lastSwitch) return
 
-    if (part.tool === "plan_exit") {
-      local.agent.set("build")
-      lastSwitch = part.id
-    } else if (part.tool === "plan_enter") {
-      local.agent.set("plan")
-      lastSwitch = part.id
-    }
+    // plan_enter/plan_exit 已移除（愚公无模式切换）
+    // 保留空函数体避免上游合并冲突
   })
 
   let seeded = false

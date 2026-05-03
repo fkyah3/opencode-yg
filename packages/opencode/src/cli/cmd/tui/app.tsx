@@ -16,7 +16,7 @@ import {
   Show,
   on,
 } from "solid-js"
-import { win32DisableProcessedInput, win32InstallCtrlCGuard } from "./win32"
+import { win32DisableProcessedInput, win32InstallCtrlCGuard, win32EnableVT } from "./win32"
 import { Flag } from "@/flag/flag"
 import semver from "semver"
 import { DialogProvider, useDialog } from "@tui/ui/dialog"
@@ -135,13 +135,19 @@ export function tui(input: {
       await TuiPluginRuntime.dispose()
     }
 
-    const renderer = await createCliRenderer(rendererConfig(input.config))
+    // Enable VT BEFORE opentui creates its own handles
+    try { win32EnableVT(); } catch (_) {}
 
-    // Safety timeout: if TUI doesn't render in 15s, exit cleanly
-    const safetyTimer = setTimeout(() => {
-      console.error("[TUI] render timed out (15s), exiting")
-      onExit()
-    }, 15000)
+    // TUI diagnostic: wrap createCliRenderer with timeout
+    const renderer = await Promise.race([
+      createCliRenderer(rendererConfig(input.config)),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("[TUI] createCliRenderer timed out")), 8000)
+      ),
+    ]);
+
+    // Timer logging
+    _lf("A_RENDERER_READY at +" + (Date.now() - _lt) + "ms");
 
     try {
       await render(() => {
@@ -206,7 +212,10 @@ export function tui(input: {
           </ErrorBoundary>
         )
       }, renderer)
+      _lf("B:RENDER_DONE at +" + (Date.now() - _lt) + "ms");
       clearTimeout(safetyTimer)
+      // Keep the process alive while TUI is running
+      await new Promise(() => {})
     } catch (e) {
       clearTimeout(safetyTimer)
       await onExit()

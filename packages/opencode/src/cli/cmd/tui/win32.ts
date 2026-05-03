@@ -2,6 +2,7 @@ import { dlopen, ptr } from "bun:ffi"
 import type { ReadStream } from "node:tty"
 
 const STD_INPUT_HANDLE = -10
+const STD_OUTPUT_HANDLE = -11
 const ENABLE_PROCESSED_INPUT = 0x0001
 
 const kernel = () =>
@@ -10,6 +11,8 @@ const kernel = () =>
     GetConsoleMode: { args: ["ptr", "ptr"], returns: "i32" },
     SetConsoleMode: { args: ["ptr", "u32"], returns: "i32" },
     FlushConsoleInputBuffer: { args: ["ptr"], returns: "i32" },
+    CreateFileW: { args: ["ptr", "u32", "u32", "ptr", "u32", "u32", "ptr"], returns: "ptr" },
+    CloseHandle: { args: ["ptr"], returns: "i32" },
   })
 
 let k32: ReturnType<typeof kernel> | undefined
@@ -127,4 +130,50 @@ export function win32InstallCtrlCGuard() {
   }
 
   return unhook
+}
+
+/**
+ * Enable Virtual Terminal processing on ALL console output handles.
+ * Some runtimes (Bun PR #26757) leave opentui's own console handle
+ * without VT processing, causing escape sequences to print as text.
+ * We brute-force VT on every handle we can get.
+ */
+export function win32EnableVT() {
+  if (process.platform !== "win32") return
+  if (!load()) return
+
+  const setVT = (handle: bigint | null) => {
+    if (!handle || handle === 0n) return
+    const buf = new Uint32Array(1)
+    if (k32!.symbols.GetConsoleMode(handle, ptr(buf)) === 0) return
+    const mode = buf[0]!
+    k32!.symbols.SetConsoleMode(handle, mode | 0x0007)
+  }
+
+  // 1. Standard output handle
+  setVT(k32!.symbols.GetStdHandle(-11))
+
+  // 2. Standard error handle
+  setVT(k32!.symbols.GetStdHandle(-12))
+
+  // 3. Console output handle via CreateFile (bypasses runtime's wrapper)
+  const GENERIC_READ = 0x80000000
+  const GENERIC_WRITE = 0x40000000
+  const FILE_SHARE_READ = 1
+  const FILE_SHARE_WRITE = 2
+  const OPEN_EXISTING = 3
+  const conoutPtr = ptr(Buffer.from("CONOUT$\0", "ucs2"))
+  const conHandle = k32!.symbols.CreateFileW(
+    conoutPtr,
+    GENERIC_READ | GENERIC_WRITE,
+    FILE_SHARE_READ | FILE_SHARE_WRITE,
+    0n, // null security attributes
+    OPEN_EXISTING,
+    0,
+    0n // no template
+  )
+  setVT(conHandle)
+  if (conHandle !== 0n && conHandle !== -1n) {
+    k32!.symbols.CloseHandle(conHandle)
+  }
 }

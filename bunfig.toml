@@ -1,6 +1,8 @@
 [install]
 exact = true
 
+preload = ["./opencode-root-preload.ts"]
+
 [test]
 root = "./do-not-run-tests-from-root"
 
