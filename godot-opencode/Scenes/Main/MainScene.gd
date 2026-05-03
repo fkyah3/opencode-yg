@@ -80,10 +80,14 @@ var _overscan: int = 4                       # 可见区域外的缓冲行数
 
 # ── 滚动到底参数（导出到 Inspector 方便调试） ──
 @export_group("滚动到底参数")
-@export var scroll_sample_count: int = 20    # 采样行数
-@export var scroll_stable_frames: int = 3    # max_value 稳定判定帧数
-@export var scroll_safety_max: int = 60      # 推底循环安全锁上限
-@export var scroll_step_ratio: float = 1.0   # 每帧推的视口倍数（1.0=100%）
+@export_tooltip("采样行数：均匀从_row_data中取N行实测高度与估算高度之比，全表应用该系数矫正")
+@export var scroll_sample_count: int = 20
+@export_tooltip("max_value稳定判定帧数：连续N帧scrollbar的max_value不再变化即认为底已稳定")
+@export var scroll_stable_frames: int = 3
+@export_tooltip("推底循环安全锁上限：单次推底循环最多执行N帧，防止死循环")
+@export var scroll_safety_max: int = 60
+@export_tooltip("每帧推进的视口倍数：1.0=每次推进一个完整视口高度，0.5=半个视口")
+@export var scroll_step_ratio: float = 1.0
 @export_group("")
 
 # ── 滚动防抖 ──
