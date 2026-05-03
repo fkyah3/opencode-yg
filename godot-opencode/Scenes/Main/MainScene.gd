@@ -72,7 +72,7 @@ func _create_sse_handler() -> SSEHandler:
 		if sid != _current_session_id or _streaming_label == null:
 			return
 		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
-		_streaming_text += "\n**" + icon + " " + tool_name + "**"
+		_streaming_text += "\n[b]" + icon + " " + tool_name + "[/b]"
 		_streaming_label.text = _streaming_text
 		_scroll_to_newest()
 
