@@ -68,8 +68,8 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 
 
 static func _escape_bbcode(text: String) -> String:
+	## 转义 BBCode 特殊字符（Godot 标准转义）
 	var result := text
-	result = result.replace("&", "&amp;")
-	result = result.replace("[", "&lb;")
-	result = result.replace("]", "&rb;")
+	result = result.replace("[", "[lb]")
+	result = result.replace("]", "[rb]")
 	return result
