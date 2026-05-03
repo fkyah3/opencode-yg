@@ -739,6 +739,22 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			# 事件通过 _pending_refresh 触发单次刷新，避免双刷新闪屏
 			pass
 
+		# SyncEvent 通过 "sync" 事件类型传递（工具调用等消息更新）
+		"sync":
+			var sync_event: Dictionary = properties.get("syncEvent", {})
+			var se_type: String = sync_event.get("type", "")
+			if not se_type.begins_with("message.part.updated"):
+				return
+			var se_data: Dictionary = sync_event.get("data", {})
+			var sid: String = se_data.get("sessionID", "")
+			if sid != _current_session_id:
+				return
+			var part_data: Dictionary = se_data.get("part", {})
+			var part_type: String = part_data.get("type", "")
+			if part_type != "tool":
+				return
+			_on_tool_part_updated(part_data)
+
 		"permission.asked":
 			_on_permission_asked(properties)
 
@@ -920,6 +936,51 @@ func _finalize_streaming() -> void:
 	_streaming_root = null
 	_streaming_parts.clear()
 	_streaming_part_order.clear()
+	_scroll_to_bottom()
+
+
+func _on_tool_part_updated(part_data: Dictionary) -> void:
+	## 收到工具调用的 PartUpdated 事件，创建或更新流式工具部件
+	## part_data: {id, type: "tool", tool: "write", state: {status, input, title, ...}}
+	var tool_name: String = part_data.get("tool", "")
+	var pstate: Dictionary = part_data.get("state", {})
+	var status_str: String = pstate.get("status", "")
+	var input_dict: Dictionary = pstate.get("input", {})
+	var title_str: String = pstate.get("title", "")
+	
+	# 构建工具调用信息行
+	var icon := "🔧"
+	if status_str == "completed":
+		icon = "✅"
+	elif status_str == "error":
+		icon = "❌"
+	
+	# 提取关键参数（文件路径）
+	var param_desc := ""
+	if input_dict.has("file"):
+		param_desc = " " + str(input_dict["file"])
+	elif input_dict.has("command"):
+		param_desc = " " + str(input_dict["command"]).left(80)
+	elif not title_str.is_empty():
+		param_desc = " " + title_str
+	
+	var line := icon + " " + tool_name + param_desc
+	
+	# 确保流式容器存在
+	if not is_instance_valid(_streaming_root):
+		_create_streaming_widget()
+	
+	# 使用 tool_name 做 partID 的 fallback（工具调用没有 PartDelta 的 partID）
+	var part_id := "tool_" + part_data.get("id", tool_name)
+	
+	if not _streaming_parts.has(part_id):
+		_create_streaming_part(part_id, "tool", _streaming_root)
+	
+	var part: Dictionary = _streaming_parts[part_id]
+	part.text = line
+	part.widget.text = line
+	part.widget.visible = true
+	
 	_scroll_to_bottom()
 
 
