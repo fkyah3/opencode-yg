@@ -474,8 +474,8 @@ func _load_session_messages(sid: String) -> void:
 	_update_visible_rows(scroll.scroll_vertical)
 
 	_set_status(str(_row_data.size()) + " 条消息")
-	await _push_scroll_bottom_deferred()
 	_hide_loading()
+	_push_scroll_bottom_deferred()
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
@@ -1205,30 +1205,42 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 迭代滚动：从顶一次推一段，直到 scroll 无法再推（已到真底）
+	## 快速测量所有未渲染行的实际高度 → 直接推到底
+	if _row_data.is_empty():
+		return
 	if _row_data.size() <= 1:
 		scroll.scroll_vertical = 99999
 		return
 
-	var vp_h: float = maxf(scroll.size.y, 100)
-	var step: float = vp_h * 0.66  # 每次推 2/3 视口高度，避免跳过行的测量
-	var max_iter: int = ceili(maxf(virtual_content.custom_minimum_size.y, 100) / maxf(step, 1)) * 2  # 2× 安全上界
-	scroll.scroll_vertical = 0
-	await get_tree().process_frame
+	# 遍历未渲染的行，借池节点临时渲染→测量→归还
+	for i in _row_data.size():
+		if _row_assignments.has(i):
+			continue  # 已渲染（可见区），已经测量过
+		if _free_nodes.is_empty():
+			break  # 池节点用完了
+		var node: Control = _free_nodes.pop_back()
+		_row_assignments[i] = node
+		_prepare_row_node(node, _row_data[i], i)
+		var h: float = node.get_combined_minimum_size().y
+		if h > 0 and abs(h - _row_heights[i]) > 2.0:
+			_row_heights[i] = h
+		# 归还池
+		node.visible = false
+		_free_nodes.append(node)
+		_row_assignments.erase(i)
 
-	var iter: int = 0
-	while iter < max_iter:
-		iter += 1
-		var vbar := scroll.get_v_scroll_bar()
-		if vbar == null or vbar.max_value <= 0:
-			break
-		var cur: float = scroll.scroll_vertical
-		var max_v: float = vbar.max_value
-		if cur >= max_v - 2.0:
-			break
-		scroll.scroll_vertical = int(cur + step)
-		await get_tree().process_frame
-	# 最后再推一次确保到底
+	# 用 _row_heights（实测 + 估算混合）计算准确总高
+	var total_h: float = 0.0
+	for h in _row_heights:
+		total_h += h
+	virtual_content.custom_minimum_size.y = total_h
+	# 重建 _y_offsets
+	var cursor: float = 0.0
+	for i in _row_heights.size():
+		_y_offsets[i] = cursor
+		cursor += _row_heights[i]
+
+	# 直接推到底
 	scroll.scroll_vertical = 99999
 
 
