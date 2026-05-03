@@ -284,13 +284,10 @@ func _send_message_direct(text: String) -> void:
 	# 创建流式响应容器
 	_create_streaming_widget()
 
+	# 等待 API 返回，SSE 已处理追加
 	var result := await _api.send_message(_current_session_id, text)
 	if result.is_empty():
 		push_warning("send_message 返回空结果")
-	else:
-		# 移除流式占位，追加 AI 响应到虚拟滚动
-		_finalize_streaming()
-		_append_message(result)
 	_set_status("")
 
 
@@ -741,12 +738,12 @@ func _on_send_pressed() -> void:
 	# 创建流式响应容器
 	_create_streaming_widget()
 
+	# 等待 API 返回，SSE session.status/idle + message.updated
+	# 已经处理了 _finalize_streaming + _refresh_messages，
+	# 这里不再重复追加 AI 回复
 	var res = await _api.send_message(_current_session_id, text)
 	if res.is_empty() or not (res is Dictionary):
 		push_warning("send_message 返回异常: " + str(res))
-	else:
-		_finalize_streaming()
-		_append_message(res)
 	_set_status("")
 
 
@@ -963,7 +960,10 @@ func _create_streaming_widget() -> VBoxContainer:
 
 
 func _finalize_streaming() -> void:
-	## 完成流式响应（不删除节点，由 _append_message 清理）
+	## 完成流式响应：释放流式节点，置空引用
+	if _streaming_node != null and is_instance_valid(_streaming_node):
+		_streaming_node.queue_free()
+	_streaming_node = null
 	_streaming_label = null
 	_streaming_thinking_label = null
 	_scroll_to_bottom()
