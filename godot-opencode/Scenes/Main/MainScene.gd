@@ -81,6 +81,7 @@ var _overscan: int = 4                       # 可见区域外的缓冲行数
 # ── 滚动防抖 ──
 var _scroll_timer: float = 0.0
 var _scroll_pending: bool = false
+var _pending_scroll_bottom: bool = false  # 布局稳定后推到底
 
 # ── 权限 / 问题对话框 ──
 var _permission_dialog: PermissionDialog
@@ -467,9 +468,9 @@ func _load_session_messages(sid: String) -> void:
 	_update_visible_rows(scroll.scroll_vertical)
 
 	_set_status(str(_row_data.size()) + " 条消息")
-	# 等一帧确保布局完成，滚动到底部
-	await get_tree().process_frame
-	scroll.scroll_vertical = 99999
+	# 标记首次加载需滚动到底部，主动触发推底链
+	_pending_scroll_bottom = true
+	_on_scroll_resized()
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
@@ -795,6 +796,12 @@ func _on_scroll_resized() -> void:
 	# 更新流式节点的宽度
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.size.x = virtual_content.size.x
+	# 首次加载时持续推到底部，直到布局稳定
+	if _pending_scroll_bottom:
+		scroll.scroll_vertical = 99999
+		var vbar := scroll.get_v_scroll_bar()
+		if vbar != null and vbar.value >= vbar.max_value - 2.0:
+			_pending_scroll_bottom = false
 
 
 # ── 连接对话框 ──
