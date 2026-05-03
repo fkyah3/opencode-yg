@@ -726,14 +726,14 @@ func _render_part_tool(d: Dictionary) -> String:
 	var parts := PackedStringArray()
 	parts.append("**" + icon + " " + tname.trim_suffix(".md") + "**")
 
-	# edit → 左右对照 diff
+	# edit → 原文红、修改后绿，顺序块（不用 [table]，避免 ITEM_TABLE 警告）
 	if tool_name == "edit":
 		var old_str: String = state.get("input", {}).get("oldString", "")
 		var new_str: String = state.get("input", {}).get("newString", "")
 		if not old_str.is_empty() or not new_str.is_empty():
 			var old_esc := old_str.replace("[", "[lb]")
 			var new_esc := new_str.replace("[", "[lb]")
-			parts.append("[table=2 border=true][cell][bgcolor=#331111][color=#ff5555]" + old_esc + "[/color][/bgcolor][/cell][cell][bgcolor=#113311][color=#55ff55]" + new_esc + "[/color][/bgcolor][/cell][/table]")
+			parts.append("\n[color=#ff5555]─ 原文 ─[/color]\n[color=#ff5555]" + old_esc + "[/color]\n[color=#55ff55]─ 修改后 ─[/color]\n[color=#55ff55]" + new_esc + "[/color]")
 	else:
 		# write/bash/shell → 代码块包裹内容
 		var mutation: bool = tool_name in ["write", "bash", "shell"]
@@ -787,9 +787,10 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 	# ── 更新思考标签 ──
 	if not thinking_text.is_empty():
 		var col := color_text_dim.to_html(false)
+		var escaped := thinking_text.replace("[", "[lb]")
 		thinking_label.visible = true
 		thinking_label.clear()
-		thinking_label.append_text("[color=#" + col + "]思考：" + thinking_text + "[/color]")
+		thinking_label.append_text("[color=#" + col + "]思考：" + escaped + "[/color]")
 	else:
 		thinking_label.visible = false
 
@@ -962,15 +963,15 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			var field: String = properties.get("field", "")
 			var delta: String = properties.get("delta", "")
 
-			# 思考内容单独处理
+			# 思考内容单独处理（纯色灰文字，无 markdown 转换）
 			if field == "reasoning":
 				if _streaming_thinking_label:
 					_streaming_thinking_text += delta
 					_streaming_thinking_label.visible = true
-					# 用 BBCode 渲染思考文字（灰色 + "思考：" 前缀）
-					var col_html := color_text_dim.to_html(true)
+					var col_html := color_text_dim.to_html(false)
+					var escaped := _streaming_thinking_text.replace("[", "[lb]")
 					_streaming_thinking_label.clear()
-					_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + _streaming_thinking_text + "[/color]")
+					_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + escaped + "[/color]")
 					_scroll_to_bottom()
 				return
 
