@@ -474,9 +474,8 @@ func _load_session_messages(sid: String) -> void:
 	_update_visible_rows(scroll.scroll_vertical)
 
 	_set_status(str(_row_data.size()) + " 条消息")
-	_hide_loading()
-	# 等布局链稳定，推到底
 	await _push_scroll_bottom_deferred()
+	_hide_loading()
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
@@ -1206,10 +1205,23 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 等布局链稳定，推到底部 8 次（每帧一次）
-	for _i in range(8):
+	## 分批渲染所有行以实测高度 → 最后推到底
+	if _row_data.size() <= 1:
 		scroll.scroll_vertical = 99999
+		return
+
+	var vp_h: float = maxf(scroll.size.y, 100)
+	var y_back: float = _y_offsets.back() if not _y_offsets.is_empty() else 0.0
+	var h_back: float = _row_heights.back() if not _row_heights.is_empty() else 0.0
+	var total_h: float = vp_h if (y_back <= 0 and h_back <= 0) else y_back + h_back
+	scroll.scroll_vertical = 0
+	await get_tree().process_frame
+	# 从顶开始按视口高度分段滚动，每段渲染并测量一批行的高度
+	for y in range(int(vp_h), int(total_h), int(vp_h)):
+		scroll.scroll_vertical = y
 		await get_tree().process_frame
+	# 所有行已测量完毕 → 推到真底
+	scroll.scroll_vertical = 99999
 
 
 func _do_scroll_to_bottom() -> void:
