@@ -710,7 +710,25 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 					if part.container is PanelContainer:
 						part.container.visible = true
 				"text":
-					part.widget.text = part.text
+					var prev_in_code := part.get("_code_in_fence", false)
+					var now_in_code := _is_streaming_code_block(part.text)
+					part._code_in_fence = now_in_code
+					
+					if now_in_code:
+						# 代码块内：不逐字推送，提取围栏前的内容 + 占位符
+						if not prev_in_code:
+							# 刚进入代码块，截取围栏前的文本用于显示
+							part._pre_code_text = part.text.rsplit("```", 1)[0]
+						var pre: String = part.get("_pre_code_text", "")
+						part.widget.text = pre + ("\n" if pre.length() > 0 else "") + "```\n(代码块生成中...)\n```"
+					else:
+						# 不在代码块内，但刚退出时也不 dump 原始文本
+						if prev_in_code:
+							# 刚退出代码块：保持占位符，不显示原始围栏内容
+							pass
+						else:
+							# 普通文本（围栏之前或之间）：正常流式更新
+							part.widget.text = part.text
 				"tool":
 					part.widget.text = "🛠 " + part.text
 				
@@ -945,6 +963,20 @@ func _clear_messages() -> void:
 
 func _set_status(text: String) -> void:
 	status_label.text = text
+
+
+func _is_streaming_code_block(accumulated: String) -> bool:
+	## 检测累计文本中是否处于未闭合的代码围栏内
+	## 统计 ``` 出现的次数，奇数次 = 在代码块内
+	var idx := 0
+	var fence_count := 0
+	while true:
+		idx = accumulated.find("```", idx)
+		if idx == -1:
+			break
+		fence_count += 1
+		idx += 3
+	return fence_count % 2 == 1
 
 
 func _scroll_to_bottom() -> void:
