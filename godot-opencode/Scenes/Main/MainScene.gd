@@ -948,17 +948,21 @@ func _on_tool_part_updated(part_data: Dictionary) -> void:
 	var input_dict: Dictionary = pstate.get("input", {})
 	var title_str: String = pstate.get("title", "")
 	
-	# 构建工具调用信息行
+	# 构建工具调用状态行
 	var icon := "🔧"
 	if status_str == "completed":
 		icon = "✅"
 	elif status_str == "error":
 		icon = "❌"
 	
-	# 提取关键参数（文件路径）
+	# 提取关键参数（文件路径/命令）
 	var param_desc := ""
-	if input_dict.has("file"):
+	if input_dict.has("filePath"):
+		param_desc = " " + str(input_dict["filePath"])
+	elif input_dict.has("file"):
 		param_desc = " " + str(input_dict["file"])
+	elif input_dict.has("path"):
+		param_desc = " " + str(input_dict["path"])
 	elif input_dict.has("command"):
 		param_desc = " " + str(input_dict["command"]).left(80)
 	elif not title_str.is_empty():
@@ -966,11 +970,30 @@ func _on_tool_part_updated(part_data: Dictionary) -> void:
 	
 	var line := icon + " " + tool_name + param_desc
 	
+	# 完成/错误时附加内容预览
+	if status_str == "completed" or status_str == "error":
+		var preview := ""
+		if status_str == "error":
+			preview = pstate.get("error", "")
+		elif input_dict.has("content"):
+			# write 工具：显示写入内容预览
+			var raw: String = str(input_dict["content"])
+			preview = raw.left(200)
+			if raw.length() > 200:
+				preview += "..."
+		elif pstate.has("output"):
+			var raw: String = str(pstate["output"])
+			preview = raw.left(200)
+			if raw.length() > 200:
+				preview += "..."
+		
+		if not preview.is_empty():
+			line += "\n" + preview
+	
 	# 确保流式容器存在
 	if not is_instance_valid(_streaming_root):
 		_create_streaming_widget()
 	
-	# 使用 tool_name 做 partID 的 fallback（工具调用没有 PartDelta 的 partID）
 	var part_id: String = "tool_" + str(part_data.get("id", tool_name))
 	
 	if not _streaming_parts.has(part_id):
