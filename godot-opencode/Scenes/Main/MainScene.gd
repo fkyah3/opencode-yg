@@ -1212,20 +1212,23 @@ func _push_scroll_bottom_deferred() -> void:
 
 	var vp_h: float = maxf(scroll.size.y, 100)
 	var step: float = vp_h * 0.66  # 每次推 2/3 视口高度，避免跳过行的测量
+	var max_iter: int = ceili(maxf(virtual_content.custom_minimum_size.y, 100) / maxf(step, 1)) * 2  # 2× 安全上界
 	scroll.scroll_vertical = 0
 	await get_tree().process_frame
 
-	while true:
+	var iter: int = 0
+	while iter < max_iter:
+		iter += 1
 		var vbar := scroll.get_v_scroll_bar()
 		if vbar == null or vbar.max_value <= 0:
 			break
 		var cur: float = scroll.scroll_vertical
 		var max_v: float = vbar.max_value
 		if cur >= max_v - 2.0:
-			break  # 已到真底
+			break
 		scroll.scroll_vertical = int(cur + step)
 		await get_tree().process_frame
-	# 最后再推一次确保到底（高度在实测中逐渐趋准）
+	# 最后再推一次确保到底
 	scroll.scroll_vertical = 99999
 
 
