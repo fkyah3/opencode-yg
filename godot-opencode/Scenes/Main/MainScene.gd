@@ -971,7 +971,7 @@ func _on_tool_part_updated(part_data: Dictionary) -> void:
 		_create_streaming_widget()
 	
 	# 使用 tool_name 做 partID 的 fallback（工具调用没有 PartDelta 的 partID）
-	var part_id := "tool_" + part_data.get("id", tool_name)
+	var part_id: String = "tool_" + str(part_data.get("id", tool_name))
 	
 	if not _streaming_parts.has(part_id):
 		_create_streaming_part(part_id, "tool", _streaming_root)
