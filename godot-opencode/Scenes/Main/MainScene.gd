@@ -104,6 +104,8 @@ func _ready() -> void:
 	_load_agent_info()
 	# 监听输入框输入，检测 / 命令
 	msg_input.text_changed.connect(_on_input_text_changed)
+	# 回车发送，Tab 换行
+	msg_input.gui_input.connect(_on_input_gui_input)
 	# 连接虚拟滚动的滚动信号
 	scroll.get_v_scroll_bar().value_changed.connect(_on_scroll_changed)
 	scroll.resized.connect(_on_scroll_resized)
@@ -465,7 +467,7 @@ func _load_session_messages(sid: String) -> void:
 	_update_visible_rows(scroll.scroll_vertical)
 
 	_set_status(str(_row_data.size()) + " 条消息")
-	_scroll_to_bottom()
+	call_deferred("_scroll_to_bottom")
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
@@ -827,6 +829,30 @@ func _on_connection_dialog_connected(url: String) -> void:
 	_refresh_sidebar_info()
 	_set_status("已连接 " + url)
 	_sse.start()
+
+
+func _on_input_gui_input(event: InputEvent) -> void:
+	## 回车发送，Tab 换行
+	if not (event is InputEventKey):
+		return
+	var key_event := event as InputEventKey
+	if not key_event.pressed:
+		return
+	if key_event.keycode == KEY_ENTER:
+		accept_event()
+		_on_send_pressed()
+	elif key_event.keycode == KEY_TAB:
+		accept_event()
+		# 在光标位置插入换行
+		var line := msg_input.get_caret_line()
+		var col := msg_input.get_caret_column()
+		var content := msg_input.text
+		var lines_array := content.split("\n")
+		var current := lines_array[line]
+		lines_array[line] = current.left(col) + "\n" + current.right(col)
+		msg_input.text = "\n".join(lines_array)
+		msg_input.set_caret_line(line + 1)
+		msg_input.set_caret_column(0)
 
 
 func _on_send_pressed() -> void:
