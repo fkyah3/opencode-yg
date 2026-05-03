@@ -1083,15 +1083,6 @@ func _finalize_streaming() -> void:
 	_streaming_label = null
 	_streaming_thinking_label = null
 	_scroll_to_newest()
-	return msg_vbox
-
-
-func _finalize_streaming() -> void:
-	print("→ _finalize_streaming")
-	## 完成流式响应（不删除节点，由 _append_message 清理）
-	_streaming_label = null
-	_streaming_thinking_label = null
-	_scroll_to_newest()
 
 
 func _clear_messages() -> void:
