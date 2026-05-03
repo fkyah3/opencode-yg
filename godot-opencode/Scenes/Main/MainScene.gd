@@ -724,10 +724,14 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 		var raw_md: String = "\n".join(text_parts)
 		var bbcode: String = msg.get("_bbcode", "")
 		if bbcode.is_empty():
-			bbcode = raw_md
+			bbcode = text_label._convert_markdown(raw_md)
+			# 后处理：给粗体标签加颜色（字符串替换，无循环风险）
+			if text_label.bold_color and text_label.bold_color.a > 0:
+				var col := text_label.bold_color.to_html(false)
+				bbcode = bbcode.replace("[b]", "[color=#%s][b]" % col)
+				bbcode = bbcode.replace("[/b]", "[/b][/color]")
 			msg["_bbcode"] = bbcode
 
-		print("→ _prepare_row_node: append_text start")
 		text_label.clear()
 		text_label.append_text(bbcode)
 		print("→ _prepare_row_node: append_text done")

@@ -629,17 +629,17 @@ func _process_link_syntax(line: String) -> String:
 
 func _process_text_formatting_syntax(line: String) -> String:
 	var processed_line := line
-	# Bold text — 包颜色标签
+	# Bold text:
 	var regex := RegEx.create_from_string("(\\*\\*|\\_\\_)(.+?)\\1")
 	while true:
 		var result := regex.search(processed_line)
 		if not result:
 			break
-		var content := result.get_string(2)
-		var before := processed_line.left(result.get_start())
-		var after := processed_line.right(result.get_end())
-		processed_line = before + "[color=#%s][b]%s[/b][/color]" % [bold_color.to_html(), content] + after
-		_debug("... bold text: "+content)
+		var _start := result.get_start()
+		processed_line = processed_line.erase(_start, 2).insert(_start, "[b]")
+		var _end := result.get_end()
+		processed_line = processed_line.erase(_end - 2, 2).insert(_end - 2, "[/b]")
+		_debug("... bold text: "+result.get_string(2))
 	
 	# Italic text
 	while true:
