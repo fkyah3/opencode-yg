@@ -78,14 +78,6 @@ var _row_assignments: Dictionary = {}        # idx → Control（当前分配给
 var _free_nodes: Array[Control] = []         # 空闲池节点（自由列表，O(1) 取用）
 var _overscan: int = 4                       # 可见区域外的缓冲行数
 
-# ── 滚动到底参数（导出到 Inspector 方便调试） ──
-@export_group("滚动到底参数")
-@export var scroll_sample_count: int = 20  ## 采样行数：均匀从_row_data中取N行实测高度与估算之比，全表应用该系数矫正
-@export var scroll_stable_frames: int = 3  ## max_value稳定判定帧数：连续N帧不再变化即认为底已稳定
-@export var scroll_safety_max: int = 60  ## 推底循环安全锁上限：单次推底最多执行N帧，防止死循环
-@export var scroll_step_ratio: float = 1.0  ## 每帧推进的视口倍数：1.0=完整视口，0.5=半个视口
-@export_group("")
-
 # ── 滚动防抖 ──
 var _scroll_timer: float = 0.0
 var _scroll_pending: bool = false
@@ -367,11 +359,8 @@ func _process(delta: float) -> void:
 	# print("→ _process")
 	# 防抖滚动: 每 0.1s 最多触发一次
 	if _scroll_pending:
-		_scroll_timer += delta
-		if _scroll_timer >= 0.1:
-			_scroll_timer = 0.0
-			_scroll_pending = false
-			_do_scroll_to_bottom()
+		_scroll_pending = false
+		scroll.scroll_vertical = 0
 
 
 func _bootstrap() -> void:
@@ -468,15 +457,15 @@ func _load_session_messages(sid: String) -> void:
 		_set_status("(无消息)")
 		return
 
-	# 数据准备
+	# 数据准备（倒序：最新消息在前）
+	messages.reverse()
 	_row_data = messages
 	_set_status("渲染 " + str(messages.size()) + " 条消息...")
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
-	_update_visible_rows(scroll.scroll_vertical)
+	_update_visible_rows(0)
 
 	_set_status(str(_row_data.size()) + " 条消息")
-	await _push_scroll_bottom_deferred()
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
@@ -486,6 +475,7 @@ func _refresh_messages() -> void:
 	var messages = await _api.get_messages(_current_session_id, 300)
 	if messages.is_empty():
 		return
+	messages.reverse()
 	_row_data = messages
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
@@ -815,7 +805,7 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 
 func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
 	print("→ _append_message remove_streaming=" + str(remove_streaming))
-	## 追加一条消息到虚拟滚动（用于用户/ AI 响应消息）
+	## 追加一条消息到虚拟滚动（新消息插在最前）
 	if remove_streaming or _streaming_node != null:
 		if _streaming_node != null and is_instance_valid(_streaming_node):
 			_streaming_node.queue_free()
@@ -823,25 +813,31 @@ func _append_message(msg: Dictionary, remove_streaming: bool = false) -> void:
 		_streaming_label = null
 		_streaming_thinking_label = null
 
-	_row_data.append(msg)
+	_row_data.insert(0, msg)
 	var h: float = _estimate_row_height(msg)
-	_row_heights.append(h)
-	_y_offsets.append(virtual_content.custom_minimum_size.y)
-	virtual_content.custom_minimum_size.y += h
+	_row_heights.insert(0, h)
+	# 重算全部偏移
+	var cursor: float = 0.0
+	for i in _row_heights.size():
+		_y_offsets[i] = cursor
+		cursor += _row_heights[i]
+	virtual_content.custom_minimum_size.y = cursor
 
 	_adjust_pool_size()
 	_update_visible_rows(scroll.scroll_vertical)
-	_scroll_to_bottom()
+	_scroll_to_newest()
 
 
 func _on_scroll_resized() -> void:
 	print("→ _on_scroll_resized")
-	## 滚动容器大小变化时重新调整
 	_adjust_pool_size()
 	_update_visible_rows(scroll.scroll_vertical)
-	# 更新流式节点的宽度
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.size.x = virtual_content.size.x
+
+
+
+# ── 连接对话框 ──
 
 
 # ── 连接对话框 ──
@@ -972,7 +968,7 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 					var escaped := _streaming_thinking_text.replace("[", "[lb]")
 					_streaming_thinking_label.clear()
 					_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + escaped + "[/color]")
-					_scroll_to_bottom()
+					_scroll_to_newest()
 				return
 
 			if field != "text":
@@ -981,7 +977,7 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			if _streaming_label:
 				_streaming_text += delta
 				_streaming_label.text = _streaming_text
-				_scroll_to_bottom()
+				_scroll_to_newest()
 			# Token 速率追踪
 			_rate_tokens += delta.length()
 			if _rate_time < 0.001:
@@ -1005,25 +1001,9 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 					var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
 					_streaming_text += "\n**" + icon + " " + tool_name + "**"
 					_streaming_label.text = _streaming_text
-					_scroll_to_bottom()
+					_scroll_to_newest()
 
-		"message.updated":
-			# SSE 通知有新消息完成时，刷新当前会话的消息列表
-			var sid: String = properties.get("sessionID", "")
-			if sid == _current_session_id and not _streaming_label:
-				# 非流式场景下刷新消息列表
-				_refresh_messages()
-
-		"permission.asked":
-			_on_permission_asked(properties)
-
-		"question.asked":
-			_on_question_asked(properties)
-
-		"server.connected":
-			_set_status("服务器已连接")
-
-		"server.heartbeat":
+			"server.heartbeat":
 			pass
 
 
@@ -1149,13 +1129,20 @@ func _create_streaming_widget() -> VBoxContainer:
 	bubble.add_child(_streaming_label)
 	msg_vbox.add_child(bubble)
 
-	# 将流式节点添加到虚拟内容底部（在虚拟滚动行之后）
+	# 将流式节点添加到虚拟内容顶部（新消息总在最前）
 	_streaming_node = msg_vbox
-	var y_pos := virtual_content.custom_minimum_size.y
-	msg_vbox.position.y = y_pos
+	msg_vbox.position.y = 0
 	msg_vbox.size.x = virtual_content.size.x
 	virtual_content.add_child(msg_vbox)
-	_scroll_to_bottom()
+	_scroll_to_newest()
+	return msg_vbox
+
+func _finalize_streaming() -> void:
+	print("→ _finalize_streaming")
+	## 完成流式响应（不删除节点，由 _append_message 清理）
+	_streaming_label = null
+	_streaming_thinking_label = null
+	_scroll_to_newest()
 	return msg_vbox
 
 
@@ -1164,7 +1151,7 @@ func _finalize_streaming() -> void:
 	## 完成流式响应（不删除节点，由 _append_message 清理）
 	_streaming_label = null
 	_streaming_thinking_label = null
-	_scroll_to_bottom()
+	_scroll_to_newest()
 
 
 func _clear_messages() -> void:
@@ -1197,131 +1184,6 @@ func _set_status(text: String) -> void:
 
 
 
-func _scroll_to_bottom() -> void:
+func _scroll_to_newest() -> void:
+	## 防抖标记：最新消息在顶部（reversed 模式 scroll=0）
 	_scroll_pending = true
-
-
-func _push_scroll_bottom_deferred() -> void:
-	## 采样 → 推到底(稳定检测) → 强制测量残差 → 推真底
-	## 参数可在 Inspector 中实时调试
-	if _row_data.is_empty():
-		return
-	if _row_data.size() <= 1:
-		scroll.scroll_vertical = 99999
-		return
-
-	var n := _row_data.size()
-
-	# — Ⅰ 采样：均匀取 scroll_sample_count 行 —
-	var skip := maxi(1, n / scroll_sample_count)
-	var sum_actual := 0.0
-	var sum_est := 0.0
-	for i in range(0, n, skip):
-		if _row_assignments.has(i):
-			sum_actual += _row_heights[i]
-			sum_est += _row_heights[i]
-			continue
-		if _free_nodes.is_empty():
-			break
-		var node: Control = _free_nodes.pop_back()
-		_row_assignments[i] = node
-		_prepare_row_node(node, _row_data[i], i)
-		node.visible = true
-		var h: float = node.get_combined_minimum_size().y
-		node.visible = false
-		_free_nodes.append(node)
-		_row_assignments.erase(i)
-		if h > 0 and _row_heights[i] > 0:
-			sum_actual += h
-			sum_est += _row_heights[i]
-
-	var ratio := sum_actual / sum_est if sum_est > 0 else 1.0
-	if abs(ratio - 1.0) > 0.01:
-		for j in _row_heights.size():
-			_row_heights[j] *= ratio
-	var cursor: float = 0.0
-	for j in _row_heights.size():
-		_y_offsets[j] = cursor
-		cursor += _row_heights[j]
-	virtual_content.custom_minimum_size.y = cursor
-	_update_visible_rows(scroll.scroll_vertical)
-
-	# — Ⅱ 推到底（稳定检测） —
-	var vp_h: float = maxf(scroll.size.y, 100) * scroll_step_ratio
-	scroll.scroll_vertical = 0
-	await get_tree().process_frame
-
-	var last_max: float = -1.0
-	var stable_frames: int = 0
-	var safety: int = scroll_safety_max
-	var n_max := scroll_stable_frames
-	while stable_frames < n_max and safety > 0:
-		safety -= 1
-		var vbar := scroll.get_v_scroll_bar()
-		var cur_max: float = vbar.max_value if vbar != null else 0.0
-		if cur_max <= 0:
-			break
-		if abs(cur_max - last_max) < 1.0 and scroll.scroll_vertical >= cur_max - 2.0:
-			stable_frames += 1
-		else:
-			stable_frames = 0
-			var target := int(min(scroll.scroll_vertical + vp_h, cur_max))
-			scroll.scroll_vertical = target
-		last_max = cur_max
-		await get_tree().process_frame
-
-	# — Ⅲ 回收全部池节点 → 强制测量所有未渲染行 —
-	# （稳定推到假底后，池节点全被可见区占用，_free_nodes 为空）
-	for key in _row_assignments.keys():
-		var nd: Control = _row_assignments[key]
-		nd.visible = false
-		_free_nodes.append(nd)
-	_row_assignments.clear()
-
-	var measured_any := false
-	for i in range(n):
-		if _free_nodes.is_empty():
-			break  # 不应发生，已回收全部
-		var node: Control = _free_nodes.pop_back()
-		_row_assignments[i] = node
-		_prepare_row_node(node, _row_data[i], i)
-		node.visible = true
-		var h: float = node.get_combined_minimum_size().y
-		node.visible = false
-		if h > 0 and abs(h - _row_heights[i]) > 2.0:
-			_row_heights[i] = h
-			measured_any = true
-		_free_nodes.append(node)
-		_row_assignments.erase(i)
-
-	if measured_any:
-		cursor = 0.0
-		for j in _row_heights.size():
-			_y_offsets[j] = cursor
-			cursor += _row_heights[j]
-		virtual_content.custom_minimum_size.y = cursor
-
-		# 高度变了 → 第二轮推到底（此时每行都已测量，直接推）
-		scroll.scroll_vertical = 0
-		await get_tree().process_frame
-		safety = scroll_safety_max
-		while safety > 0:
-			safety -= 1
-			var vbar := scroll.get_v_scroll_bar()
-			var cur_max: float = vbar.max_value if vbar != null else 0.0
-			if cur_max <= 0:
-				break
-			if scroll.scroll_vertical >= cur_max - 2.0:
-				break
-			var target := int(min(scroll.scroll_vertical + vp_h, cur_max))
-			scroll.scroll_vertical = target
-			await get_tree().process_frame
-
-	scroll.scroll_vertical = 99999
-
-
-func _do_scroll_to_bottom() -> void:
-	## 实际执行滚动到底部，由 _process 防抖调用
-	var max_y: float = virtual_content.custom_minimum_size.y
-	if max_y > 0:
-		scroll.scroll_vertical = int(max_y)
