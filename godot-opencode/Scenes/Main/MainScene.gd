@@ -324,7 +324,6 @@ func _launch_headless_server() -> void:
 
 
 var _pending_refresh: bool = false  # 由 _process 处理的异步刷新请求
-var _refresh_coroutine: Variant = null  # 持有协程引用，防止 GC
 
 
 func _process(delta: float) -> void:
@@ -339,7 +338,7 @@ func _process(delta: float) -> void:
 	# 延迟异步刷新（避让信号处理器中的 await GC 陷阱）
 	if _pending_refresh:
 		_pending_refresh = false
-		_refresh_coroutine = _refresh_messages()
+		_refresh_messages()
 
 
 func _bootstrap() -> void:
@@ -444,6 +443,7 @@ func _refresh_messages() -> void:
 	_all_messages = msgs
 	_clear_messages()
 	_render_page_from_cache(max(0, _all_messages.size() - PAGE_SIZE))
+	_scroll_to_bottom()
 
 
 func _render_page_from_cache(start_idx: int) -> void:
@@ -693,6 +693,8 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			
 			# 首次遇到 partID → 创建部件
 			if not _streaming_parts.has(part_id):
+				if not is_instance_valid(_streaming_root):
+					return  # 流式容器已被清理（如 clear_messages 触发时）
 				_create_streaming_part(part_id, field, _streaming_root)
 			
 			var part: Dictionary = _streaming_parts[part_id]
@@ -950,5 +952,10 @@ func _scroll_to_bottom() -> void:
 
 
 func _do_scroll_to_bottom() -> void:
+	call_deferred("_apply_scroll_to_bottom")
+
+
+func _apply_scroll_to_bottom() -> void:
 	var max_v = scroll.get_v_scroll_bar().max_value
-	scroll.set_deferred("scroll_vertical", max_v)
+	if max_v > 0:
+		scroll.set_deferred("scroll_vertical", max_v)
