@@ -659,6 +659,8 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			if status.get("type") == "idle" and sid == _current_session_id:
 				_finalize_streaming()
 				_set_status("")
+				# 完成后刷新完整消息，渲染工具调用/code块等所有 part
+				_refresh_messages()
 			# 更新上下文 Token 数
 			var mem: int = status.get("memory", _context_memory)
 			var ctx: int = status.get("context", _context_total)
