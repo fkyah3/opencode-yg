@@ -23,10 +23,10 @@ static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCod
 	for line_raw in lines:
 		var line := line_raw.trim_suffix("\r")
 		
-		# ── 围栏代码块检测 ──
-		var trimmed := line.strip_edges()
-			if trimmed.begins_with("```"):
-			if in_code_block:
+	# ── 围栏代码块检测 ──
+	var trimmed := line.strip_edges()
+	if trimmed.begins_with("```"):
+		if in_code_block:
 				result.append("[/code][/color]")
 				in_code_block = false
 				continue
