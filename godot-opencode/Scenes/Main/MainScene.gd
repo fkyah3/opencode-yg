@@ -643,22 +643,13 @@ func _build_message_row() -> Control:
 	style.content_margin_bottom = 6
 	bubble.add_theme_stylebox_override("panel", style)
 
-	var text_label := MarkdownLabel.new()
+	var text_label := RichTextLabel.new()
+	text_label.bbcode_enabled = true
 	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text_label.fit_content = true
 	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.add_theme_font_size_override("normal_font_size", font_size_base)
 	text_label.add_theme_color_override("default_color", color_text)
-	# Markdown 转 BBCode 时的颜色主题（_convert_markdown 会读取这些属性）
-	var heading_color := Color("#C77DFF")
-	text_label.h1.override_font_color = true; text_label.h1.font_color = heading_color
-	text_label.h2.override_font_color = true; text_label.h2.font_color = heading_color
-	text_label.h3.override_font_color = true; text_label.h3.font_color = heading_color
-	text_label.h4.override_font_color = true; text_label.h4.font_color = heading_color
-	text_label.h5.override_font_color = true; text_label.h5.font_color = heading_color
-	text_label.h6.override_font_color = true; text_label.h6.font_color = heading_color
-	text_label.code_color = Color("#4CD964")
-	text_label.bold_color = Color("#FF9500")
 	bubble.add_child(text_label)
 	row.add_child(bubble)
 
@@ -678,7 +669,7 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 	var name_label: RichTextLabel = row.get_child(0)
 	var thinking_label: RichTextLabel = row.get_child(1)
 	var bubble: PanelContainer = row.get_child(2)
-	var text_label: MarkdownLabel = bubble.get_child(0)
+	var text_label: RichTextLabel = bubble.get_child(0)
 
 	# ── 更新名称 ──
 	name_label.clear()
@@ -724,12 +715,11 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 		var raw_md: String = "\n".join(text_parts)
 		var bbcode: String = msg.get("_bbcode", "")
 		if bbcode.is_empty():
-			bbcode = text_label._convert_markdown(raw_md)
-			# 后处理：给粗体标签加颜色（字符串替换，无循环风险）
-			if text_label.bold_color and text_label.bold_color.a > 0:
-				var col := text_label.bold_color.to_html(false)
-				bbcode = bbcode.replace("[b]", "[color=#%s][b]" % col)
-				bbcode = bbcode.replace("[/b]", "[/b][/color]")
+			var cfg := MarkdownBBCodeConfig.new()
+			cfg.heading_color = Color("#C77DFF")
+			cfg.bold_color = Color("#FF9500")
+			cfg.code_color = Color("#4CD964")
+			bbcode = MarkdownBBCode.to_bbcode(raw_md, cfg)
 			msg["_bbcode"] = bbcode
 
 		text_label.clear()

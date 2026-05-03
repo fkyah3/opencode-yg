@@ -1,0 +1,76 @@
+class_name MarkdownBBCode
+## 轻量级 Markdown → BBCode 转换器。
+##
+## 覆盖移山需要的最小 Markdown 子集：
+##   标题 # → [font_size=][color]
+##   粗体 ** → [color][b]
+##   行内代码 ` → [color][code]
+##   围栏代码块 ``` → 块级 [color][code]
+##   转义反斜杠 \\ → 透传
+##
+## 其它内容原样透传（BBCode 兼容）。
+## 不支持的语法（表格/列表/图片/链接）保留原始文本。
+
+static func to_bbcode(text: String, config: MarkdownBBCodeConfig = MarkdownBBCodeConfig.new()) -> String:
+	var hc := config.heading_color.to_html(false)
+	var bc := config.bold_color.to_html(false)
+	var cc := config.code_color.to_html(false)
+	
+	var lines := text.split("\n")
+	var result := PackedStringArray()
+	
+	var in_code_block := false
+	for line_raw in lines:
+		var line := line_raw.trim_suffix("\r")
+		
+		# ── 围栏代码块检测 ──
+		var trimmed := line.strip_edges()
+		if trimmed.begins_with("\`\`\`"):
+			if in_code_block:
+				result.append("[/code][/color]")
+				in_code_block = false
+				continue
+			else:
+				# 取出标记语言（如 python），忽略
+				result.append("[color=#%s][code]" % cc)
+				in_code_block = true
+				continue
+		
+		if in_code_block:
+			result.append(_escape_bbcode(line))
+			continue
+		
+		# ── 标题 # ──
+		if trimmed.begins_with("#") and trimmed.length() > 1 and trimmed[1] in [" ", "#"]:
+			var n := 0
+			while n < trimmed.length() and trimmed[n] == "#":
+				n += 1
+				if n == 6:
+					break
+			var after_hash := trimmed.substr(n).trim_prefix(" ")
+			var size := 26 - n * 2
+			line = line.replace(trimmed, "[color=#%s][font_size=%d]%s[/font_size][/color]" % [hc, size, after_hash])
+		
+		# ── 行内代码 `code` ──
+		var inline_re := RegEx.create_from_string("\`([^\`]+)\`")
+		line = inline_re.sub(line, "[color=#%s][code]$1[/code][/color]" % cc, true)
+		
+		# ── 粗体 **text** ──
+		var bold_re := RegEx.create_from_string("\\*\\*(.+?)\\*\\*")
+		line = bold_re.sub(line, "[color=#%s][b]$1[/b][/color]" % bc, true)
+		
+		result.append(line)
+	
+	# 关闭未闭合的围栏
+	if in_code_block:
+		result.append("[/code][/color]")
+	
+	return "\n".join(result)
+
+
+static func _escape_bbcode(text: String) -> String:
+	var result := text
+	result = result.replace("&", "&amp;")
+	result = result.replace("[", "&lb;")
+	result = result.replace("]", "&rb;")
+	return result
