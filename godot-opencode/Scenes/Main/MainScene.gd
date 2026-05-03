@@ -323,14 +323,22 @@ func _launch_headless_server() -> void:
 	]), false)
 
 
+var _pending_refresh: bool = false  # 由 _process 处理的异步刷新请求
+
+
 func _process(delta: float) -> void:
-	# 防抖滚动: 每 0.1s 最多触发一次
+	# 防抖滚动
 	if _scroll_pending:
 		_scroll_timer += delta
 		if _scroll_timer >= 0.1:
 			_scroll_timer = 0.0
 			_scroll_pending = false
 			_do_scroll_to_bottom()
+	
+	# 延迟异步刷新（避让信号处理器中的 await GC 陷阱）
+	if _pending_refresh:
+		_pending_refresh = false
+		_refresh_messages()
 
 
 func _bootstrap() -> void:
@@ -429,9 +437,10 @@ func _open_session(sid: String) -> void:
 
 func _refresh_messages() -> void:
 	## 刷新全部消息（重新加载缓存并分页渲染）
-	_all_messages = await _api.get_messages(_current_session_id, MAX_CACHE)
-	if _all_messages.size() == 0:
+	var msgs = await _api.get_messages(_current_session_id, MAX_CACHE)
+	if msgs == null or msgs.size() == 0:
 		return
+	_all_messages = msgs
 	_clear_messages()
 	_render_page_from_cache(max(0, _all_messages.size() - PAGE_SIZE))
 
@@ -556,7 +565,7 @@ func _render_message(msg: Variant) -> void:
 		bubble.add_theme_stylebox_override("panel", style)
 
 		var label := _make_msg_label()
-		label.append_text("\n".join(text_parts))
+		label.text = "\n".join(text_parts)
 		bubble.add_child(label)
 
 		msg_vbox.add_child(name_label)
@@ -602,17 +611,16 @@ func _render_message(msg: Variant) -> void:
 			bubble.add_theme_stylebox_override("panel", style)
 
 			var label := _make_msg_label()
-			label.append_text("\n".join(text_parts))
+			label.text = "\n".join(text_parts)
 			bubble.add_child(label)
 			msg_vbox.add_child(bubble)
 
 	msg_list.add_child(msg_vbox)
 
 
-func _make_msg_label() -> RichTextLabel:
-	## 统一创建消息文本标签（调小字号、轻色）
-	var label := RichTextLabel.new()
-	label.bbcode_enabled = true
+func _make_msg_label() -> MarkdownLabel:
+	## 统一创建消息文本标签（调小字号、轻色），使用 MarkdownLabel 渲染 Markdown 内容
+	var label := MarkdownLabel.new()
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.fit_content = true
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -657,10 +665,12 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			var sid: String = properties.get("sessionID", "")
 			var status: Dictionary = properties.get("status", {})
 			if status.get("type") == "idle" and sid == _current_session_id:
+				# 先就地渲染流式内容为 MarkdownLabel
+				_finalize_streaming_content()
 				_finalize_streaming()
 				_set_status("")
-				# 完成后刷新完整消息，渲染工具调用/code块等所有 part
-				_refresh_messages()
+				# 通过 _process 触发异步刷新，避让信号处理器中 await 被 GC
+				_pending_refresh = true
 			# 更新上下文 Token 数
 			var mem: int = status.get("memory", _context_memory)
 			var ctx: int = status.get("context", _context_total)
@@ -852,6 +862,7 @@ func _create_streaming_widget() -> VBoxContainer:
 	_streaming_label.add_theme_font_size_override("normal_font_size", font_size_base)
 	_streaming_label.add_theme_color_override("default_color", color_text)
 
+	_streaming_bubble = bubble
 	bubble.add_child(_streaming_label)
 	msg_vbox.add_child(bubble)
 
@@ -863,6 +874,45 @@ func _create_streaming_widget() -> VBoxContainer:
 func _finalize_streaming() -> void:
 	_streaming_label = null
 	_streaming_thinking_label = null
+	_scroll_to_bottom()
+
+
+func _finalize_streaming_content() -> void:
+	## 流式完成后，将流式标签就地替换为 MarkdownLabel（不依赖异步刷新）
+	var final_text := _streaming_text
+	var final_thinking := _streaming_thinking_text
+	
+	# ── 气泡 text 标签替换 ──
+	if is_instance_valid(_streaming_bubble):
+		var inner := _streaming_bubble.get_child(0) if _streaming_bubble.get_child_count() > 0 else null
+		if inner is RichTextLabel:
+			var md := MarkdownLabel.new()
+			md.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			md.fit_content = true
+			md.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			md.add_theme_font_size_override("normal_font_size", font_size_base)
+			md.add_theme_font_size_override("bold_font_size", font_size_base)
+			md.add_theme_color_override("default_color", color_text)
+			md.text = final_text
+			_streaming_bubble.remove_child(inner)
+			inner.queue_free()
+			_streaming_bubble.add_child(md)
+	
+	# ── thinking 标签替换 ──
+	if is_instance_valid(_streaming_thinking_label) and not final_thinking.is_empty():
+		var pp := _streaming_thinking_label.get_parent()
+		if pp is PanelContainer:
+			var md := MarkdownLabel.new()
+			md.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			md.fit_content = true
+			md.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			md.add_theme_font_size_override("normal_font_size", font_size_base - 1)
+			md.add_theme_color_override("default_color", color_text_dim)
+			md.text = "思考：" + final_thinking
+			pp.remove_child(_streaming_thinking_label)
+			_streaming_thinking_label.queue_free()
+			pp.add_child(md)
+	
 	_scroll_to_bottom()
 
 
