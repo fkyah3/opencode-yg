@@ -82,11 +82,10 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="MessageList" type="Control" parent="Layout/Body/ChatArea/ScrollContainer" unique_id=1692659932]
+[node name="VirtualContent" type="Control" parent="Layout/Body/ChatArea/ScrollContainer" unique_id=1692659932]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 0
 mouse_filter = 2
 
 [node name="InfoBar" type="PanelContainer" parent="Layout/Body/ChatArea" unique_id=262149538]

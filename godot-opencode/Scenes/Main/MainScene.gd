@@ -2,7 +2,7 @@ extends Control
 class_name MainScene
 
 
-@onready var virtual_content: Control = %MessageList
+@onready var virtual_content: Control = %VirtualContent
 @onready var msg_input: TextEdit = %TextInput
 @onready var send_btn: Button = %SendBtn
 @onready var status_label: Label = %Status
