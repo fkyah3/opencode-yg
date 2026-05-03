@@ -68,6 +68,7 @@ func _ready() -> void:
 	_question_text.size = Vector2(inner_w, 60)
 	_question_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_question_text.fit_content = true
+	_question_text.add_theme_color_override("default_color", Color(1, 1, 1))
 	_panel.add_child(_question_text)
 	y += 68
 

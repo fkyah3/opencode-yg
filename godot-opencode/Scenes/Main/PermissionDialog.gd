@@ -61,6 +61,7 @@ func _ready() -> void:
 	_content_label.size = Vector2(388, 90)
 	_content_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_content_label.fit_content = true
+	_content_label.add_theme_color_override("default_color", Color(1, 1, 1))
 	_panel.add_child(_content_label)
 
 	# 用户反馈输入（可选）
