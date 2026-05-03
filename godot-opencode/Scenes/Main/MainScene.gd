@@ -82,6 +82,7 @@ var _overscan: int = 4                       # 可见区域外的缓冲行数
 var _scroll_timer: float = 0.0
 var _scroll_pending: bool = false
 var _pending_scroll_bottom: bool = false  # 布局稳定后推到底
+var _scroll_bottom_remaining: int = 0     # 还差几次推动
 
 # ── 权限 / 问题对话框 ──
 var _permission_dialog: PermissionDialog
@@ -369,6 +370,9 @@ func _process(delta: float) -> void:
 
 func _bootstrap() -> void:
 	print("→ _bootstrap")
+	# 创建加载覆盖面板
+	_ensure_loading_overlay()
+	_show_loading("连接服务器...")
 	_set_status("连接服务器...")
 
 	var ok := await _api.health_check()
@@ -454,22 +458,27 @@ func _load_session_messages(sid: String) -> void:
 	_streaming_label = null
 	_current_session_id = sid
 	_clear_messages()
+	_show_loading("加载消息...")
 	_set_status("加载消息...")
 
 	var messages = await _api.get_messages(sid, 300)
 	if messages.is_empty():
 		_set_status("(无消息)")
+		_hide_loading()
 		return
 
 	# 数据准备
 	_row_data = messages
+	_show_loading("渲染 " + str(messages.size()) + " 条消息...")
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
 	_update_visible_rows(scroll.scroll_vertical)
 
 	_set_status(str(_row_data.size()) + " 条消息")
-	# 标记首次加载需滚动到底部，主动触发推底链
+	_hide_loading()
+	# 标记首次加载需滚动到底部，标记生效倒计 5 次 resize
 	_pending_scroll_bottom = true
+	_scroll_bottom_remaining = 5
 	_on_scroll_resized()
 
 func _refresh_messages() -> void:
@@ -796,12 +805,10 @@ func _on_scroll_resized() -> void:
 	# 更新流式节点的宽度
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.size.x = virtual_content.size.x
-	# 首次加载时持续推到底部，直到布局稳定
-	if _pending_scroll_bottom:
+	# 首次加载时持续推到底部，resize 链稳定后（~5 次）自动停
+	if _scroll_bottom_remaining > 0:
 		scroll.scroll_vertical = 99999
-		var vbar := scroll.get_v_scroll_bar()
-		if vbar != null and vbar.value >= vbar.max_value - 2.0:
-			_pending_scroll_bottom = false
+		_scroll_bottom_remaining -= 1
 
 
 # ── 连接对话框 ──
@@ -979,6 +986,10 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 		"question.asked":
 			_on_question_asked(properties)
 
+		"server.connected":
+			_hide_loading()
+			_set_status("服务器已连接")
+
 		"server.heartbeat":
 			pass
 
@@ -1147,6 +1158,45 @@ func _clear_messages() -> void:
 
 func _set_status(text: String) -> void:
 	status_label.text = text
+
+
+# ── 加载覆盖面板 ──
+
+var _loading_overlay: Control = null
+
+func _ensure_loading_overlay() -> void:
+	## 创建/获取加载覆盖面板（透明灰底 + 居中标签）
+	if _loading_overlay != null:
+		return
+	_loading_overlay = Panel.new()
+	_loading_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_loading_overlay.anchor_right = 1.0
+	_loading_overlay.anchor_bottom = 1.0
+	var pstyle := StyleBoxFlat.new()
+	pstyle.bg_color = Color(0, 0, 0, 0.8)
+	_loading_overlay.add_theme_stylebox_override("panel", pstyle)
+	
+	var lbl := Label.new()
+	lbl.name = "LoadingLabel"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 20)
+	lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1))
+	_loading_overlay.add_child(lbl)
+	
+	scroll.add_child(_loading_overlay)
+	_loading_overlay.hide()
+
+func _show_loading(text: String) -> void:
+	_ensure_loading_overlay()
+	var lbl := _loading_overlay.get_node("LoadingLabel") as Label
+	if lbl != null:
+		lbl.text = text
+	_loading_overlay.show()
+
+func _hide_loading() -> void:
+	if _loading_overlay != null:
+		_loading_overlay.hide()
 
 
 func _scroll_to_bottom() -> void:
