@@ -54,7 +54,7 @@ func _ready() -> void:
 func popup_connect() -> void:
 	url_input.select_all()
 	url_input.grab_focus()
-	custom_minimum_size = Vector2(360, 140)
+	min_size = Vector2i(360, 140)
 	popup_centered()
 
 

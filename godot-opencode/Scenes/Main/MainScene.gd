@@ -812,7 +812,7 @@ func _on_connection_dialog_connected(url: String) -> void:
 	_row_data = []
 	_clear_messages()
 	_compute_heights_and_offsets()
-	_adjust_pool_size(0)
+	_adjust_pool_size()
 	_update_visible_rows(scroll.scroll_vertical)
 	
 	# 重新健康检查 + 引导
