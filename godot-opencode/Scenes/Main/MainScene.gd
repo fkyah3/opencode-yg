@@ -262,19 +262,8 @@ func _on_input_text_changed() -> void:
 
 
 func _send_message_direct(text: String) -> void:
-	if text.is_empty():
+	if msg_input.text.is_empty() or _current_session_id.is_empty():
 		return
-
-	# 自动创建会话
-	if _current_session_id.is_empty():
-		var title := text.substr(0, min(text.length(), 30))
-		var created := await _api.create_session(title)
-		var sid: String = created.get("id", "")
-		if sid.is_empty():
-			_set_status("创建会话失败")
-			return
-		_current_session_id = sid
-
 	msg_input.text = ""
 	_set_status("执行命令...")
 
@@ -589,7 +578,7 @@ func _build_message_row() -> Control:
 	thinking_label.visible = false
 	row.add_child(thinking_label)
 
-	# ── 第 2 子节点：主气泡（MarkdownLabel 渲染最终格式化产物） ──
+	# ── 第 2 子节点：主气泡 ──
 	var bubble := PanelContainer.new()
 	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var style := StyleBoxFlat.new()
@@ -608,16 +597,6 @@ func _build_message_row() -> Control:
 	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_label.add_theme_font_size_override("normal_font_size", font_size_base)
 	text_label.add_theme_color_override("default_color", color_text)
-	# 颜色主题
-	var heading_color := Color("#C77DFF")
-	text_label.h1.override_font_color = true; text_label.h1.font_color = heading_color
-	text_label.h2.override_font_color = true; text_label.h2.font_color = heading_color
-	text_label.h3.override_font_color = true; text_label.h3.font_color = heading_color
-	text_label.h4.override_font_color = true; text_label.h4.font_color = heading_color
-	text_label.h5.override_font_color = true; text_label.h5.font_color = heading_color
-	text_label.h6.override_font_color = true; text_label.h6.font_color = heading_color
-	text_label.code_color = Color("#4CD964")
-	text_label.bold_color = Color("#FF9500")
 	bubble.add_child(text_label)
 	row.add_child(bubble)
 
@@ -627,13 +606,12 @@ func _build_message_row() -> Control:
 func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 	## 用消息数据填充已有行结构（不创建/删除子节点）
 	var d: Dictionary = msg as Dictionary
-	var role: String = d.get("role", "")
-	if role.is_empty() and d.has("info"):
-		role = d["info"].get("role", "")
-	var parts: Array = d.get("parts", [])
-	var is_user: bool = role == "user"
+	# 第二版使用字典作为基础数组类型
+	var _parts: Array = msg.get("parts", [])
+	var is_user: bool = d.get("role", "") == "user"
+	var parts: Array = _parts
 
-	# 获取固定子节点（位置固定：0=名称，1=思考，2=气泡）
+	# 解包行结构的预构建子节点
 	var name_label: RichTextLabel = row.get_child(0)
 	var thinking_label: RichTextLabel = row.get_child(1)
 	var bubble: PanelContainer = row.get_child(2)
@@ -643,41 +621,32 @@ func _prepare_row_node(row: Control, msg: Dictionary) -> void:
 	name_label.clear()
 	name_label.append_text("你" if is_user else "AI")
 
-	# ── 提取文本 + 思考 + 工具 ──
+	# ── 提取文本 + 思考 ──
 	var text_parts := PackedStringArray()
 	var thinking_text := ""
 	for p in parts:
-		if not (p is Dictionary):
-			continue
 		var pt: String = p.get("type", "")
-		if pt == "reasoning":
-			var rt: String = p.get("reasoning_text", p.get("text", ""))
-			if not rt.is_empty():
-				thinking_text = rt
-		elif pt == "text":
+		if pt == "text":
 			var txt: String = p.get("text", "")
 			if not txt.is_empty():
 				text_parts.append(txt)
-		elif pt == "tool":
-			var tool_name: String = p.get("tool", "?")
-			var state: Dictionary = p.get("state", {})
-			var status: String = state.get("status", "")
-			var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
-			var preview := ""
-			var content: String = state.get("input", {}).get("content", "")
-			if not content.is_empty():
-				preview = "\n```\n" + content.left(300) + "\n```"
-			text_parts.append("**" + icon + " " + tool_name + "**" + preview)
+		elif pt == "tool-call":
+			var tool_name: String = p.get("name", p.get("function", {}).get("name", ""))
+			var args: String = p.get("arguments", "")
+			if args.length() > 100:
+				args = args.left(100) + "..."
+			text_parts.append("🔧 [%s] %s" % [tool_name, args])
 
 	# ── 更新思考标签 ──
 	if not thinking_text.is_empty():
-		thinking_label.clear()
-		thinking_label.append_text("思考：" + thinking_text)
+		var col := color_text_dim.to_html(false)
 		thinking_label.visible = true
+		thinking_label.clear()
+		thinking_label.append_text("[color=#" + col + "]思考：" + thinking_text + "[/color]")
 	else:
 		thinking_label.visible = false
 
-	# ── 更新气泡文本 + 颜色 (MarkdownLabel 用 .text = ) ──
+	# ── 更新气泡文本 + 颜色 ──
 	if not text_parts.is_empty():
 		var style: StyleBoxFlat = bubble.get_theme_stylebox("panel")
 		style.bg_color = bubble_user_bg if is_user else bubble_ai_bg
@@ -718,22 +687,11 @@ func _on_scroll_resized() -> void:
 
 func _on_send_pressed() -> void:
 	var text := msg_input.text.strip_edges()
-	if text.is_empty():
+	if text.is_empty() or _current_session_id.is_empty():
 		return
 
 	msg_input.text = ""
 	_set_status("发送中...")
-
-	# 自动创建会话
-	if _current_session_id.is_empty():
-		var title := text.substr(0, min(text.length(), 30))
-		var created := await _api.create_session(title)
-		var sid: String = created.get("id", "")
-		if sid.is_empty():
-			_set_status("创建会话失败")
-			msg_input.text = text  # 恢复输入
-			return
-		_current_session_id = sid
 
 	# 用户消息追加到虚拟滚动
 	_append_message({"role": "user", "parts": [{"type": "text", "text": text}]})
@@ -799,31 +757,11 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			else:
 				_rate_time += 0.1  # 粗略估算
 
-		"sync":
-			# SyncEvent: 工具调用状态更新（PartUpdated）
-			var sync_data: Dictionary = properties.get("syncEvent", {})
-			var sync_type: String = sync_data.get("type", "")
-			if sync_type == "message.part.updated":
-				var data: Dictionary = sync_data.get("data", {})
-				var part: Dictionary = data.get("part", {})
-				var part_type: String = part.get("type", "")
-				if part_type == "tool" and _streaming_label != null:
-					var tool_name: String = part.get("tool", "?")
-					var state: Dictionary = part.get("state", {})
-					var status: String = state.get("status", "running")
-					var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
-					var preview := ""
-					var content: String = state.get("input", {}).get("content", "")
-					if not content.is_empty() and status == "completed":
-						preview = "\n```\n" + content.left(200) + "\n```"
-					_streaming_text += "\n**" + icon + " " + tool_name + "**" + preview
-					_streaming_label.text = _streaming_text
-					_scroll_to_bottom()
-
 		"message.updated":
 			# SSE 通知有新消息完成时，刷新当前会话的消息列表
 			var sid: String = properties.get("sessionID", "")
 			if sid == _current_session_id and not _streaming_label:
+				# 非流式场景下刷新消息列表
 				_refresh_messages()
 
 		"permission.asked":
