@@ -700,11 +700,58 @@ func _build_message_row() -> Control:
 	return row
 
 
+# ── Part 渲染器 ──
+# 每个 render_* 函数接受一个 part 字典，返回 BBCode 字符串片段。
+# 主气泡标签将这些片段用 "\n" 拼接后通过 append_text() 渲染。
+
+func _render_part_text(txt: String) -> String:
+	## text part：Markdown → BBCode（颜色方案取自实例配置）
+	var cfg := MarkdownBBCodeConfig.new()
+	cfg.heading_color = Color("#C77DFF")
+	cfg.bold_color = Color("#FF9500")
+	cfg.code_color = Color("#4CD964")
+	return MarkdownBBCode.to_bbcode(txt, cfg)
+
+
+func _render_part_tool(d: Dictionary) -> String:
+	## tool part：根据工具语义生成 BBCode，不经过 markdown 转换
+	var tool_name: String = d.get("tool", d.get("name", d.get("function", {}).get("name", "?")))
+	var state: Dictionary = d.get("state", {})
+	var status: String = state.get("status", "")
+	var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
+	var ttitle: String = state.get("title", "")
+	var fpath: String = state.get("input", {}).get("filePath", "")
+	var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
+
+	var parts := PackedStringArray()
+	parts.append("**" + icon + " " + tname.trim_suffix(".md") + "**")
+
+	# edit → 左右对照 diff
+	if tool_name == "edit":
+		var old_str: String = state.get("input", {}).get("oldString", "")
+		var new_str: String = state.get("input", {}).get("newString", "")
+		if not old_str.is_empty() or not new_str.is_empty():
+			var old_esc := old_str.replace("[", "[lb]")
+			var new_esc := new_str.replace("[", "[lb]")
+			parts.append("[table=2 border=true][cell][bgcolor=#331111][color=#ff5555]" + old_esc + "[/color][/bgcolor][/cell][cell][bgcolor=#113311][color=#55ff55]" + new_esc + "[/color][/bgcolor][/cell][/table]")
+	else:
+		# write/bash/shell → 代码块包裹内容
+		var mutation: bool = tool_name in ["write", "bash", "shell"]
+		if mutation:
+			var raw: String = state.get("input", {}).get("content", "")
+			var out: String = state.get("output", "")
+			if not raw.is_empty():
+				parts.append("\n```\n" + raw.left(1500) + "\n```")
+			elif not out.is_empty():
+				parts.append("\n```\n" + out.left(1500) + "\n```")
+
+	return "\n".join(parts)
+
+
 func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void:
 	print("→ _prepare_row_node")
 	## 用消息数据填充已有行结构（不创建/删除子节点）
 	var d: Dictionary = msg as Dictionary
-	# 第二版使用字典作为基础数组类型
 	var _parts: Array = msg.get("parts", [])
 	var is_user: bool = d.get("role", "") == "user"
 	var parts: Array = _parts
@@ -719,43 +766,23 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 	name_label.clear()
 	name_label.append_text("你" if is_user else "AI")
 
-	# ── 提取文本 + 思考 ──
-	var text_parts := PackedStringArray()  # raw markdown/fmt
+	# ── 按 Part 类型分流渲染 ──
 	var thinking_text := ""
+	var bbcode_fragments := PackedStringArray()
+
 	for p in parts:
 		var pt: String = p.get("type", "")
-		if pt == "text":
-			var txt: String = p.get("text", "")
-			if not txt.is_empty():
-				text_parts.append(txt)
-		elif pt == "tool" or pt == "tool-call":
-			var tool_name: String = p.get("tool", p.get("name", p.get("function", {}).get("name", "?")))
-			var state: Dictionary = p.get("state", {})
-			var status: String = state.get("status", "")
-			var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
-			var ttitle: String = state.get("title", "")
-			var fpath: String = state.get("input", {}).get("filePath", "")
-			var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
-			text_parts.append("**" + icon + " " + tname.trim_suffix(".md") + "**")
-			# 工具类型细分显示
-			if tool_name == "edit":
-				# edit: 左右对照 diff，红删绿增
-				var old_str: String = state.get("input", {}).get("oldString", "")
-				var new_str: String = state.get("input", {}).get("newString", "")
-				if not old_str.is_empty() or not new_str.is_empty():
-					var old_esc := old_str.replace("[", "[lb]")
-					var new_esc := new_str.replace("[", "[lb]")
-					text_parts.append("[table=2 border=true][cell][bgcolor=#331111][color=#ff5555]" + old_esc + "[/color][/bgcolor][/cell][cell][bgcolor=#113311][color=#55ff55]" + new_esc + "[/color][/bgcolor][/cell][/table]")
-			else:
-				# read 只显示路径；write/bash/shell 展示内容
-				var mutation: bool = tool_name in ["write", "bash", "shell"]
-				if mutation:
-					var raw: String = state.get("input", {}).get("content", "")
-					var out: String = state.get("output", "")
-					if not raw.is_empty():
-						text_parts.append("\n```\n" + raw.left(1500) + "\n```")
-					elif not out.is_empty():
-						text_parts.append("\n```\n" + out.left(1500) + "\n```")
+		match pt:
+			"text":
+				var txt: String = p.get("text", "")
+				if not txt.is_empty():
+					bbcode_fragments.append(_render_part_text(txt))
+			"reasoning":
+				var rt: String = p.get("text", "")
+				if not rt.is_empty():
+					thinking_text += rt
+			"tool", "tool-call":
+				bbcode_fragments.append(_render_part_tool(p))
 
 	# ── 更新思考标签 ──
 	if not thinking_text.is_empty():
@@ -767,20 +794,15 @@ func _prepare_row_node(row: Control, msg: Dictionary, row_idx: int = -1) -> void
 		thinking_label.visible = false
 
 	# ── 更新气泡文本 + 颜色 ──
-	if not text_parts.is_empty():
+	if not bbcode_fragments.is_empty():
 		var style: StyleBoxFlat = bubble.get_theme_stylebox("panel")
 		style.bg_color = bubble_user_bg if is_user else bubble_ai_bg
 		style.border_color = bubble_user_border if is_user else bubble_ai_border
 
-		# 拼接 raw markdown → 用 _convert_markdown 转为 BBCode（纯字符串，不触发布局）
-		var raw_md: String = "\n".join(text_parts)
+		# 拼接 BBCode 片段
 		var bbcode: String = msg.get("_bbcode", "")
 		if bbcode.is_empty():
-			var cfg := MarkdownBBCodeConfig.new()
-			cfg.heading_color = Color("#C77DFF")
-			cfg.bold_color = Color("#FF9500")
-			cfg.code_color = Color("#4CD964")
-			bbcode = MarkdownBBCode.to_bbcode(raw_md, cfg)
+			bbcode = "\n".join(bbcode_fragments)
 			msg["_bbcode"] = bbcode
 
 		text_label.clear()
