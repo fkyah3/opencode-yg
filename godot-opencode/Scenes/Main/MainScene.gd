@@ -1205,23 +1205,23 @@ func _scroll_to_bottom() -> void:
 
 
 func _push_scroll_bottom_deferred() -> void:
-	## 采样→系数矫正→迭代滚动→最终推到底
+	## 采样系数矫正 → 固定轮数推进 → 推到底
 	if _row_data.is_empty():
 		return
 	if _row_data.size() <= 1:
 		scroll.scroll_vertical = 99999
 		return
 
-	# — Ⅰ 采样：均匀取 ~20 行，累加实际高度与估算高度 —
 	var n := _row_data.size()
+
+	# — 采样：均匀取 20 行，累加 actual/est 比值 —
 	var skip := maxi(1, n / 20)
 	var sum_actual := 0.0
 	var sum_est := 0.0
 	for i in range(0, n, skip):
 		if _row_assignments.has(i):
-			# 已渲染：_row_heights[i] 已经是实测值
 			sum_actual += _row_heights[i]
-			sum_est += _row_heights[i]  # 维持比率为 1
+			sum_est += _row_heights[i]
 			continue
 		if _free_nodes.is_empty():
 			break
@@ -1242,19 +1242,17 @@ func _push_scroll_bottom_deferred() -> void:
 		for j in _row_heights.size():
 			_row_heights[j] *= ratio
 
-	# 重算总高与偏移
 	var cursor: float = 0.0
 	for j in _row_heights.size():
 		_y_offsets[j] = cursor
 		cursor += _row_heights[j]
 	virtual_content.custom_minimum_size.y = cursor
-	# 重新渲染当前视口 → 可见行回到实测值
 	_update_visible_rows(scroll.scroll_vertical)
 
-	# — Ⅱ 迭代滚动：while + max_value 安全锁 —
+	# — 固定轮数推进：行数 × 5%，最少 2 轮，最多 20 轮 —
+	var max_iter: int = clampi(ceili(n * 0.05), 2, 20)
 	var vp_h: float = maxf(scroll.size.y, 100)
-	var step: float = vp_h * 0.66
-	var max_iter: int = ceili(virtual_content.custom_minimum_size.y / maxf(step, 1)) * 2
+
 	scroll.scroll_vertical = 0
 	await get_tree().process_frame
 
@@ -1262,13 +1260,9 @@ func _push_scroll_bottom_deferred() -> void:
 	while iter < max_iter:
 		iter += 1
 		var vbar := scroll.get_v_scroll_bar()
-		if vbar == null or vbar.max_value <= 0:
+		if vbar != null and vbar.max_value > 0 and scroll.scroll_vertical >= vbar.max_value - 2.0:
 			break
-		var cur: float = scroll.scroll_vertical
-		var max_v: float = vbar.max_value
-		if cur >= max_v - 2.0:
-			break
-		scroll.scroll_vertical = int(cur + step)
+		scroll.scroll_vertical = int(scroll.scroll_vertical + vp_h)
 		await get_tree().process_frame
 
 	scroll.scroll_vertical = 99999
