@@ -378,7 +378,8 @@ export class Agent implements ACPAgent {
                     .sessionUpdate({
                       sessionId,
                       update: {
-                        sessionUpdate: "plan",
+                      sessionUpdate: "plan",
+                      /* plan/build 已移除，保留枚举值避免上游schema冲突 */
                         entries: parsedTodos.data.map((todo) => {
                           const status: PlanEntry["status"] =
                             todo.status === "cancelled" ? "completed" : (todo.status as PlanEntry["status"])
@@ -508,7 +509,7 @@ export class Agent implements ACPAgent {
           return
         }
 
-        if (part.type === "reasoning" && props.field === "text") {
+		if (part.type === "reasoning" && (props.field === "text" || props.field === "reasoning")) {
           await this.connection
             .sessionUpdate({
               sessionId,

@@ -256,24 +256,30 @@ func _on_input_text_changed() -> void:
 
 
 func _send_message_direct(text: String) -> void:
-	if msg_input.text.is_empty() or _current_session_id.is_empty():
+	if text.is_empty():
 		return
+
+	# 无当前会话时自动创建
+	if _current_session_id.is_empty():
+		var title := text.substr(0, min(text.length(), 30))
+		var created := await _api.create_session(title)
+		var sid: String = created.get("id", "")
+		if sid.is_empty():
+			_set_status("创建会话失败")
+			return
+		_current_session_id = sid
+		_refresh_sessions()
+
 	msg_input.text = ""
 	_set_status("执行命令...")
 
 	_render_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
-	# 创建流式响应容器
+	# 创建流式响应容器（由 SSE 事件实时填充）
 	_create_streaming_widget()
 
-	var result := await _api.send_message(_current_session_id, text)
-	if result.is_empty():
-		push_warning("send_message 返回空结果")
-	else:
-		# 用响应立即渲染最终消息，不依赖 SSE 补全
-		_finalize_streaming()
-		_render_message(result)
-	_set_status("")
+	# 不阻塞等待，完全由 SSE 流式驱动渲染
+	_api.send_message_async(_current_session_id, text)
 
 
 func _on_session_picker_dismissed() -> void:
@@ -306,6 +312,17 @@ func _init_sse() -> void:
 	_sse.event_received.connect(_on_sse_event)
 
 
+func _launch_headless_server() -> void:
+	## 后台启动 opencode headless 服务器（Windows 专用）
+	## 使用 create_process 而非 execute，避免 GDScript 重载歧义。
+	var opencode_root := "E:\\agent\\opencode-yg\\packages\\opencode"
+	var bun_exe := "E:\\agent\\bun-main\\build\\release\\bun.exe"
+	OS.create_process("cmd.exe", PackedStringArray([
+		"/c", "cd", "/d", opencode_root, "&&",
+		bun_exe, "run", "--conditions=browser", "src/index.ts", "--port", "4096"
+	]), false)
+
+
 func _process(delta: float) -> void:
 	# 防抖滚动: 每 0.1s 最多触发一次
 	if _scroll_pending:
@@ -321,8 +338,14 @@ func _bootstrap() -> void:
 
 	var ok := await _api.health_check()
 	if not ok:
-		_set_status("❌ 服务器不可用")
-		return
+		_set_status("启动服务器...")
+		_launch_headless_server()
+		# 等 4 秒让服务器初始化
+		await get_tree().create_timer(4.0).timeout
+		ok = await _api.health_check()
+		if not ok:
+			_set_status("❌ 服务器不可用，请在终端手动运行 opencode")
+			return
 
 	_set_status("获取会话列表...")
 	await _refresh_sessions()
@@ -601,24 +624,31 @@ func _make_msg_label() -> RichTextLabel:
 
 func _on_send_pressed() -> void:
 	var text := msg_input.text.strip_edges()
-	if text.is_empty() or _current_session_id.is_empty():
+	if text.is_empty():
 		return
 
+	# 无当前会话时自动创建
+	if _current_session_id.is_empty():
+		var title := text.substr(0, min(text.length(), 30))
+		var created := await _api.create_session(title)
+		var sid: String = created.get("id", "")
+		if sid.is_empty():
+			_set_status("创建会话失败")
+			return
+		_current_session_id = sid
+		# 通知会话选择器更新
+		_refresh_sessions()
+
 	msg_input.text = ""
-	_set_status("发送中...")
+	_set_status("思考中...")
 
 	_render_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
-	# 创建流式响应容器
+	# 创建流式响应容器（由 SSE 事件实时填充）
 	_create_streaming_widget()
 
-	var res = await _api.send_message(_current_session_id, text)
-	if res.is_empty() or not (res is Dictionary):
-		push_warning("send_message 返回异常: " + str(res))
-	else:
-		_finalize_streaming()
-		_render_message(res)
-	_set_status("")
+	# 不阻塞等待，完全由 SSE 流式驱动渲染
+	_api.send_message_async(_current_session_id, text)
 
 
 func _on_sse_event(event_type: String, properties: Dictionary) -> void:
@@ -628,6 +658,7 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 			var status: Dictionary = properties.get("status", {})
 			if status.get("type") == "idle" and sid == _current_session_id:
 				_finalize_streaming()
+				_set_status("")
 			# 更新上下文 Token 数
 			var mem: int = status.get("memory", _context_memory)
 			var ctx: int = status.get("context", _context_total)
@@ -648,8 +679,12 @@ func _on_sse_event(event_type: String, properties: Dictionary) -> void:
 				if _streaming_thinking_label:
 					_streaming_thinking_text += delta
 					_streaming_thinking_label.visible = true
+					# 父级 panel 同步可见
+					var parent := _streaming_thinking_label.get_parent()
+					if parent is PanelContainer:
+						parent.visible = true
 					# 用 BBCode 渲染思考文字（灰色 + "思考：" 前缀）
-					var col_html := color_text_dim.to_html(true)
+					var col_html := color_text_dim.to_html(false)
 					_streaming_thinking_label.clear()
 					_streaming_thinking_label.append_text("[color=#" + col_html + "]思考：" + _streaming_thinking_text + "[/color]")
 					_scroll_to_bottom()
@@ -766,16 +801,31 @@ func _create_streaming_widget() -> VBoxContainer:
 	name_label.append_text("AI")
 	msg_vbox.add_child(name_label)
 
-	# 思考标签（初始隐藏，SSE 推送时可见）
+	# 思考标签区域（包在带左边条的容器内，与回复气泡视觉区分）
 	_streaming_thinking_label = RichTextLabel.new()
 	_streaming_thinking_label.bbcode_enabled = true
 	_streaming_thinking_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_streaming_thinking_label.fit_content = true
 	_streaming_thinking_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_streaming_thinking_label.add_theme_font_size_override("normal_font_size", font_size_base - 1)
+	_streaming_thinking_label.add_theme_color_override("default_color", color_text_dim)
 	_streaming_thinking_label.append_text("")
 	_streaming_thinking_label.visible = false
-	msg_vbox.add_child(_streaming_thinking_label)
+
+	# 用半透明 PanelContainer 包裹 thinking，左边条 + 透明背景
+	var think_panel := PanelContainer.new()
+	think_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var think_style := StyleBoxFlat.new()
+	think_style.bg_color = Color(0.37, 0.37, 0.37, 0.07)  # 极淡灰底
+	think_style.border_width_left = 2
+	think_style.border_color = Color(0.37, 0.37, 0.37, 0.35)  # 深灰左边条
+	think_style.content_margin_left = 8
+	think_style.content_margin_right = 4
+	think_style.content_margin_top = 2
+	think_style.content_margin_bottom = 2
+	think_panel.add_theme_stylebox_override("panel", think_style)
+	think_panel.add_child(_streaming_thinking_label)
+	msg_vbox.add_child(think_panel)
 
 	# 主文本气泡
 	var bubble := PanelContainer.new()

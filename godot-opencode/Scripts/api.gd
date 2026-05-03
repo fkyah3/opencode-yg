@@ -68,6 +68,21 @@ func send_message(session_id: String, text: String) -> Dictionary:
 	return {}
 
 
+## 发送消息，不等待返回（由 SSE 流式渲染驱动）。
+## 使用独立的 HTTPRequest 节点避免与同步 API 冲突。
+func send_message_async(session_id: String, text: String) -> void:
+	var url := _base_url + "/session/%s/message" % session_id
+	var body_str := JSON.stringify({"parts": [{"type": "text", "text": text}]})
+	var http := HTTPRequest.new()
+	http.use_threads = true
+	add_child(http)
+	var headers := PackedStringArray(["Content-Type: application/json"])
+	http.request(url, headers, HTTPClient.METHOD_POST, body_str)
+	# 请求完成后自清理，不等待不处理返回
+	var _resp = await http.request_completed
+	http.queue_free()
+
+
 ## 中止会话。
 func abort_session(session_id: String) -> bool:
 	var url := _base_url + "/session/%s/abort" % session_id

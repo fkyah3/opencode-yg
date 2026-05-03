@@ -241,7 +241,7 @@ export const layer: Layer.Layer<
               sessionID: ctx.reasoningMap[value.id].sessionID,
               messageID: ctx.reasoningMap[value.id].messageID,
               partID: ctx.reasoningMap[value.id].id,
-              field: "text",
+              field: "reasoning",
               delta: value.text,
             })
             return
