@@ -545,61 +545,22 @@ func _load_session_messages(sid: String) -> void:
 	await get_tree().process_frame
 	_update_visible_rows(0)
 
-	# 同步实测所有行的高度（利用池节点循环遍历，BBCode 在此过程中被缓存）
-	_measure_all_heights_sync()
-
-	# 实测后重算总高，标记滚动到底（_process 在 Layout Pass 后执行）
-	var total_y: float = _y_offsets.back() + _row_heights.back() if not _row_heights.is_empty() else 0.0
-	virtual_content.custom_minimum_size.y = total_y
-	_update_visible_rows(0)
+	# 标记滚动到底（_process 在 Layout Pass 后执行，此时 max_value 已刷新）
 	if not _scroll_pending:
 		_scroll_pending = true
 
 	_set_status(str(_row_data.size()) + " 条消息")
 
 
-func _measure_all_heights_sync() -> void:
-	## 回收全部池节点，遍历所有行实测高度
-	## 同一个 14 节点池通过 pop → measure → append 循环可测量任意行数
-	# 回收已分配行
-	var assigned := _row_assignments.keys()
-	for idx in assigned:
-		var node: Control = _row_assignments[idx]
-		node.visible = false
-		_free_nodes.append(node)
-		_row_assignments.erase(idx)
-
-	# 逐行测量（节点池循环复用）
-	for i in _row_data.size():
-		if _free_nodes.is_empty():
-			break  # 不应发生——回收后池应有 14+ 节点
-		var node: Control = _free_nodes.pop_back()
-		_prepare_row_node(node, _row_data[i], i)
-		node.visible = true
-		var h: float = node.get_combined_minimum_size().y
-		if h > 0.0:
-			_row_heights[i] = h
-		node.visible = false
-		_free_nodes.append(node)
-
-	# 重算偏移和总高
-	var cursor: float = 0.0
-	for j in _row_heights.size():
-		_y_offsets[j] = cursor
-		cursor += _row_heights[j]
-	virtual_content.custom_minimum_size.y = cursor
-
-
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
-	## 重新加载当前会话消息
+	## 重新加载当前会话的最新消息
 	if _current_session_id.is_empty():
 		return
-	var page = await _api.get_messages_page(_current_session_id, 50, _lazy_cursor)
+	var page = await _api.get_messages_page(_current_session_id, 50)
 	if page.is_empty() or page.get("items", []).is_empty():
 		return
 	var msgs: Array = page.items
-	# get_messages_page 已按时间正序（旧→新），不需要 reverse
 	_row_data = msgs
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
@@ -705,6 +666,8 @@ func _on_scroll_changed(_value: float) -> void:
 	_compute_heights_and_offsets()
 	virtual_content.custom_minimum_size.y = _row_heights.back() + _y_offsets.back()
 	_adjust_pool_size()
+	# 等一帧让新行的 label 获得布局宽度后再渲染
+	await get_tree().process_frame
 	_update_visible_rows(scroll.scroll_vertical)
 	_lazy_cursor = page.get("cursor", "")
 	if _lazy_cursor.is_empty():
