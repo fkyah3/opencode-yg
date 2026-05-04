@@ -91,6 +91,8 @@ var _primary_model_name: String = ""
 @export var input_padding: int = 8
 ## 输入框本身的最小高度（像素）
 @export var input_min_height: int = 80
+## 首次加载的消息条数（默认 50，数值越小启动越快，拉到顶会自动加载更多）
+@export var load_limit: int = 50
 
 # ── 子模块（注入 ThemeConfig 后初始化，顺序：theme_config → PartRenderer → SSEHandler） ──
 @onready var part_renderer: PartRenderer = PartRenderer.new(theme_config)
@@ -588,7 +590,7 @@ func _load_session_messages(sid: String) -> void:
 	_clear_messages()
 	_set_status("加载消息...")
 
-	var page = await _api.get_messages_page(sid, 50)
+	var page = await _api.get_messages_page(sid, load_limit)
 	if page.is_empty() or page.get("items", []).is_empty():
 		_set_status("(无消息)")
 		_has_loaded_all = true
@@ -628,43 +630,14 @@ func _refresh_messages() -> void:
 		print("→ _refresh_messages skipped (already refreshing)")
 		return
 	_refreshing_messages = true
-	var page = await _api.get_messages_page(_current_session_id, 50)
+	var page = await _api.get_messages_page(_current_session_id, load_limit)
 	if page.is_empty() or page.get("items", []).is_empty():
-		_refreshing_messages = false
 		return
-	if not is_instance_valid(virtual_content) or virtual_content.get_parent() == null:
-		push_warning("→ _refresh_messages: virtual_content 已从场景树移除！")
-		_refreshing_messages = false
-		return
-	var msgs: Array = page.items
-	_row_data = msgs
-	print("→ _refresh_messages clearing children=" + str(virtual_content.get_child_count()) + " has_parent=" + str(virtual_content.get_parent() != null))
-	_clear_messages()
-	var rebuilt := 0
-	for msg in msgs:
-		var node := _build_message_node(msg)
-		if not is_instance_valid(virtual_content) or not is_instance_valid(node):
-			push_warning("→ _refresh_messages: 节点构建后 virtual_content 失效！")
-			break
-		virtual_content.add_child(node)
-		rebuilt += 1
-	print("→ _refresh_messages rebuilt=" + str(rebuilt) + " children=" + str(virtual_content.get_child_count()))
-	_refreshing_messages = false
-	await get_tree().process_frame
-	_scroll_pending = true
-
-
-# ═══════════════════ 虚拟滚动核心 ═══════════════════
-
-func _on_raw_mode_toggled(pressed: bool) -> void:
-	print("→ _on_raw_mode_toggled " + str(pressed))
-	_raw_mode = pressed
-	# 只重绘已有消息（保留流式节点）
-	for c in virtual_content.get_children():
-		if c == _streaming_node and is_instance_valid(_streaming_node):
-			continue
-		c.queue_free()
-	for msg in _row_data:
+	var messages: Array = page.items
+	messages.reverse()
+	_row_data = messages
+	_set_status("刷新 " + str(messages.size()) + " 条...")
+	for msg in messages:
 		virtual_content.add_child(_build_message_node(msg))
 	_refreshing_messages = false
 	await get_tree().process_frame
@@ -683,7 +656,7 @@ func _on_scroll_changed(_value: float) -> void:
 
 func _lazy_load_more() -> void:
 	## 加载更多旧消息，批量创建后一次性加入 VBoxContainer
-	var page = await _api.get_messages_page(_current_session_id, 50, _lazy_cursor)
+	var page = await _api.get_messages_page(_current_session_id, load_limit, _lazy_cursor)
 	if page.is_empty() or not (page.get("items") is Array) or page.items.is_empty():
 		_lazy_loading = false
 		if page.get("cursor", "") == "":
