@@ -103,6 +103,9 @@ var _streaming_just_finalized: bool = false  # 阻止 message.updated 触发 _re
 ## 首次加载的消息条数（默认 50，数值越小启动越快，拉到顶会自动加载更多）
 @export var load_limit: int = 50
 
+## 硬约束行数（可在 Inspector 中调整，调整后需要重启生效）
+@export var constraint_count: int = 3
+
 # ── 子模块（注入 ThemeConfig 后初始化，顺序：theme_config → PartRenderer → SSEHandler） ──
 @onready var part_renderer: PartRenderer = PartRenderer.new(theme_config)
 @onready var message_log: MessageLog = MessageLog.new(virtual_content, theme_config, part_renderer)
@@ -851,7 +854,7 @@ func _init_constraints() -> void:
 	hdr.custom_minimum_size.y = 22
 	sidebar.add_child(hdr)
 
-	for i in 3:
+	for i in constraint_count:
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.custom_minimum_size.y = 28
@@ -875,7 +878,7 @@ func _init_constraints() -> void:
 func _get_constraints_text() -> String:
 	## 获取已勾选的硬约束文本，用换行拼接
 	var lines := PackedStringArray()
-	for i in 3:
+	for i in constraint_count:
 		if _constraint_checks[i].button_pressed:
 			var txt := _constraint_inputs[i].text.strip_edges()
 			if not txt.is_empty():
@@ -886,7 +889,7 @@ func _get_constraints_text() -> String:
 func _save_constraints() -> void:
 	## 将 3 对约束保存到 user:// 配置文件
 	var data: Array[Dictionary] = []
-	for i in 3:
+	for i in constraint_count:
 		data.append({"checked": _constraint_checks[i].button_pressed, "text": _constraint_inputs[i].text})
 	var file := FileAccess.open(_constraints_path, FileAccess.WRITE)
 	if file:
@@ -900,17 +903,18 @@ func _load_constraints() -> void:
 		_save_constraints()
 		return
 	var file := FileAccess.open(_constraints_path, FileAccess.READ)
-	if file:
-		var raw := file.get_as_text()
-		file.close()
-		var parsed = JSON.parse_string(raw) as Array
-		if parsed == null or parsed.size() < 3:
-			return
-		for i in 3:
-			var entry: Dictionary = parsed[i] as Dictionary
-			if i < _constraint_checks.size() and i < _constraint_inputs.size():
-				_constraint_checks[i].button_pressed = entry.get("checked", false)
-				_constraint_inputs[i].text = entry.get("text", "")
+	if not file:
+		return
+	var raw := file.get_as_text()
+	file.close()
+	var parsed = JSON.parse_string(raw) as Array
+	if parsed == null or parsed.size() < constraint_count:
+		return
+	for i in constraint_count:
+		var entry: Dictionary = parsed[i] as Dictionary
+		if i < _constraint_checks.size() and i < _constraint_inputs.size():
+			_constraint_checks[i].button_pressed = entry.get("checked", false)
+			_constraint_inputs[i].text = entry.get("text", "")
 
 
 func _on_send_pressed() -> void:
