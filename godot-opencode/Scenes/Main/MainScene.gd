@@ -37,9 +37,7 @@ var _current_session_id: String = ""
 var _streaming_text: String = ""
 var _streaming_reasoning_text: String = ""
 var _raw_toggle: CheckBox
-var _scroll_pending: bool = false
-var _auto_scroll: bool = true  # 用户是否在"吸附"状态（插头插在插座里）
-var _pending_frames: int = 0  # _scroll_pending 持续帧数，超时强制清除
+var _auto_scroll: bool = true  # 侧边栏"自动跟随"按钮控制
 
 # ── 懒加载状态 ──
 var _lazy_cursor: String = ""
@@ -198,7 +196,9 @@ func _ready() -> void:
 	# 回车发送，Tab 换行
 	msg_input.gui_input.connect(_on_input_gui_input)
 	# 连接虚拟滚动的滚动信号
-	scroll.get_v_scroll_bar().value_changed.connect(_on_scroll_changed)
+	var vbar := scroll.get_v_scroll_bar()
+	vbar.value_changed.connect(_on_scroll_changed)
+	vbar.scrolling.connect(_on_user_scrolling)
 	scroll.resized.connect(_on_scroll_resized)
 	# RAW 模式切换
 	var toggle := get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/RawModeToggle") as CheckBox
@@ -527,27 +527,12 @@ func _init_sse() -> void:
 
 
 func _process(delta: float) -> void:
-	# 主动推底：设 scroll_vertical，value_changed 在 Layout Pass 后才刷新 max_value
-	# 推底一次即清标记，防止用户上拉后被拽回
-	if _auto_scroll and _scroll_pending:
+	if _auto_scroll:
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
-			if scroll.scroll_vertical >= bar.max_value - 2.0:
-				_scroll_pending = false  # 已到真底
-			# else: 还没到底（节点高度还在增长中），保持标记，下一帧继续推
 
 	# 注意：VBoxContainer 自动管理总高，滚动路径不碰 custom_minimum_size
-
-
-	# 安全阀：_scroll_pending 停留超过 0.5 秒（30帧@60fps）强制清除
-	if _scroll_pending:
-		_pending_frames += 1
-		if _pending_frames > 30:
-			_scroll_pending = false
-			_pending_frames = 0
-	else:
-		_pending_frames = 0
 
 
 func _bootstrap() -> void:
@@ -666,7 +651,6 @@ func _load_session_messages(sid: String) -> void:
 
 	# 消息追加完毕，标记推送到底
 	await get_tree().process_frame
-	_scroll_pending = true
 
 	_set_status(str(messages.size()) + " 条消息")
 
@@ -694,17 +678,14 @@ func _refresh_messages() -> void:
 	_scroll_to_newest()
 
 
+func _on_user_scrolling() -> void:
+	## 用户手动滚动滚动条时触发——用 scrolling 信号（仅用户操作，不是程序设值）
+	var bar := scroll.get_v_scroll_bar()
+	_auto_scroll = scroll.scroll_vertical + bar.page >= bar.max_value
+
+
 func _on_scroll_changed(value: float) -> void:
 	print("→ _on_scroll_changed value=" + str(value))
-
-	# ⭐ 插头/插座逻辑：用户上拉断开吸附，用户拉到底重新吸附
-	var bar := scroll.get_v_scroll_bar()
-	if bar != null and bar.max_value > 0:
-		if value >= bar.max_value - 5.0:
-			_auto_scroll = true  # 用户拉到底 → 重新插上
-		elif value < bar.max_value - 10.0:
-		if value < bar.max_value - 10.0:
-			_auto_scroll = false  # 用户手动上拉 → 拔出插头
 
 	## 滚动时触发懒加载：拉到顶时加载更旧的消息
 	if not _lazy_loading and not _lazy_cursor.is_empty():
@@ -1018,7 +999,6 @@ func _finalize_streaming() -> void:
 	_streaming_label = null
 	_streaming_node = null
 	_streaming_just_finalized = true
-	_pending_frames = 0
 	_scroll_to_newest()
 
 
@@ -1179,7 +1159,6 @@ func _append_message(msg: Dictionary) -> void:
 	virtual_content.add_child(node)
 	print("→ _append_message added children=" + str(before) + "→" + str(before + 1))
 	await get_tree().process_frame
-	_scroll_pending = true
 
 
 func _clear_messages() -> void:
@@ -1219,5 +1198,5 @@ func _fetch_balance() -> void:
 
 
 func _scroll_to_newest() -> void:
-	if not _scroll_pending:
-		_scroll_pending = true
+	## 触发自动跟随（下次 _process 推到底）
+	_auto_scroll = true
