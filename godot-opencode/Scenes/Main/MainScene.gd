@@ -82,6 +82,16 @@ var _primary_model_name: String = ""
 # ═══════════════════ 导出变量（可在 Inspector 中调整） ═══════════════════
 @export var theme_config: ThemeConfig
 
+@export_group("布局")
+## 聊天框左右内边距（像素）
+@export var chat_padding_h: int = 8
+## 消息滚动区与输入框之间的间距（像素）
+@export var chat_input_gap: int = 4
+## 输入框内边距（像素，统一设置上下左右）
+@export var input_padding: int = 8
+## 输入框本身的最小高度（像素）
+@export var input_min_height: int = 80
+
 # ── 子模块（注入 ThemeConfig 后初始化，顺序：theme_config → PartRenderer → SSEHandler） ──
 @onready var part_renderer: PartRenderer = PartRenderer.new(theme_config)
 @onready var sse_handler: SSEHandler = _create_sse_handler()
@@ -182,6 +192,33 @@ func _ready() -> void:
 		_raw_toggle = toggle
 		_raw_toggle.button_pressed = _raw_mode
 		_raw_toggle.toggled.connect(_on_raw_mode_toggled)
+
+	# ── 应用布局参数 ──
+	_apply_layout()
+
+
+func _apply_layout() -> void:
+	## 将导出的布局变量应用到场景节点上
+	var scroll_vbox: VBoxContainer = scroll.get_parent() as VBoxContainer
+	if scroll_vbox:
+		scroll_vbox.theme_override_constants["separation"] = chat_input_gap
+
+	var input_panel: Panel = scroll_vbox.get_node("InputArea") as Panel
+	if input_panel:
+		input_panel.custom_minimum_size.y = input_min_height
+		var pb: StyleBoxEmpty = StyleBoxEmpty.new()
+		pb.content_margin_left = input_padding
+		pb.content_margin_right = input_padding
+		pb.content_margin_top = input_padding
+		pb.content_margin_bottom = input_padding
+		input_panel.add_theme_stylebox_override("panel", pb)
+
+	# 聊天框左右边距（VirtualContent）
+	virtual_content.theme_override_constants["separation"] = 0
+	var vc_style := StyleBoxEmpty.new()
+	vc_style.content_margin_left = chat_padding_h
+	vc_style.content_margin_right = chat_padding_h
+	virtual_content.add_theme_stylebox_override("panel", vc_style)
 
 
 func _apply_font_theme() -> void:
