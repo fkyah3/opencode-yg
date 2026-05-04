@@ -85,10 +85,10 @@ func _create_sse_handler() -> SSEHandler:
 		_on_question_asked(props)
 
 	h.on_server_connected = func() -> void:
-	_update_info_bar()
-	_fetch_balance()
-	if _api and is_instance_valid(_api):
-		_refresh_sessions()
+		_update_info_bar()
+		_fetch_balance()
+		if _api and is_instance_valid(_api):
+			_refresh_sessions()
 
 	return h
 
