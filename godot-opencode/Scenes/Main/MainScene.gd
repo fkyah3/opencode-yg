@@ -158,7 +158,6 @@ func _create_sse_handler() -> SSEHandler:
 				_streaming_text += "\n[color=#88cc88]" + output.left(1000) + "[/color]"
 		if _streaming_label != null:
 			_streaming_label.text = _streaming_text
-			_scroll_to_newest()
 
 	h.on_message_updated = func(sid: String) -> void:
 		if sid == _current_session_id and _streaming_label == null and not _streaming_just_finalized:
