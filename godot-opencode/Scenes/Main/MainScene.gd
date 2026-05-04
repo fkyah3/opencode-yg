@@ -22,6 +22,67 @@ class_name MainScene
 @onready var info_rate: Label = %InfoRate
 
 
+# ── 会话选择器 ──
+var _session_picker: SessionPicker
+
+# ── 命令面板 ──
+var _cmd_palette: CommandPalette
+
+# ── 通信层 ──
+var _api: OpenCodeAPI
+var _sse: SSEClient
+
+# ── 会话状态 ──
+var _current_session_id: String = ""
+var _streaming_text: String = ""
+var _streaming_reasoning_text: String = ""
+var _streaming_dirty: bool = false  # label 需要刷新
+var _streaming_frame_count: int = 0  # 流式节流帧计数器
+var _streaming_initial_scroll: bool = true  # 首帧内容需滚动跟随
+var _scroll_pending: bool = false
+var _scroll_pending_locked: bool = false  # 防反复推底锁
+
+# ── 懒加载状态 ──
+var _lazy_cursor: String = ""
+var _lazy_loading: bool = false
+var _has_loaded_all: bool = false
+var _refreshing_messages: bool = false
+
+# ── 行级缓存 ──
+var _row_data: Array = []
+
+# ── 流式渲染相关 ──
+var _streaming_label: RichTextLabel
+var _streaming_reasoning_label: RichTextLabel
+var _streaming_node: Control
+var _streaming_reasoning_text: String = ""  # 推理累积文本
+
+# ── 上下文 ──
+var _context_memory: int = 0
+var _context_total: int = 0
+var _cached_sessions: Array = []  # 会话列表缓存
+
+# ── Token 速率 ──
+var _rate_tokens: int = 0
+var _rate_time: float = 0.0
+
+# ── 余额 ──
+var _balance_text: String = "余额: 未配置"
+
+# ── 权限 / 问题对话框 ──
+var _permission_dialog: PermissionDialog
+var _question_dialog: QuestionDialog
+var _pending_permissions: Dictionary = {}  # request_id → properties
+var _pending_questions: Dictionary = {}    # request_id → properties
+
+# ── 连接对话框 ──
+var _connection_dialog: ConnectionDialog
+
+# ── 模型信息（从 Agent API 加载） ──
+var _primary_agent_name: String = ""
+var _primary_model_name: String = ""
+
+
 # ═══════════════════ 导出变量（可在 Inspector 中调整） ═══════════════════
 @export var theme_config: ThemeConfig
 
@@ -85,36 +146,6 @@ func _create_sse_handler() -> SSEHandler:
 			_refresh_sessions()
 
 	return h
-
-
-# ── 会话选择器 ──
-var _session_picker: SessionPicker
-
-# ── 命令面板 ──
-var _cmd_palette: CommandPalette
-
-# ── 通信层 ──
-var _api: OpenCodeAPI
-var _sse: SSEClient
-
-# ── 会话状态 ──
-var _current_session_id: String = ""
-var _streaming_text: String = ""
-var _streaming_reasoning_text: String = ""
-var _streaming_dirty: bool = false  # label 需要刷新
-var _streaming_frame_count: int = 0  # 流式节流帧计数器
-var _streaming_initial_scroll: bool = true  # 首帧内容需滚动跟随
-var _scroll_pending: bool = false
-var _scroll_pending_locked: bool = false  # 防反复推底锁
-
-# ── 权限 / 问题对话框 ──
-var _permission_dialog: PermissionDialog
-var _question_dialog: QuestionDialog
-var _pending_permissions: Dictionary = {}  # request_id → properties
-var _pending_questions: Dictionary = {}    # request_id → properties
-
-# ── 连接对话框 ──
-var _connection_dialog: ConnectionDialog
 
 
 func _ready() -> void:
