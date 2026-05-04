@@ -663,6 +663,7 @@ func _load_session_messages(sid: String) -> void:
 		virtual_content.add_child(node)
 
 	# 消息追加完毕，标记推送到底
+	_auto_scroll = true
 	await get_tree().process_frame
 
 	_set_status(str(messages.size()) + " 条消息")
@@ -1065,7 +1066,7 @@ func _append_message(msg: Dictionary) -> void:
 
 
 func _clear_messages() -> void:
-	## 清空消息区所有节点（包括流式），重置状态，为新会话初始化
+	## 清空消息区所有节点（包括流式），重置滚动位置，为新会话初始化
 	_message_log.clear_all()
 	_row_data.clear()
 	_streaming_label = null
@@ -1073,6 +1074,7 @@ func _clear_messages() -> void:
 	_streaming_text = ""
 	_streaming_reasoning_text = ""
 	_streaming_just_finalized = false
+	scroll.scroll_vertical = 0
 
 
 func _set_status(text: String) -> void:
