@@ -74,6 +74,11 @@ var _pending_questions: Dictionary = {}    # request_id → properties
 # ── 连接对话框 ──
 var _connection_dialog: ConnectionDialog
 
+# ── 硬约束持久化 ──
+var _constraints_path: String = "user://godot_opencode_constraints.json"
+var _constraint_checks: Array[CheckBox] = []
+var _constraint_inputs: Array[TextEdit] = []
+
 # ── 模型信息（从 Agent API 加载） ──
 var _primary_agent_name: String = ""
 var _primary_model_name: String = ""
@@ -193,8 +198,18 @@ func _ready() -> void:
 	_update_info_bar()
 	# 监听输入框输入，检测 / 命令
 	msg_input.text_changed.connect(_on_input_text_changed)
+	# ⭐ 硬约束：3 对 CheckBox + TextEdit
+	_init_constraints()
 	# 回车发送，Tab 换行
 	msg_input.gui_input.connect(_on_input_gui_input)
+	# ⭐ 拖入文件自动填路径
+	get_viewport().files_dropped.connect(func(paths: PackedStringArray) -> void:
+		for p in paths:
+			if msg_input.text.is_empty():
+				msg_input.text = p
+			else:
+				msg_input.text += "\n" + p
+	)
 	# 连接虚拟滚动的滚动信号
 	var vbar := scroll.get_v_scroll_bar()
 	vbar.value_changed.connect(_on_scroll_changed)
@@ -449,7 +464,10 @@ func _send_message_direct(text: String) -> void:
 	if text.is_empty():
 		return
 
-	# ⭐ 前置系统时间到用户消息
+	# ⭐ 前置硬约束和系统时间到用户消息
+	var ctext := _get_constraints_text()
+	if not ctext.is_empty():
+		text = ctext + "\n" + text
 	var now := Time.get_datetime_dict_from_system()
 	var time_tag := "当前时间为 %04d年%02d月%02d日 %02d:%02d:%02d\n" % [now.year, now.month, now.day, now.hour, now.minute, now.second]
 	text = time_tag + text
@@ -822,6 +840,79 @@ func _ensure_status_label() -> void:
 		sidebar.add_child(label)
 
 
+func _init_constraints() -> void:
+	## 在侧边栏底部创建 3 对 CheckBox + TextEdit 硬约束控件
+	var sidebar := get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent") as VBoxContainer
+	if sidebar == null:
+		return
+	# 标题
+	var hdr := Label.new()
+	hdr.text = "硬约束"
+	hdr.custom_minimum_size.y = 22
+	sidebar.add_child(hdr)
+
+	for i in 3:
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.custom_minimum_size.y = 28
+		var cb := CheckBox.new()
+		cb.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		row.add_child(cb)
+		var te := TextEdit.new()
+		te.custom_minimum_size.y = 26
+		te.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		te.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(te)
+		sidebar.add_child(row)
+		_constraint_checks.append(cb)
+		_constraint_inputs.append(te)
+		# 勾选变化时立即存档
+		cb.toggled.connect(func(_on: bool) -> void: _save_constraints())
+
+	_load_constraints()
+
+
+func _get_constraints_text() -> String:
+	## 获取已勾选的硬约束文本，用换行拼接
+	var lines := PackedStringArray()
+	for i in 3:
+		if _constraint_checks[i].button_pressed:
+			var txt := _constraint_inputs[i].text.strip_edges()
+			if not txt.is_empty():
+				lines.append("[硬约束] " + txt)
+	return "\n".join(lines)
+
+
+func _save_constraints() -> void:
+	## 将 3 对约束保存到 user:// 配置文件
+	var data: Array[Dictionary] = []
+	for i in 3:
+		data.append({"checked": _constraint_checks[i].button_pressed, "text": _constraint_inputs[i].text})
+	var file := FileAccess.open(_constraints_path, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.new().stringify(data))
+		file.close()
+
+
+func _load_constraints() -> void:
+	## 从 user:// 加载约束文本
+	if not FileAccess.file_exists(_constraints_path):
+		_save_constraints()
+		return
+	var file := FileAccess.open(_constraints_path, FileAccess.READ)
+	if file:
+		var raw := file.get_as_text()
+		file.close()
+		var parsed = JSON.parse_string(raw) as Array
+		if parsed == null or parsed.size() < 3:
+			return
+		for i in 3:
+			var entry: Dictionary = parsed[i] as Dictionary
+			if i < _constraint_checks.size() and i < _constraint_inputs.size():
+				_constraint_checks[i].button_pressed = entry.get("checked", false)
+				_constraint_inputs[i].text = entry.get("text", "")
+
+
 func _on_send_pressed() -> void:
 	print("→ _on_send_pressed")
 	var text := msg_input.text.strip_edges()
@@ -839,7 +930,10 @@ func _on_send_pressed() -> void:
 			return
 		_current_session_id = sid
 
-	# ⭐ 前置系统时间到用户消息
+	# ⭐ 前置硬约束和系统时间到用户消息
+	var ctext := _get_constraints_text()
+	if not ctext.is_empty():
+		text = ctext + "\n" + text
 	var now := Time.get_datetime_dict_from_system()
 	var time_tag := "当前时间为 %04d年%02d月%02d日 %02d:%02d:%02d\n" % [now.year, now.month, now.day, now.hour, now.minute, now.second]
 	text = time_tag + text

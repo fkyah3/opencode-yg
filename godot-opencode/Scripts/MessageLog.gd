@@ -43,6 +43,7 @@ func build_node(msg: Dictionary) -> VBoxContainer:
 	# 名称标签
 	var name_label := RichTextLabel.new()
 	name_label.bbcode_enabled = true
+	name_label.selection_enabled = true
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.add_theme_color_override("default_color", _theme_config.color_text_name)
 	name_label.append_text("你" if is_user else "AI")
@@ -93,6 +94,7 @@ func build_node(msg: Dictionary) -> VBoxContainer:
 		bubble.add_theme_stylebox_override("panel", style)
 		var label := RichTextLabel.new()
 		label.bbcode_enabled = true
+		label.selection_enabled = true
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.fit_content = true
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -135,6 +137,7 @@ func create_streaming_widget() -> VBoxContainer:
 
 	_streaming_label = RichTextLabel.new()
 	_streaming_label.bbcode_enabled = true
+	_streaming_label.selection_enabled = true
 	_streaming_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_streaming_label.fit_content = true
 	_streaming_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
