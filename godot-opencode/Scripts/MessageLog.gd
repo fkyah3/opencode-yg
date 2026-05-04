@@ -90,7 +90,7 @@ func build_node(msg: Dictionary) -> VBoxContainer:
 		style.border_width_left = 3
 		style.corner_radius_bottom_right = 6
 		style.corner_radius_top_right = 6
-		style.content_margin_all = 10
+		style.set_content_margin_all(10)
 		bubble.add_theme_stylebox_override("panel", style)
 		var label := RichTextLabel.new()
 		label.bbcode_enabled = true
@@ -132,7 +132,7 @@ func create_streaming_widget() -> VBoxContainer:
 	bstyle.border_width_left = 3
 	bstyle.corner_radius_bottom_right = 6
 	bstyle.corner_radius_top_right = 6
-	bstyle.content_margin_all = 8
+	bstyle.set_content_margin_all(8)
 	bubble.add_theme_stylebox_override("panel", bstyle)
 
 	_streaming_label = RichTextLabel.new()
