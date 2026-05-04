@@ -259,23 +259,10 @@ func _apply_layout() -> void:
 
 
 func _on_raw_mode_toggled(on: bool) -> void:
-	## RAW 模式切换：重建当前消息
+	## RAW 模式切换：改为切换消息节点内的可见图层，不重建节点
 	_raw_mode = on
-	# 重新渲染所有现有消息（跳过流式节点）
-	var to_rerender: Array[Dictionary] = []
-	for child in virtual_content.get_children():
-		if child == _streaming_node:
-			continue
-		var row_data: Dictionary = child.get_meta("row_data", {})
-		if not row_data.is_empty():
-			to_rerender.append(row_data)
-		child.queue_free()
-	await get_tree().process_frame
-	for msg in to_rerender:
-		var node := _message_log.build_node(msg)
-		virtual_content.add_child(node)
-	if _streaming_node != null and is_instance_valid(_streaming_node):
-		virtual_content.add_child(_streaming_node)
+	_message_log.switch_mode(on)
+	_scroll_to_newest()
 
 
 func _apply_font_theme() -> void:

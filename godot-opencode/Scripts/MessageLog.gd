@@ -42,13 +42,13 @@ func clear_all() -> void:
 
 # ── 创建消息节点（历史加载/用户消息）────────────────────────────────
 func build_node(msg: Dictionary) -> VBoxContainer:
-	## 创建一个固定结构的消息节点并返回（不添加到容器）
+	## 创建双层结构消息节点：StreamingLayer(默认可见) + BBCodeLayer(空壳，取消RAW时懒填充)
 	var is_user: bool = msg.get("role", "") == "user"
 	var parts: Array = msg.get("parts", [])
 	var root := VBoxContainer.new()
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	# 名称标签
+	# ── 名称标签（共用） ──
 	var name_label := RichTextLabel.new()
 	name_label.bbcode_enabled = true
 	name_label.selection_enabled = true
@@ -57,7 +57,15 @@ func build_node(msg: Dictionary) -> VBoxContainer:
 	name_label.append_text("你" if is_user else "AI")
 	root.add_child(name_label)
 
-	# 统一流式风格：灰色思考，粗体工具，原文文字
+	# ══════════════════════════════════════════════════════
+	# 1. StreamingLayer（默认可见）
+	# ══════════════════════════════════════════════════════
+	var sl := VBoxContainer.new()
+	sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sl.visible = true
+	root.add_child(sl)
+	root.set_meta("streaming_layer", sl)
+
 	var raw_parts := PackedStringArray()
 	for p in parts:
 		var pt_raw: String = p.get("type", "")
@@ -109,12 +117,23 @@ func build_node(msg: Dictionary) -> VBoxContainer:
 		label.add_theme_color_override("default_color", _theme_config.color_text)
 		label.append_text("\n".join(raw_parts))
 		bubble.add_child(label)
-		root.add_child(bubble)
+		sl.add_child(bubble)
 	else:
-		# 无内容兜底（不应发生）
 		var empty := RichTextLabel.new()
 		empty.text = "(空消息)"
-		root.add_child(empty)
+		sl.add_child(empty)
+
+	# ══════════════════════════════════════════════════════
+	# 2. BBCodeLayer（空壳，默认隐藏）
+	# ══════════════════════════════════════════════════════
+	var bl := VBoxContainer.new()
+	bl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bl.visible = false
+	root.add_child(bl)
+	root.set_meta("bbcode_layer", bl)
+	# BBCode 内容在用户首次取消 RAW 时懒填充
+
+	root.set_meta("row_data", msg)
 	return root
 
 
@@ -162,6 +181,85 @@ func lock_streaming() -> void:
 	## 锁定流式节点：节点保留在容器中，但不再被追踪为流式节点
 	_streaming_label = null
 	_streaming_node = null
+
+
+func switch_mode(raw: bool) -> void:
+	## 切换所有消息的显示模式：raw=true 显示流式层，raw=false 显示 BBCode 层
+	for c in _container.get_children():
+		_modify_node_visibility(c, raw)
+
+
+func _modify_node_visibility(root: Control, raw: bool) -> void:
+	## 递归切换单个消息节点的显示层
+	if not root.has_meta("streaming_layer") or not root.has_meta("bbcode_layer"):
+		return
+	var sl: Control = root.get_meta("streaming_layer")
+	var bl: Control = root.get_meta("bbcode_layer")
+	if not is_instance_valid(sl) or not is_instance_valid(bl):
+		return
+	sl.visible = raw
+	bl.visible = not raw
+	# 懒填充：用户首次切到 BBCode 时填充内容
+	if not raw and not bl.has_meta("bbcode_filled"):
+		var msg: Dictionary = root.get_meta("row_data", {})
+		_fill_bbcode_layer(bl, msg)
+
+
+func _fill_bbcode_layer(bl: Control, msg: Dictionary) -> void:
+	## 懒填充 BBCode 层——按 Part 类型渲染
+	bl.set_meta("bbcode_filled", true)
+	var is_user: bool = msg.get("role", "") == "user"
+	var parts: Array = msg.get("parts", [])
+	var thinking_text := ""
+	var bbcode_parts := PackedStringArray()
+	for p in parts:
+		var pt_raw: String = p.get("type", "")
+		var pt: String = pt_raw
+		if pt.begins_with("tool-"):
+			pt = "tool"
+		match pt:
+			"reasoning":
+				var rt: String = p.get("text", "")
+				if not rt.is_empty():
+					thinking_text += rt
+			"text":
+				var txt: String = p.get("text", "")
+				if not txt.is_empty():
+					bbcode_parts.append(_part_renderer.render_part_text(txt))
+			"tool", "tool-call":
+				bbcode_parts.append(_part_renderer.render_part_tool(p))
+	# 填充思考标签（如存在）
+	if not thinking_text.is_empty():
+		var think_label := RichTextLabel.new()
+		think_label.bbcode_enabled = true
+		think_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		think_label.fit_content = true
+		think_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		think_label.add_theme_color_override("default_color", _theme_config.color_text_dim)
+		think_label.append_text("[color=#" + _theme_config.color_text_dim.to_html(false) + "]思考：" + thinking_text + "[/color]")
+		bl.add_child(think_label)
+	# 填充正文气泡
+	if not bbcode_parts.is_empty():
+		var bubble := PanelContainer.new()
+		bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var style := StyleBoxFlat.new()
+		style.bg_color = _theme_config.bubble_user_bg if is_user else _theme_config.bubble_ai_bg
+		style.border_color = _theme_config.bubble_user_border if is_user else _theme_config.bubble_ai_border
+		style.border_width_left = 3
+		style.corner_radius_bottom_right = 6
+		style.corner_radius_top_right = 6
+		style.set_content_margin_all(10)
+		bubble.add_theme_stylebox_override("panel", style)
+		var label := RichTextLabel.new()
+		label.bbcode_enabled = true
+		label.selection_enabled = true
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.fit_content = true
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.add_theme_color_override("default_color", _theme_config.color_text)
+		label.append_text("\n".join(bbcode_parts))
+		bubble.add_child(label)
+		bl.add_child(bubble)
 
 
 func is_streaming() -> bool:
