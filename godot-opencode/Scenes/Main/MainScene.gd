@@ -199,26 +199,25 @@ func _ready() -> void:
 
 func _apply_layout() -> void:
 	## 将导出的布局变量应用到场景节点上
-	var scroll_vbox: VBoxContainer = scroll.get_parent() as VBoxContainer
-	if scroll_vbox:
-		scroll_vbox.theme_override_constants["separation"] = chat_input_gap
+	var chat_area: VBoxContainer = scroll.get_parent() as VBoxContainer
+	if chat_area:
+		chat_area.add_theme_constant_override("separation", chat_input_gap)
+		# 聊天框左右内边距 — 通过 ChatArea 的 StyleBox 衬垫实现
+		var chat_style := StyleBoxEmpty.new()
+		chat_style.content_margin_left = chat_padding_h
+		chat_style.content_margin_right = chat_padding_h
+		chat_area.add_theme_stylebox_override("panel", chat_style)
 
-	var input_panel: Panel = scroll_vbox.get_node("InputArea") as Panel
+	# 输入框最小高度与内边距
+	var input_panel: Panel = chat_area.get_node("InputArea") as Panel
 	if input_panel:
 		input_panel.custom_minimum_size.y = input_min_height
-		var pb: StyleBoxEmpty = StyleBoxEmpty.new()
+		var pb := StyleBoxEmpty.new()
 		pb.content_margin_left = input_padding
 		pb.content_margin_right = input_padding
 		pb.content_margin_top = input_padding
 		pb.content_margin_bottom = input_padding
 		input_panel.add_theme_stylebox_override("panel", pb)
-
-	# 聊天框左右边距（VirtualContent）
-	virtual_content.theme_override_constants["separation"] = 0
-	var vc_style := StyleBoxEmpty.new()
-	vc_style.content_margin_left = chat_padding_h
-	vc_style.content_margin_right = chat_padding_h
-	virtual_content.add_theme_stylebox_override("panel", vc_style)
 
 
 func _apply_font_theme() -> void:
