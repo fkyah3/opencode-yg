@@ -55,7 +55,6 @@ var _row_data: Array = []
 var _streaming_label: RichTextLabel
 var _streaming_reasoning_label: RichTextLabel
 var _streaming_node: Control
-var _streaming_reasoning_text: String = ""  # 推理累积文本
 
 # ── 上下文 ──
 var _context_memory: int = 0
