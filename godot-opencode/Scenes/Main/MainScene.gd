@@ -39,16 +39,12 @@ func _create_sse_handler() -> SSEHandler:
 			if _streaming_reasoning_label == null:
 				return
 			_streaming_reasoning_text += delta
-			_streaming_reasoning_label.visible = true
-			var col_html := theme_config.color_text_dim.to_html(false)
-			_streaming_reasoning_label.text = "[color=#" + col_html + "]" + _streaming_reasoning_text + "[/color]"
-			_scroll_to_newest()
+			_streaming_dirty = true
 		elif field == "text":
 			if _streaming_label == null:
 				return
 			_streaming_text += delta
-			_streaming_label.text = _streaming_text
-			_scroll_to_newest()
+			_streaming_dirty = true
 			_rate_tokens += delta.length()
 			if _rate_time < 0.001:
 				_rate_time = 0.001
@@ -70,8 +66,7 @@ func _create_sse_handler() -> SSEHandler:
 			return
 		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
 		_streaming_text += "\n[b]" + icon + " " + tool_name + "[/b]"
-		_streaming_label.text = _streaming_text
-		_scroll_to_newest()
+		_streaming_dirty = true
 
 	h.on_message_updated = func(sid: String) -> void:
 		if sid == _current_session_id and _streaming_label == null:
@@ -105,32 +100,12 @@ var _sse: SSEClient
 # ── 会话状态 ──
 var _current_session_id: String = ""
 var _streaming_text: String = ""
-var _streaming_reasoning_text: String = ""  # 流式推理累积文本
-var _streaming_label: RichTextLabel
-var _streaming_reasoning_label: RichTextLabel
-var _streaming_node: Control          # 流式容器的根节点
-var _cached_sessions: Array = []  # 缓存的会话列表，避免重复 HTTP 请求
-
-# ── 懒加载状态 ──
-var _lazy_cursor: String = ""  # 下一页游标
-var _lazy_loading: bool = false  # 正在加载更多
-var _has_loaded_all: bool = false
-var _refreshing_messages: bool = false  # 刷新锁（防 SSE + HTTP 双写 VBoxContainer）
-var _skip_append_after: int = 0  # 发送序列号：_append_message 检查此号是否过期
-var _row_data: Array = []  # 消息数据（仅作数据缓存）
-# ── Agent/模型信息 ──
-var _primary_agent_name: String = "-"
-var _primary_model_name: String = "-"
-var _context_memory: int = 0
-var _context_total: int = 0
-
-# ── Token 速率追踪 ──
-var _rate_tokens: int = 0
-var _rate_time: float = 0.0
-
-# ── 滚动防抖 ──
-var _scroll_timer: float = 0.0
+var _streaming_reasoning_text: String = ""
+var _streaming_dirty: bool = false  # label 需要刷新
+var _streaming_frame_count: int = 0  # 流式节流帧计数器
+var _streaming_initial_scroll: bool = true  # 首帧内容需滚动跟随
 var _scroll_pending: bool = false
+var _scroll_pending_locked: bool = false  # 防反复推底锁
 
 # ── 权限 / 问题对话框 ──
 var _permission_dialog: PermissionDialog
@@ -437,8 +412,28 @@ func _process(delta: float) -> void:
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
+			_scroll_pending_locked = true
 
 	# 注意：VBoxContainer 自动管理总高，滚动路径不碰 custom_minimum_size
+
+	# ── 流式节流刷新：每 N 帧刷一次推理/文字标签 ──
+	_streaming_frame_count += 1
+	if _streaming_dirty and _streaming_frame_count >= 6:
+		_streaming_frame_count = 0
+		_streaming_dirty = false
+		# 推理标签
+		if _streaming_reasoning_label != null and is_instance_valid(_streaming_reasoning_label):
+			if not _streaming_reasoning_text.is_empty():
+				var col := theme_config.color_text_dim.to_html(false)
+				_streaming_reasoning_label.visible = true
+				_streaming_reasoning_label.text = "[color=#" + col + "]" + _streaming_reasoning_text + "[/color]"
+		# 文字标签
+		if _streaming_label != null and is_instance_valid(_streaming_label):
+			_streaming_label.text = _streaming_text
+		# 滚动跟随（仅首次内容）
+		if _streaming_initial_scroll:
+			_streaming_initial_scroll = false
+			_scroll_to_newest()
 
 
 func _bootstrap() -> void:
@@ -600,6 +595,12 @@ func _refresh_messages() -> void:
 
 func _on_scroll_changed(_value: float) -> void:
 	print("→ _on_scroll_changed value=" + str(_value))
+	## 用户手动滚动时解锁推底锁
+	if _scroll_pending_locked:
+		var bar := scroll.get_v_scroll_bar()
+		if bar != null and scroll.scroll_vertical < int(bar.max_value) - 10:
+			_scroll_pending_locked = false
+
 	## 滚动时触发懒加载：拉到顶时加载更旧的消息
 	if not _lazy_loading and not _lazy_cursor.is_empty():
 		if scroll.scroll_vertical <= 5:
@@ -816,6 +817,8 @@ func _create_streaming_widget() -> VBoxContainer:
 	# 重置流式状态
 	_streaming_text = ""
 	_streaming_reasoning_text = ""
+	_streaming_frame_count = 6  # 第一帧立即刷新
+	_streaming_initial_scroll = true
 
 	var msg_vbox := VBoxContainer.new()
 	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -878,6 +881,7 @@ func _finalize_streaming() -> void:
 	print("→ _finalize_streaming")
 	## 完成流式响应（由 _append_message 清理流式节点）
 	_streaming_label = null
+	_scroll_pending_locked = false
 	_scroll_to_newest()
 
 
@@ -1029,7 +1033,9 @@ func _fetch_balance() -> void:
 
 
 func _scroll_to_newest() -> void:
-	## 标记滚动到底。若非手动远离底部则可跳转。
+	## 标记滚动到底（锁门控制：同一推送被锁定后，用户手动滚动才解锁）
+	if _scroll_pending_locked:
+		return
 	var bar := scroll.get_v_scroll_bar()
 	if bar != null and bar.max_value > 0:
 		if scroll.scroll_vertical < int(bar.max_value) - 30:
