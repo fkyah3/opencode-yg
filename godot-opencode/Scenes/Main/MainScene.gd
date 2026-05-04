@@ -91,6 +91,9 @@ var _primary_model_name: String = ""
 @export var input_padding: int = 8
 ## 输入框本身的最小高度（像素）
 @export var input_min_height: int = 80
+	## 当前会话状态（用于侧边栏指示器）
+var _session_state: String = "idle"  # idle | sending | thinking | generating | tool_call
+
 ## 首次加载的消息条数（默认 50，数值越小启动越快，拉到顶会自动加载更多）
 @export var load_limit: int = 50
 
@@ -105,11 +108,13 @@ func _create_sse_handler() -> SSEHandler:
 		if sid != _current_session_id:
 			return
 		if field == "reasoning":
+			_update_session_state("thinking")
 			_streaming_text += delta
 			if _streaming_label != null:
 				_streaming_label.text = _streaming_text
 				_scroll_to_newest()
 		elif field == "text":
+			_update_session_state("generating")
 			_streaming_text += delta
 			if _streaming_label != null:
 				_streaming_label.text = _streaming_text
@@ -124,6 +129,7 @@ func _create_sse_handler() -> SSEHandler:
 	h.on_session_status = func(sid: String, status: Dictionary) -> void:
 		if status.get("type") == "idle" and sid == _current_session_id:
 			_finalize_streaming()
+			_update_session_state("idle")
 		var mem: int = status.get("memory", _context_memory)
 		var ctx: int = status.get("context", _context_total)
 		_context_memory = mem
@@ -133,6 +139,7 @@ func _create_sse_handler() -> SSEHandler:
 	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String, state: Dictionary = {}) -> void:
 		if sid != _current_session_id or _streaming_label == null:
 			return
+		_update_session_state("tool_call")
 		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
 		_streaming_text += "\n[b]" + icon + " " + tool_name + "[/b]"
 		# 渲染工具调用的 input（命令内容）和 output（执行结果）
@@ -197,6 +204,9 @@ func _ready() -> void:
 
 	# ── 应用布局参数 ──
 	_apply_layout()
+	# ── 侧边栏状态指示标签 ──
+	_ensure_status_label()
+	_update_session_state("idle")
 
 
 func _apply_layout() -> void:
@@ -458,7 +468,11 @@ func _send_message_direct(text: String) -> void:
 	# 创建流式响应容器
 	_create_streaming_widget()
 
+	var send_sid := _current_session_id
 	var result := await _api.send_message(_current_session_id, text)
+	if _current_session_id != send_sid:
+		_update_session_state("idle")
+		return
 	if result.is_empty():
 		push_warning("send_message 返回空结果")
 	else:
@@ -764,6 +778,44 @@ func _on_input_gui_input(event: InputEvent) -> void:
 		msg_input.set_caret_column(0)
 
 
+
+
+func _update_session_state(new_state: String) -> void:
+	## 更新侧边栏会话状态指示标签
+	_session_state = new_state
+	var texts := {
+		"idle": "就绪",
+		"sending": "发送中",
+		"thinking": "思考中",
+		"generating": "生成中",
+		"tool_call": "执行工具",
+		"error": "错误",
+	}
+	var label: Label = get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/StatusState")
+	if label:
+		label.text = texts.get(new_state, new_state)
+
+
+func _ensure_status_label() -> void:
+	## 确保侧边栏状态指示标签存在
+	var sidebar := get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent") as VBoxContainer
+	if sidebar == null or sidebar.has_node("StatusState"):
+		return
+	var label := Label.new()
+	label.name = "StatusState"
+	label.text = "就绪"
+	label.custom_minimum_size.y = 22
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+	# 插入到 RawModeToggle 前面
+	var toggle := sidebar.get_node_or_null("RawModeToggle")
+	if toggle:
+		sidebar.add_child(label)
+		sidebar.move_child(label, toggle.get_index())
+	else:
+		sidebar.add_child(label)
+
+
 func _on_send_pressed() -> void:
 	print("→ _on_send_pressed")
 	var text := msg_input.text.strip_edges()
@@ -788,6 +840,7 @@ func _on_send_pressed() -> void:
 
 	msg_input.text = ""
 	_set_status("发送中...")
+	_update_session_state("sending")
 
 	# 用户消息追加到虚拟滚动
 	_append_message({"role": "user", "parts": [{"type": "text", "text": text}]})
@@ -795,8 +848,15 @@ func _on_send_pressed() -> void:
 	# 创建流式响应容器
 	_create_streaming_widget()
 
+	var send_sid := _current_session_id
 	var row_len_before := _row_data.size()
-	var res = await _api.send_message(_current_session_id, text)
+	var res = await _api.send_message(send_sid, text)
+	# 安全锁：await 期间切换会话则丢弃结果
+	if _current_session_id != send_sid:
+		print("→ discard send result: session changed")
+		_update_session_state("idle")
+		_set_status("")
+		return
 	if res.is_empty() or not (res is Dictionary):
 		push_warning("send_message 返回异常: " + str(res))
 	else:
@@ -806,6 +866,7 @@ func _on_send_pressed() -> void:
 		else:
 			_append_message(res)
 	_set_status("")
+	_update_session_state("idle")
 
 
 func _on_sse_event(event_type: String, properties: Dictionary) -> void:
@@ -1099,11 +1160,11 @@ func _append_message(msg: Dictionary) -> void:
 
 
 func _clear_messages() -> void:
-	print("→ _clear_messages before children=" + str(virtual_content.get_child_count()) + " parent=" + str(virtual_content.get_parent() != null))
-	## 清空 VBoxContainer 中所有消息节点（保留 VBoxContainer 本身）
+	## 清空 VBoxContainer 中所有消息节点（保留流式节点）
 	for c in virtual_content.get_children():
+		if c == _streaming_node:
+			continue
 		c.queue_free()
-	print("→ _clear_messages after children=" + str(virtual_content.get_child_count()))
 
 
 func _set_status(text: String) -> void:
