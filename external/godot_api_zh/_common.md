@@ -1,0 +1,130 @@
+# 常用类（Common Classes）（128）
+
+- AABB —— 3D 轴对齐包围盒。
+- AnimatableBody2D <- StaticBody2D —— 不受外力移动的 2D 物理体。
+- AnimatableBody3D <- StaticBody3D —— 不受外力移动的 3D 物理体。
+- AnimatedSprite2D <- Node2D —— 包含多帧纹理作为动画帧的精灵节点。
+- AnimatedSprite3D <- SpriteBase3D —— 3D 世界中的 2D 精灵节点，可使用多张 2D 纹理实现动画。
+- AnimationPlayer <- AnimationMixer —— 用于动画播放的节点。
+- AnimationTree <- AnimationMixer —— 用于 AnimationPlayer 中高级动画过渡的节点。
+- Area2D <- CollisionObject2D —— 检测其他 CollisionObject2D 进出其区域的 2D 空间区域。
+- Area3D <- CollisionObject3D —— 检测其他 CollisionObject3D 进出其区域的 3D 空间区域。
+- AudioStream <- Resource —— 音频流的基类。
+- AudioStreamPlayer <- Node —— 音频播放节点。
+- AudioStreamPlayer2D <- Node2D —— 在 2D 空间中播放位置音效。
+- AudioStreamPlayer3D <- Node3D —— 在 3D 空间中播放位置音效。
+- Basis —— 表示 3D 旋转和缩放的 3×3 矩阵。
+- BoxMesh <- PrimitiveMesh —— 生成轴对齐的盒状 PrimitiveMesh。
+- BoxShape3D <- Shape3D —— 用于物理碰撞的 3D 盒状形状。
+- Button <- BaseButton —— 可包含文本和图标的主题化按钮。
+- CPUParticles2D <- Node2D —— 基于 CPU 的 2D 粒子发射器。
+- CPUParticles3D <- GeometryInstance3D —— 基于 CPU 的 3D 粒子发射器。
+- Callable —— 表示方法或独立函数的内置类型。
+- Camera2D <- Node2D —— 2D 场景的摄像机节点。
+- Camera3D <- Node3D —— 摄像机节点，从视角显示画面。
+- CanvasItem <- Node —— 2D 空间中所有对象的抽象基类。
+- CanvasItemMaterial <- Material —— 用于 CanvasItem 的材质。
+- CanvasLayer <- Node —— 用于 2D 场景内对象独立渲染的节点。
+- CapsuleMesh <- PrimitiveMesh —— 胶囊形状的 PrimitiveMesh。
+- CapsuleShape2D <- Shape2D —— 用于物理碰撞的 2D 胶囊形状。
+- CapsuleShape3D <- Shape3D —— 用于物理碰撞的 3D 胶囊形状。
+- CenterContainer <- Container —— 将子控件保持在其中心的容器。
+- CharacterBody2D <- PhysicsBody2D —— 专为由脚本控制的角色而设计的 2D 物理体。
+- CharacterBody3D <- PhysicsBody3D —— 专为由脚本控制的角色而设计的 3D 物理体。
+- CheckBox <- Button —— 表示二元选择的按钮。
+- CircleShape2D <- Shape2D —— 用于物理碰撞的 2D 圆形形状。
+- CollisionPolygon2D <- Node2D —— 为 CollisionObject2D 父节点提供多边形形状的节点。
+- CollisionPolygon3D <- Node3D —— 为 CollisionObject3D 父节点提供加厚多边形形状（棱柱）的节点。
+- CollisionShape2D <- Node2D —— 为 CollisionObject2D 父节点提供 Shape2D 的节点。
+- CollisionShape3D <- Node3D —— 为 CollisionObject3D 父节点提供 Shape3D 的节点。
+- Color —— 以 RGBA 格式表示的颜色。
+- ColorRect <- Control —— 显示纯色矩形的控件。
+- Container <- Control —— 所有 GUI 容器的基类。
+- Control <- CanvasItem —— 所有 GUI 控件的基类。
+- ConvexPolygonShape2D <- Shape2D —— 用于物理碰撞的 2D 凸多边形形状。
+- ConvexPolygonShape3D <- Shape3D —— 用于物理碰撞的 3D 凸多面体形状。
+- Curve2D <- Resource —— 描述 2D 空间中的贝塞尔曲线。
+- Curve3D <- Resource —— 描述 3D 空间中的贝塞尔曲线。
+- CylinderMesh <- PrimitiveMesh —— 圆柱体 PrimitiveMesh。
+- DirectionalLight2D <- Light2D —— 来自远处的 2D 方向光。
+- DirectionalLight3D <- Light3D —— 来自远处的方向光（如太阳光）。
+- Engine <- Object —— 提供对引擎属性的访问。
+- GPUParticles2D <- Node2D —— 2D 粒子发射器。
+- GPUParticles3D <- GeometryInstance3D —— 3D 粒子发射器。
+- GridContainer <- Container —— 以网格布局排列子控件的容器。
+- HBoxContainer <- BoxContainer —— 水平排列子控件的容器。
+- HSlider <- Slider —— 从左（最小值）到右（最大值）的水平滑块。
+- Input <- Object —— 处理输入的全局单例。
+- InputEvent <- Resource —— 输入事件的抽象基类。
+- Label <- Control —— 用于显示纯文本的控件。
+- Light2D <- Node2D —— 在 2D 环境中投射光线。
+- Light3D <- VisualInstance3D —— 不同类型光照节点的基类。
+- LineEdit <- Control —— 单行文本输入框。
+- MarginContainer <- Container —— 在子控件周围保留边距的容器。
+- Material <- Resource —— 将视觉属性（如颜色和粗糙度）应用到对象的虚基类。
+- Mesh <- Resource —— 包含顶点数组几何数据的资源。
+- MeshInstance2D <- Node2D —— 在 2D 中显示网格的节点。
+- MeshInstance3D <- GeometryInstance3D —— 将网格实例化到场景中的节点。
+- MultiMeshInstance2D <- Node2D —— 在 2D 中实例化 MultiMesh 的节点。
+- MultiMeshInstance3D <- GeometryInstance3D —— 实例化 MultiMesh 的节点。
+- NavigationAgent2D <- Node —— 用于寻路到目标位置并避开障碍物的 2D 代理。
+- NavigationAgent3D <- Node —— 用于寻路到目标位置并避开障碍物的 3D 代理。
+- NavigationRegion2D <- Node2D —— NavigationAgent2D 可用于寻路的可遍历 2D 区域。
+- NavigationRegion3D <- Node3D —— NavigationAgent3D 可用于寻路的可遍历 3D 区域。
+- Node <- Object —— 所有场景对象的基类。
+- Node2D <- CanvasItem —— 2D 游戏对象，所有 2D 相关节点的父类。
+- Node3D <- Node —— 3D 空间中的基础对象，所有 3D 节点的父类。
+- Object —— 引擎中所有其他类的基类。
+- OmniLight3D <- Light3D —— 全方向光（如灯泡或蜡烛）。
+- PackedScene <- Resource —— 序列化场景的抽象。
+- Panel <- Control —— 显示 StyleBox 的 GUI 控件。
+- PanelContainer <- Container —— 将子控件保持在 StyleBox 区域内的容器。
+- Path2D <- Node2D —— 包含供 PathFollow2D 节点遵循的 Curve2D 路径。
+- Path3D <- Node3D —— 包含供 PathFollow3D 节点遵循的 Curve3D 路径。
+- PathFollow2D <- Node2D —— Path2D 的点采样器。
+- PathFollow3D <- Node3D —— Path3D 的点采样器。
+- Plane —— 海塞标准型平面。
+- PlaneMesh <- PrimitiveMesh —— 平面 PrimitiveMesh。
+- PointLight2D <- Light2D —— 定位 2D 光源。
+- PrimitiveMesh <- Mesh —— 所有基本网格的基类。
+- ProgressBar <- Range —— 用于可视化表示百分比的控件。
+- Quaternion —— 用于表示 3D 旋转的单位四元数。
+- RayCast2D <- Node2D —— 2D 空间中的射线，用于查找其穿过的第一个碰撞对象。
+- RayCast3D <- Node3D —— 3D 空间中的射线，用于查找其穿过的第一个碰撞对象。
+- Rect2 —— 使用浮点坐标的 2D 轴对齐包围盒。
+- RectangleShape2D <- Shape2D —— 用于物理碰撞的 2D 矩形形状。
+- RefCounted <- Object —— 引用计数对象的基类。
+- Resource <- RefCounted —— 可序列化对象的基类。
+- RigidBody2D <- PhysicsBody2D —— 由物理模拟驱动的 2D 物理体。
+- RigidBody3D <- PhysicsBody3D —— 由物理模拟驱动的 3D 物理体。
+- SceneTree <- MainLoop —— 通过节点层级管理游戏循环。
+- ScrollContainer <- Container —— 在需要时为子控件提供滚动条的容器。
+- ShaderMaterial <- Material —— 由自定义着色器程序及其参数值定义的材质。
+- Shape2D <- Resource —— 用于物理碰撞的 2D 形状抽象基类。
+- Shape3D <- Resource —— 用于物理碰撞的 3D 形状抽象基类。
+- ShapeCast2D <- Node2D —— 在 2D 空间中扫掠区域以检测 CollisionObject2D 的形状。
+- ShapeCast3D <- Node3D —— 在 3D 空间中扫掠区域以检测 CollisionObject3D 的形状。
+- Signal —— 表示对象的信号的内置类型。
+- Slider <- Range —— 滑块的抽象基类。
+- SphereMesh <- PrimitiveMesh —— 球体 PrimitiveMesh。
+- SphereShape3D <- Shape3D —— 用于物理碰撞的 3D 球体形状。
+- SpotLight3D <- Light3D —— 聚光灯（如反射式聚光灯或灯笼）。
+- Sprite2D <- Node2D —— 通用精灵节点。
+- Sprite3D <- SpriteBase3D —— 3D 世界中的 2D 精灵节点。
+- StandardMaterial3D <- BaseMaterial3D —— 用于 3D 对象的 PBR（基于物理的渲染）材质。
+- StaticBody2D <- PhysicsBody2D —— 不受外力移动的 2D 物理体。
+- StaticBody3D <- PhysicsBody3D —— 不受外力移动的 3D 物理体。
+- Texture2D <- Texture —— 用于 2D 和 3D 的纹理。
+- TextureButton <- BaseButton —— 基于纹理的按钮。
+- TextureRect <- Control —— 显示纹理的控件。
+- TileMapLayer <- Node2D —— 基于瓦片的 2D 地图节点。
+- TileSet <- Resource —— 用于瓦片地图的瓦片库。
+- Timer <- Node —— 倒计时器。
+- Transform2D —— 表示 2D 变换的 2×3 矩阵。
+- Transform3D —— 表示 3D 变换的 3×4 矩阵。
+- Tween <- RefCounted —— 用于通过脚本使用 Tweeners 进行通用动画的轻量级对象。
+- VBoxContainer <- BoxContainer —— 垂直排列子控件的容器。
+- VSlider <- Slider —— 从下（最小值）到上（最大值）的垂直滑块。
+- Vector2 —— 使用浮点坐标的 2D 向量。
+- Vector3 —— 使用浮点坐标的 3D 向量。
+- Vector4 —— 使用浮点坐标的 4D 向量。

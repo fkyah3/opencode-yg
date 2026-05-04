@@ -1,0 +1,74 @@
+## PackedByteArray（打包字节数组）
+
+专门设计用于存储字节的数组。数据紧密打包，因此对于大型数组可以节省内存。PackedByteArray 还提供了将各种类型编码/解码为字节的方法。值的编码方式是实现细节，在与外部应用交互时不应依赖。**注意：** 打包数组始终通过引用传递。要获取可以独立于原始数组修改的副本，请使用 `duplicate`。但内置属性和方法的情况*并非如此*，它们返回的打包数组是副本，修改它不会影响原始值。要更新此类型的内置属性，请修改返回的数组然后重新赋值给属性。**注意：** 在布尔上下文中，空数组将求值为 `false`，否则始终求值为 `true`。
+
+**方法（Methods）：**
+- append(value: int) -> bool —— 追加值
+- append_array(array: PackedByteArray) —— 追加数组
+- bsearch(value: int, before: bool = true) -> int —— 二分搜索
+- bswap16(offset: int = 0, count: int = -1) —— 16 位字节交换
+- bswap32(offset: int = 0, count: int = -1) —— 32 位字节交换
+- bswap64(offset: int = 0, count: int = -1) —— 64 位字节交换
+- clear() —— 清除
+- compress(compression_mode: int = 0) -> PackedByteArray —— 压缩
+- count(value: int) -> int —— 计数
+- decode_double(byte_offset: int) -> float —— 解码双精度浮点数
+- decode_float(byte_offset: int) -> float —— 解码单精度浮点数
+- decode_half(byte_offset: int) -> float —— 解码半精度浮点数
+- decode_s8(byte_offset: int) -> int —— 解码有符号 8 位整数
+- decode_s16(byte_offset: int) -> int —— 解码有符号 16 位整数
+- decode_s32(byte_offset: int) -> int —— 解码有符号 32 位整数
+- decode_s64(byte_offset: int) -> int —— 解码有符号 64 位整数
+- decode_u8(byte_offset: int) -> int —— 解码无符号 8 位整数
+- decode_u16(byte_offset: int) -> int —— 解码无符号 16 位整数
+- decode_u32(byte_offset: int) -> int —— 解码无符号 32 位整数
+- decode_u64(byte_offset: int) -> int —— 解码无符号 64 位整数
+- decode_var(byte_offset: int, allow_objects: bool = false) -> Variant —— 解码变量
+- decode_var_size(byte_offset: int, allow_objects: bool = false) -> int —— 解码变量大小
+- decompress(buffer_size: int, compression_mode: int = 0) -> PackedByteArray —— 解压缩
+- decompress_dynamic(max_output_size: int, compression_mode: int = 0) -> PackedByteArray —— 动态解压缩
+- duplicate() -> PackedByteArray —— 复制
+- encode_double(byte_offset: int, value: float) —— 编码双精度浮点数
+- encode_float(byte_offset: int, value: float) —— 编码单精度浮点数
+- encode_half(byte_offset: int, value: float) —— 编码半精度浮点数
+- encode_s8(byte_offset: int, value: int) —— 编码有符号 8 位整数
+- encode_s16(byte_offset: int, value: int) —— 编码有符号 16 位整数
+- encode_s32(byte_offset: int, value: int) —— 编码有符号 32 位整数
+- encode_s64(byte_offset: int, value: int) —— 编码有符号 64 位整数
+- encode_u8(byte_offset: int, value: int) —— 编码无符号 8 位整数
+- encode_u16(byte_offset: int, value: int) —— 编码无符号 16 位整数
+- encode_u32(byte_offset: int, value: int) —— 编码无符号 32 位整数
+- encode_u64(byte_offset: int, value: int) —— 编码无符号 64 位整数
+- encode_var(byte_offset: int, value: Variant, allow_objects: bool = false) -> int —— 编码变量
+- erase(value: int) -> bool —— 擦除值
+- fill(value: int) —— 填充
+- find(value: int, from: int = 0) -> int —— 查找
+- get(index: int) -> int —— 获取元素
+- get_string_from_ascii() -> String —— 从 ASCII 获取字符串
+- get_string_from_multibyte_char(encoding: String = "") -> String —— 从多字节字符获取字符串
+- get_string_from_utf8() -> String —— 从 UTF-8 获取字符串
+- get_string_from_utf16() -> String —— 从 UTF-16 获取字符串
+- get_string_from_utf32() -> String —— 从 UTF-32 获取字符串
+- get_string_from_wchar() -> String —— 从宽字符获取字符串
+- has(value: int) -> bool —— 是否包含值
+- has_encoded_var(byte_offset: int, allow_objects: bool = false) -> bool —— 是否有编码变量
+- hex_encode() -> String —— 十六进制编码
+- insert(at_index: int, value: int) -> int —— 插入
+- is_empty() -> bool —— 是否为空
+- push_back(value: int) -> bool —— 追加到末尾
+- remove_at(index: int) —— 移除指定索引
+- resize(new_size: int) -> int —— 调整大小
+- reverse() —— 反转
+- rfind(value: int, from: int = -1) -> int —— 反向查找
+- set(index: int, value: int) —— 设置元素
+- size() -> int —— 获取大小
+- slice(begin: int, end: int = 2147483647) -> PackedByteArray —— 切片
+- sort() —— 排序
+- to_color_array() -> PackedColorArray —— 转换为颜色数组
+- to_float32_array() -> PackedFloat32Array —— 转换为 float32 数组
+- to_float64_array() -> PackedFloat64Array —— 转换为 float64 数组
+- to_int32_array() -> PackedInt32Array —— 转换为 int32 数组
+- to_int64_array() -> PackedInt64Array —— 转换为 int64 数组
+- to_vector2_array() -> PackedVector2Array —— 转换为 Vector2 数组
+- to_vector3_array() -> PackedVector3Array —— 转换为 Vector3 数组
+- to_vector4_array() -> PackedVector4Array —— 转换为 Vector4 数组

@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://e14mtfpwja0f"]
+
+[ext_resource type="PackedScene" uid="uid://cojrqff5vocjv" path="res://Scenes/Window/Window.tscn" id="1_8t376"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8t376"]
+bg_color = Color(0.55, 0.32248333, 0.1485, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+corner_detail = 10
+shadow_color = Color(0, 0, 0, 0.0784314)
+
+[node name="Window" unique_id=476648980 instance=ExtResource("1_8t376")]
+theme_override_styles/panel = SubResource("StyleBoxFlat_8t376")
+
+[node name="ApplicationContents" type="Control" parent="." index="1" unique_id=1590628022]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 30.0
+grow_horizontal = 2
+grow_vertical = 2

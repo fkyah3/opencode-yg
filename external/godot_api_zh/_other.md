@@ -1,0 +1,734 @@
+# 其他类 (732)
+
+- AESContext <- RefCounted — 提供对原始数据进行 AES 加密/解密的功能。
+- AStar2D <- RefCounted — A* 算法在二维空间中寻找连通图上两点间最短路径的实现。
+- AStar3D <- RefCounted — A* 算法在三维空间中寻找连通图上两点间最短路径的实现。
+- AStarGrid2D <- RefCounted — A* 算法在部分二维网格上寻找两点间最短路径的实现。
+- AcceptDialog <- Window — 用于用户通知的基础对话框。
+- AimModifier3D <- BoneConstraint3D — AimModifier3D 旋转骨骼使其看向参考骨骼。
+- AnimatedTexture <- Texture2D — 用于简单帧动画的代理纹理。
+- Animation <- Resource — 保存可用于驱动引擎中任何对象动画的数据。
+- AnimationLibrary <- Resource — 包含多个 Animation 资源的容器。
+- AnimationMixer <- Node — AnimationPlayer 和 AnimationTree 的基类。
+- AnimationNode <- Resource — AnimationTree 节点的基类。
+- AnimationNodeAdd2 <- AnimationNodeSync — 在 AnimationNodeBlendTree 中叠加混合两个动画。
+- AnimationNodeAdd3 <- AnimationNodeSync — 在 AnimationNodeBlendTree 中叠加混合三个动画中的两个。
+- AnimationNodeAnimation <- AnimationRootNode — AnimationNodeBlendTree 的输入动画节点。
+- AnimationNodeBlend2 <- AnimationNodeSync — 在 AnimationNodeBlendTree 中线性混合两个动画。
+- AnimationNodeBlend3 <- AnimationNodeSync — 在 AnimationNodeBlendTree 中线性混合三个动画中的两个。
+- AnimationNodeBlendSpace1D <- AnimationRootNode — 一组放置在虚拟轴上的 AnimationRootNode，在相邻节点间交叉淡入淡出。
+- AnimationNodeBlendSpace2D <- AnimationRootNode — 一组放置在二维坐标上的 AnimationRootNode，在三个相邻节点间交叉淡入淡出。
+- AnimationNodeBlendTree <- AnimationRootNode — 由多种 AnimationNode 类型组成的子树，用于复杂动画。
+- AnimationNodeExtension <- AnimationNode — 从 GDScript、C# 或 C++ 扩展 AnimationRootNode 的基类。
+- AnimationNodeOneShot <- AnimationNodeSync — 在 AnimationNodeBlendTree 中播放一次动画。
+- AnimationNodeOutput <- AnimationNode — AnimationNodeBlendTree 的动画输出节点。
+- AnimationNodeStateMachine <- AnimationRootNode — 包含多个 AnimationRootNode 的状态机，由 AnimationTree 使用。
+- AnimationNodeStateMachinePlayback <- Resource — 为 AnimationNodeStateMachine 提供播放控制。
+- AnimationNodeStateMachineTransition <- Resource — AnimationNodeStateMachine 中连接两个 AnimationRootNode 的过渡。
+- AnimationNodeSub2 <- AnimationNodeSync — 在 AnimationNodeBlendTree 中相减混合两个动画。
+- AnimationNodeSync <- AnimationNode — 具有多个需要同步的输入端口的 AnimationNode 的基类。
+- AnimationNodeTimeScale <- AnimationNode — 在 AnimationTree 中使用的时间缩放动画节点。
+- AnimationNodeTimeSeek <- AnimationNode — 在 AnimationTree 中使用的时间搜寻动画节点。
+- AnimationNodeTransition <- AnimationNodeSync — AnimationTree 中连接两个 AnimationNode 的过渡。
+- AnimationRootNode <- AnimationNode — 持有一个或多个复合动画的 AnimationNode 的基类。
+- Array — 保存元素序列的内置数据结构。
+- ArrayMesh <- Mesh — 提供从数组构建曲面工具的网格类型。
+- ArrayOccluder3D <- Occluder3D — 用于 OccluderInstance3D 遮挡剔除的三维多边形形状。
+- AspectRatioContainer <- Container — 保持子控件比例的容器。
+- AtlasTexture <- Texture2D — 裁剪另一个 Texture2D 的一部分作为纹理。
+- AudioBusLayout <- Resource — 存储音频总线的信息。
+- AudioEffect <- Resource — 音频效果资源的基类。
+- AudioEffectAmplify <- AudioEffect — 为音频总线添加放大音频效果。
+- AudioEffectBandLimitFilter <- AudioEffectFilter — 为音频总线添加带限滤波器。
+- AudioEffectBandPassFilter <- AudioEffectFilter — 为音频总线添加带通滤波器。
+- AudioEffectCapture <- AudioEffect — 实时从音频总线捕获音频。
+- AudioEffectChorus <- AudioEffect — 添加合唱音频效果。
+- AudioEffectCompressor <- AudioEffect — 为音频总线添加压缩器音频效果。
+- AudioEffectDelay <- AudioEffect — 为音频总线添加延迟音频效果。
+- AudioEffectDistortion <- AudioEffect — 为音频总线添加失真音频效果。
+- AudioEffectEQ <- AudioEffect — 音频均衡器的基类。
+- AudioEffectEQ10 <- AudioEffectEQ — 为音频总线添加 10 段均衡器音频效果。
+- AudioEffectEQ21 <- AudioEffectEQ — 为音频总线添加 21 段均衡器音频效果。
+- AudioEffectEQ6 <- AudioEffectEQ — 为音频总线添加 6 段均衡器音频效果。
+- AudioEffectFilter <- AudioEffect — 为音频总线添加滤波器。
+- AudioEffectHardLimiter <- AudioEffect — 为音频总线添加硬限制器音频效果。
+- AudioEffectHighPassFilter <- AudioEffectFilter — 为音频总线添加高通滤波器。
+- AudioEffectHighShelfFilter <- AudioEffectFilter — 为音频总线添加高架滤波器。
+- AudioEffectInstance <- RefCounted — 操纵特定效果接收到的音频。
+- AudioEffectLimiter <- AudioEffect — 为音频总线添加软削波限制器音频效果。
+- AudioEffectLowPassFilter <- AudioEffectFilter — 为音频总线添加低通滤波器。
+- AudioEffectLowShelfFilter <- AudioEffectFilter — 为音频总线添加低架滤波器。
+- AudioEffectNotchFilter <- AudioEffectFilter — 为音频总线添加陷波滤波器。
+- AudioEffectPanner <- AudioEffect — 为音频总线添加声像调节音频效果。
+- AudioEffectPhaser <- AudioEffect — 为音频总线添加移相音频效果。
+- AudioEffectPitchShift <- AudioEffect — 为音频总线添加变调音频效果。
+- AudioEffectRecord <- AudioEffect — 用于录制音频总线声音的音频效果。
+- AudioEffectReverb <- AudioEffect — 为音频总线添加混响音频效果。
+- AudioEffectSpectrumAnalyzer <- AudioEffect — 可用于实时音频可视化的音频效果。
+- AudioEffectSpectrumAnalyzerInstance <- AudioEffectInstance — AudioEffectSpectrumAnalyzer 的可查询实例。
+- AudioEffectStereoEnhance <- AudioEffect — 用于调节立体声像强度的音频效果。
+- AudioListener2D <- Node2D — 覆盖声音的听音位置。
+- AudioListener3D <- Node3D — 覆盖声音的听音位置。
+- AudioSample <- RefCounted — 音频样本的基类。
+- AudioSamplePlayback <- RefCounted — 用于播放音频样本的元类。
+- AudioServer <- Object — 低层级音频访问的服务器接口。
+- AudioStreamGenerator <- AudioStream — 带有程序化声音生成工具的音频流。
+- AudioStreamGeneratorPlayback <- AudioStreamPlaybackResampled — 播放使用 AudioStreamGenerator 生成的音频。
+- AudioStreamMicrophone <- AudioStream — 播放实时音频输入数据。
+- AudioStreamPlayback <- RefCounted — 用于播放音频的元类。
+- AudioStreamPlaybackPolyphonic <- AudioStreamPlayback — AudioStreamPolyphonic 的播放实例。
+- AudioStreamPlaybackResampled <- AudioStreamPlayback
+- AudioStreamPolyphonic <- AudioStream — 允许用户在代码中随时使用单一播放器同时播放自定义流的音频流。
+- AudioStreamRandomizer <- AudioStream — 包装一组音频流，带有音调和音量随机化。
+- AudioStreamWAV <- AudioStream — 存储从 WAV 文件加载的音频数据。
+- BackBufferCopy <- Node2D — 将屏幕区域复制到缓冲区供着色器代码访问的节点。
+- BaseButton <- Control — GUI 按钮的抽象基类。
+- BaseMaterial3D <- Material — 定义网格三维渲染属性的抽象基类。
+- BitMap <- Resource — 布尔矩阵。
+- BlitMaterial <- Material — 处理对 DrawableTexture 的 blit 调用的材质。
+- Bone2D <- Node2D — 与 Skeleton2D 配合使用以控制和其他节点动画的关节。
+- BoneAttachment3D <- Node3D — 动态复制或覆盖其父节点 Skeleton3D 中骨骼三维变换的节点。
+- BoneConstraint3D <- SkeletonModifier3D — 可通过关联两根骨骼来修改 Skeleton3D 骨骼的节点。
+- BoneMap <- Resource — 描述骨骼名称映射，用于将 Skeleton3D 重定向到 SkeletonProfile 定义的通用名称。
+- BoneTwistDisperser3D <- SkeletonModifier3D — 将子骨骼的扭转传播和分散到父骨骼的节点。
+- BoxContainer <- Container — 水平或垂直排列子控件的容器。
+- BoxOccluder3D <- Occluder3D — 用于 OccluderInstance3D 遮挡剔除的长方体形状。
+- ButtonGroup <- Resource — 一组按钮，不允许同时按下多个按钮。
+- CCDIK3D <- IterateIK3D — 基于旋转的循环坐标下降逆运动学求解器。
+- CallbackTweener <- Tweener — 在可选延迟后调用指定方法。
+- CameraAttributes <- Resource — 相机设置的父类。
+- CameraAttributesPhysical <- CameraAttributes — 基于物理的相机设置。
+- CameraAttributesPractical <- CameraAttributes — 易于使用的相机设置格式。
+- CameraFeed <- RefCounted — 提供对设备上一个物理摄像头的访问。
+- CameraTexture <- Texture2D — 由 CameraFeed 提供的纹理。
+- CanvasGroup <- Node2D — 将多个二维节点合并为一次绘制操作。
+- CanvasModulate <- Node2D — 对画布应用颜色色调的节点。
+- CanvasTexture <- Texture2D — 带有可选法线和镜面贴图的纹理，用于二维渲染。
+- ChainIK3D <- IKModifier3D — 对包含任意数量骨骼的骨骼链应用逆运动学的 SkeletonModifier3D。
+- CharFXTransform <- RefCounted — 控制 RichTextEffect 中单个字符的显示方式。
+- CheckButton <- Button — 表示二元选择的按钮。
+- ClassDB <- Object — 类信息仓库。
+- CodeEdit <- TextEdit — 专为代码编辑设计的多行文本编辑器。
+- CodeHighlighter <- SyntaxHighlighter — 为代码设计的语法高亮器。
+- CollisionObject2D <- Node2D — 二维物理对象的抽象基类。
+- CollisionObject3D <- Node3D — 三维物理对象的抽象基类。
+- ColorPalette <- Resource — 管理颜色调色板的资源类，可通过 ColorPicker 加载和保存。
+- ColorPicker <- VBoxContainer — 提供选择或修改颜色界面的控件。
+- ColorPickerButton <- Button — 按下时弹出 ColorPicker 的按钮。
+- Compositor <- Resource — 存储自定义 Viewport 渲染方式的属性。
+- CompositorEffect <- Resource — 允许创建自定义渲染效果的资源。
+- CompressedCubemap <- CompressedTextureLayered — 可选压缩的 Cubemap。
+- CompressedCubemapArray <- CompressedTextureLayered — 可选压缩的 CubemapArray。
+- CompressedTexture2D <- Texture2D — 二维纹理，可选压缩。
+- CompressedTexture2DArray <- CompressedTextureLayered — 二维纹理数组，可选压缩。
+- CompressedTexture3D <- Texture3D — 三维纹理，可选压缩。
+- CompressedTextureLayered <- TextureLayered — 纹理数组的基类，可选压缩。
+- ConcavePolygonShape2D <- Shape2D — 用于物理碰撞的二维多线段形状。
+- ConcavePolygonShape3D <- Shape3D — 用于物理碰撞的三维三角网格形状。
+- ConeTwistJoint3D <- Joint3D — 以球窝关节方式连接两个三维物理体的物理关节。
+- ConfigFile <- RefCounted — 处理 INI 风格文件的辅助类。
+- ConfirmationDialog <- AcceptDialog — 用于确认操作的对话框。
+- ConvertTransformModifier3D <- BoneConstraint3D — 将参考骨骼的变换转换后应用到目标骨骼的 SkeletonModifier3D。
+- CopyTransformModifier3D <- BoneConstraint3D — 将参考骨骼的变换复制后应用到目标骨骼的 SkeletonModifier3D。
+- Crypto <- RefCounted — 提供高级加密功能。
+- CryptoKey <- Resource — 加密密钥（RSA 或椭圆曲线）。
+- Cubemap <- ImageTextureLayered — 表示立方体六个面的方形纹理。
+- CubemapArray <- ImageTextureLayered — 多个 Cubemap 的数组，存储在一起并具有单一引用。
+- Curve <- Resource — 数学曲线。
+- CurveTexture <- Texture2D — 像素亮度对应曲线上点的一维纹理。
+- CurveXYZTexture <- Texture2D — 红、绿、蓝颜色通道分别对应三条曲线的一维纹理。
+- CylinderShape3D <- Shape3D — 用于物理碰撞的三维圆柱体形状。
+- DPITexture <- Texture2D — 基于 SVG 图像自动缩放的 Texture2D。
+- DampedSpringJoint2D <- Joint2D — 通过弹簧力连接两个二维物理体的物理关节。
+- Decal <- VisualInstance3D — 将纹理投射到 MeshInstance3D 上的节点。
+- Dictionary — 保存键值对的内置数据结构。
+- DirAccess <- RefCounted — 提供管理目录及其内容的方法。
+- DrawableTexture2D <- Texture2D — 支持通过 Blit 调用自行绘制的二维纹理。
+- EncodedObjectAsID <- RefCounted — 持有对象实例 ID 的引用。
+- EngineDebugger <- Object — 暴露内部调试器。
+- EngineProfiler <- RefCounted — 创建自定义性能分析器的基类。
+- Environment <- Resource — 为环境节点（如 WorldEnvironment）定义多种渲染选项的资源。
+- Expression <- RefCounted — 存储可执行表达式的类。
+- ExternalTexture <- Texture2D — 显示外部缓冲区内容的纹理。
+- FABRIK3D <- IterateIK3D — 基于位置的前向和后向递进逆运动学求解器。
+- FileAccess <- RefCounted — 提供文件读写操作方法。
+- FileDialog <- ConfirmationDialog — 在文件系统中选择文件或目录的对话框。
+- FileSystemDock <- EditorDock — Godot 编辑器中管理项目文件的停靠面板。
+- FlowContainer <- Container — 水平或垂直排列子控件并在边界处自动换行的容器。
+- FogMaterial <- Material — 控制体积雾渲染方式的材质，分配给 FogVolume 使用。
+- FogVolume <- VisualInstance3D — 对世界环境默认体积雾有贡献的区域。
+- FoldableContainer <- Container — 可展开/折叠的容器。
+- FoldableGroup <- Resource — 一组可折叠容器，不允许同时展开多个容器。
+- Font <- Resource — 字体及字体变体的抽象基类。
+- FontFile <- Font — 保存字体源数据和预渲染字形缓存，从动态字体或位图字体导入。
+- FontVariation <- Font — 带有附加设置的字体变体。
+- FramebufferCacheRD <- Object — 基于 RenderingDevice 的渲染器的帧缓冲缓存管理器。
+- GDExtension <- Resource — GDExtension 的原生库。
+- GDExtensionManager <- Object — 提供对 GDExtension 功能的访问。
+- GPUParticlesAttractor3D <- VisualInstance3D — 三维粒子吸引器的抽象基类。
+- GPUParticlesAttractorBox3D <- GPUParticlesAttractor3D — 盒形吸引器，影响来自 GPUParticles3D 节点的粒子。
+- GPUParticlesAttractorSphere3D <- GPUParticlesAttractor3D — 球体形吸引器，影响来自 GPUParticles3D 节点的粒子。
+- GPUParticlesAttractorVectorField3D <- GPUParticlesAttractor3D — 盒形吸引器，内部定义变化的方向和强度，影响来自 GPUParticles3D 节点的粒子。
+- GPUParticlesCollision3D <- VisualInstance3D — 影响 GPUParticles3D 节点的三维粒子碰撞形状的抽象基类。
+- GPUParticlesCollisionBox3D <- GPUParticlesCollision3D — 影响 GPUParticles3D 节点的盒形三维粒子碰撞形状。
+- GPUParticlesCollisionHeightField3D <- GPUParticlesCollision3D — 影响 GPUParticles3D 节点的实时高度图形式三维粒子碰撞形状。
+- GPUParticlesCollisionSDF3D <- GPUParticlesCollision3D — 影响 GPUParticles3D 节点的烘焙有符号距离场三维粒子碰撞形状。
+- GPUParticlesCollisionSphere3D <- GPUParticlesCollision3D — 影响 GPUParticles3D 节点的球形三维粒子碰撞形状。
+- Generic6DOFJoint3D <- Joint3D — 允许两个三维物理体之间复杂移动和旋转的物理关节。
+- Geometry2D <- Object — 提供常见二维几何操作方法。
+- Geometry3D <- Object — 提供常见三维几何操作方法。
+- GeometryInstance3D <- VisualInstance3D — 基于几何的可视化实例的基节点。
+- GodotInstance <- Object — 提供对内嵌 Godot 实例的访问。
+- Gradient <- Resource — 颜色过渡。
+- GradientTexture1D <- Texture2D — 使用从 Gradient 获取的颜色的一维纹理。
+- GradientTexture2D <- Texture2D — 使用从 Gradient 获取的颜色创建图案的二维纹理。
+- GraphEdit <- Control — 使用 GraphNode 的图形结构编辑器。
+- GraphElement <- Container — 表示可放置在 GraphEdit 控件中的基本元素的容器。
+- GraphFrame <- GraphElement — 特殊的 GraphElement，用于组织 GraphEdit 中的其他 GraphElement。
+- GraphNode <- GraphElement — 带有连接端口的容器，表示 GraphEdit 中的一个节点。
+- GrooveJoint2D <- Joint2D — 将两个二维物理体的运动限制在固定轴上的物理关节。
+- HFlowContainer <- FlowContainer — 水平排列子控件并在边界处自动换行的容器。
+- HMACContext <- RefCounted — 使用密钥为消息创建 HMAC。
+- HScrollBar <- ScrollBar — 从左（最小值）到右（最大值）的水平滚动条。
+- HSeparator <- Separator — 用于分隔其他控件的水平线。
+- HSplitContainer <- SplitContainer — 水平分割两个子控件并提供拖拽柄调整分割比例的容器。
+- HTTPClient <- RefCounted — 低层级超文本传输协议客户端。
+- HTTPRequest <- Node — 具有发送 HTTP(S) 请求能力的节点。
+- HashingContext <- RefCounted — 逐块计算加密哈希的功能。
+- HeightMapShape3D <- Shape3D — 用于物理碰撞的三维高度图形状。
+- HingeJoint3D <- Joint3D — 将三维物理体的旋转限制在相对于另一个物理体的轴上的物理关节。
+- IKModifier3D <- SkeletonModifier3D — 用于逆运动学、可能修改多个骨骼的节点。
+- IP <- Object — 互联网协议支持功能，如 DNS 解析。
+- Image <- Resource — 图像数据类型。
+- ImageFormatLoader <- RefCounted — 为特定图像格式增加支持的基类。
+- ImageFormatLoaderExtension <- ImageFormatLoader — 创建 ImageFormatLoader 扩展（增加额外图像格式支持）的基类。
+- ImageTexture <- Texture2D — 基于 Image 的 Texture2D。
+- ImageTexture3D <- Texture3D — 三维纹理。
+- ImageTextureLayered <- TextureLayered — 包含多个 ImageTexture 数据的纹理类型的基类。
+- ImmediateMesh <- Mesh — 为手动创建几何体优化的网格。
+- ImporterMesh <- Resource — 导入过程中包含顶点数组几何体的资源。
+- ImporterMeshInstance3D <- Node3D
+- InputEventAction <- InputEvent — 动作类型的输入事件。
+- InputEventFromWindow <- InputEvent — 基于 Viewport 的输入事件的抽象基类。
+- InputEventGesture <- InputEventWithModifiers — 触摸手势的抽象基类。
+- InputEventJoypadButton <- InputEvent — 表示游戏手柄按钮被按下或释放。
+- InputEventJoypadMotion <- InputEvent — 表示来自游戏手柄的轴运动（如摇杆或模拟扳机）。
+- InputEventKey <- InputEventWithModifiers — 表示键盘按键被按下或释放。
+- InputEventMIDI <- InputEvent — 表示来自 MIDI 设备（如音乐键盘）的 MIDI 消息。
+- InputEventMagnifyGesture <- InputEventGesture — 表示放大触摸手势。
+- InputEventMouse <- InputEventWithModifiers — 鼠标事件的基础输入事件类型。
+- InputEventMouseButton <- InputEventMouse — 表示鼠标按钮被按下或释放。
+- InputEventMouseMotion <- InputEventMouse — 表示鼠标或笔的移动。
+- InputEventPanGesture <- InputEventGesture — 表示平移触摸手势。
+- InputEventScreenDrag <- InputEventFromWindow — 表示屏幕拖拽事件。
+- InputEventScreenTouch <- InputEventFromWindow — 表示屏幕触摸事件。
+- InputEventShortcut <- InputEvent — 表示触发的键盘快捷键。
+- InputEventWithModifiers <- InputEventFromWindow — 受修饰键（如 [kbd]Shift[/kbd] 和 [kbd]Alt[/kbd]）影响的输入事件的抽象基类。
+- InputMap <- Object — 管理所有 InputEventAction 的单例。
+- InstancePlaceholder <- Node — PackedScene 根节点的占位符。
+- IntervalTweener <- Tweener — 在 Tween 动画中创建空闲间隔。
+- ItemList <- Control — 带有一列或多列的可选项垂直列表。
+- IterateIK3D <- ChainIK3D — 通过重复小幅度旋转逼近目标的 SkeletonModifier3D。
+- JNISingleton <- Object — 将引擎与 Android 插件连接以与原生 Android 代码交互的单例。
+- JSON <- Resource — 创建和解析 JSON 数据的辅助类。
+- JSONRPC <- Object — 处理类似 JSONRPC 文档的字典的辅助工具。
+- JacobianIK3D <- IterateIK3D — 基于雅可比矩阵转置的逆运动学求解器。
+- JavaClass <- RefCounted — 表示 Java 原生接口中的类。
+- JavaClassWrapper <- Object — 提供对 Java 原生接口的访问。
+- JavaObject <- RefCounted — 表示 Java 原生接口中的对象。
+- JavaScriptBridge <- Object — 在 Web 导出中将引擎与浏览器 JavaScript 上下文连接的单例。
+- JavaScriptObject <- RefCounted — Web 原生 JavaScript 对象的包装类。
+- Joint2D <- Node2D — 所有二维物理关节的抽象基类。
+- Joint3D <- Node3D — 所有三维物理关节的抽象基类。
+- JointLimitation3D <- Resource — 与 ChainIK3D 交互的限制条件的基类。
+- JointLimitationCone3D <- JointLimitation3D — 与 ChainIK3D 交互的锥体形状限制。
+- KinematicCollision2D <- RefCounted — 保存 PhysicsBody2D 移动产生的碰撞数据。
+- KinematicCollision3D <- RefCounted — 保存 PhysicsBody3D 移动产生的碰撞数据。
+- Label3D <- GeometryInstance3D — 在三维空间中显示纯文本的节点。
+- LabelSettings <- Resource — 提供自定义 Label 文本的通用设置。
+- LightOccluder2D <- Node2D — 遮挡 Light2D 发出的光线，投射阴影。
+- LightmapGI <- VisualInstance3D — 计算并存储烘焙光照图，用于快速全局光照。
+- LightmapGIData <- Resource — 包含 LightmapGI 所需的烘焙光照图和动态对象探针数据。
+- LightmapProbe <- Node3D — 表示 LightmapGI 中用于动态对象照明的单个手动放置探针。
+- Lightmapper <- RefCounted — 由光照烘培器扩展的抽象类，用于 LightmapGI。
+- LightmapperRD <- Lightmapper — 内置的基于 GPU 的光照烘培器，用于 LightmapGI。
+- LimitAngularVelocityModifier3D <- SkeletonModifier3D — 限制骨骼旋转角速度。
+- Line2D <- Node2D — 可选纹理贴图的二维多线段。
+- LinkButton <- BaseButton — 表示链接的按钮。
+- Logger <- RefCounted — 从内部错误/警告流接收消息的自定义日志器。
+- LookAtModifier3D <- SkeletonModifier3D — LookAtModifier3D 旋转骨骼使其看向目标。
+- MainLoop <- Object — 游戏主循环的抽象基类。
+- Marker2D <- Node2D — 用于编辑的通用二维位置提示。
+- Marker3D <- Node3D — 用于编辑的通用三维位置提示。
+- Marshalls <- Object — 数据转换（序列化）和编码辅助工具。
+- MenuBar <- Control — 为每个 PopupMenu 子节点创建菜单的水平菜单栏。
+- MenuButton <- Button — 点击时弹出 PopupMenu 的按钮。
+- MeshConvexDecompositionSettings <- RefCounted — 用于网格凸分解操作的参数。
+- MeshDataTool <- RefCounted — 访问和编辑网格数据的辅助工具。
+- MeshLibrary <- Resource — 网格库。
+- MeshTexture <- Texture2D — 使用网格绘制自身的简单纹理。
+- MethodTweener <- Tweener — 插值抽象值并随时间推移提供给指定方法。
+- MissingNode <- Node — 内部编辑器类，用于保留未识别节点的数据。
+- MissingResource <- Resource — 内部编辑器类，用于保留未识别资源的数据。
+- ModifierBoneTarget3D <- SkeletonModifier3D — 动态复制其父节点 Skeleton3D 中骨骼三维变换的节点。
+- MovieWriter <- Object — 非实时视频录制编码器的抽象类。
+- MultiMesh <- Resource — 通过 GPU 实例化实现网格的高性能多次绘制。
+- MultiplayerAPI <- RefCounted — 高层级多人游戏 API 接口。
+- MultiplayerAPIExtension <- MultiplayerAPI — 用于扩展 MultiplayerAPI 的基类。
+- MultiplayerPeer <- PacketPeer — 由 MultiplayerAPI 使用的专用 PacketPeer 的抽象类。
+- MultiplayerPeerExtension <- MultiplayerPeer — 可通过 GDExtension 继承以实现自定义多人网络层的类。
+- Mutex <- RefCounted — 用于多线程同步的二进制信号量。
+- NativeMenu <- Object — 操作系统原生菜单的服务器接口。
+- NavigationLink2D <- Node2D — NavigationRegion2D 上两个位置之间的链接，代理可通过此链接导航。
+- NavigationLink3D <- Node3D — NavigationRegion3D 上两个位置之间的链接，代理可通过此链接导航。
+- NavigationMesh <- Resource — 定义可通行区域和障碍物的导航网格。
+- NavigationMeshGenerator <- Object — 创建和清除导航网格的辅助类。
+- NavigationMeshSourceGeometryData2D <- Resource — 用于导航网格烘焙的已解析源几何数据容器。
+- NavigationMeshSourceGeometryData3D <- Resource — 用于导航网格烘焙的已解析源几何数据容器。
+- NavigationObstacle2D <- Node2D — 用于影响导航网格烘焙或限制避障控制代理速度的二维障碍物。
+- NavigationObstacle3D <- Node3D — 用于影响导航网格烘焙或限制避障控制代理速度的三维障碍物。
+- NavigationPathQueryParameters2D <- RefCounted — 提供二维导航路径查询参数。
+- NavigationPathQueryParameters3D <- RefCounted — 提供三维导航路径查询参数。
+- NavigationPathQueryResult2D <- RefCounted — 表示二维寻路查询的结果。
+- NavigationPathQueryResult3D <- RefCounted — 表示三维寻路查询的结果。
+- NavigationPolygon <- Resource — 描述可通行表面的二维导航网格，用于寻路。
+- NavigationServer2D <- Object — 低层级二维导航访问的服务器接口。
+- NavigationServer2DManager <- Object — 管理 NavigationServer2D 实现的单例。
+- NavigationServer3D <- Object — 低层级三维导航访问的服务器接口。
+- NavigationServer3DManager <- Object — 管理 NavigationServer3D 实现的单例。
+- NinePatchRect <- Control — 保持四角不变、平铺边缘和中心的纹理显示控件。
+- Node3DGizmo <- RefCounted — 为 Node3D 暴露编辑器辅助工具的抽象类。
+- NodePath — 预解析的场景树路径。
+- ORMMaterial3D <- BaseMaterial3D — 用于三维对象的 PBR（基于物理的渲染）材质。
+- OS <- Object — 提供常见操作系统功能。
+- Occluder3D <- Resource — 用于 OccluderInstance3D 遮挡剔除的遮挡体形状资源。
+- OccluderInstance3D <- VisualInstance3D — 为三维节点提供遮挡剔除，提升封闭区域性能。
+- OccluderPolygon2D <- Resource — 为 LightOccluder2D 定义二维多边形。
+- OptimizedTranslation <- Translation — 优化的翻译资源。
+- OptionButton <- Button — 按下时弹出带有可选选项的下拉菜单的按钮。
+- PCKPacker <- RefCounted — 创建可加载到运行中项目的包。
+- PackedByteArray — 字节的打包数组。
+- PackedColorArray — Color 值的打包数组。
+- PackedDataContainer <- Resource — 高效打包和序列化 Array 或 Dictionary。
+- PackedDataContainerRef <- RefCounted — PackedDataContainer 用于打包嵌套数组和字典的内部类。
+- PackedFloat32Array — 32 位浮点值的打包数组。
+- PackedFloat64Array — 64 位浮点值的打包数组。
+- PackedInt32Array — 32 位整数的打包数组。
+- PackedInt64Array — 64 位整数的打包数组。
+- PackedStringArray — String 的打包数组。
+- PackedVector2Array — Vector2 的打包数组。
+- PackedVector3Array — Vector3 的打包数组。
+- PackedVector4Array — Vector4 的打包数组。
+- PacketPeer <- RefCounted — 基于包的协议的抽象和基类。
+- PacketPeerDTLS <- PacketPeer — DTLS 包对等端。
+- PacketPeerExtension <- PacketPeer
+- PacketPeerStream <- PacketPeer — 在 StreamPeer 上使用 PacketPeer 的包装器。
+- PacketPeerUDP <- PacketPeer — UDP 包对等端。
+- PanoramaSkyMaterial <- Material — 为 Sky 提供特殊纹理（通常是 HDR 全景图）的材质。
+- Parallax2D <- Node2D — 用于创建视差滚动背景的节点。
+- ParallaxBackground <- CanvasLayer — 用于创建视差滚动背景的节点。
+- ParallaxLayer <- Node2D — 与 ParallaxBackground 一起使用的视差滚动层。
+- ParticleProcessMaterial <- Material — 为 GPUParticles2D 或 GPUParticles3D 节点保存粒子配置。
+- Performance <- Object — 暴露性能相关数据。
+- PhysicalBone2D <- RigidBody2D — 从 RigidBody2D 派生的节点，用于使 Skeleton2D 中的 Bone2D 对物理做出反应。
+- PhysicalBone3D <- PhysicsBody3D — 用于使 Skeleton3D 中的骨骼对物理做出反应的物理体。
+- PhysicalBoneSimulator3D <- SkeletonModifier3D — 可作为 PhysicalBone3D 父节点的节点，可将模拟结果应用到 Skeleton3D。
+- PhysicalSkyMaterial <- Material — 通过一组物理属性为 Sky 资源定义天空的材质。
+- PhysicsBody2D <- CollisionObject2D — 受物理影响的二维游戏对象的抽象基类。
+- PhysicsBody3D <- CollisionObject3D — 受物理影响的三维游戏对象的抽象基类。
+- PhysicsDirectBodyState2D <- Object — 提供对 PhysicsServer2D 中物理体的直接访问。
+- PhysicsDirectBodyState2DExtension <- PhysicsDirectBodyState2D — 提供可重写的虚拟方法，用于创建自定义 PhysicsDirectBodyState2D 实现。
+- PhysicsDirectBodyState3D <- Object — 提供对 PhysicsServer3D 中物理体的直接访问。
+- PhysicsDirectBodyState3DExtension <- PhysicsDirectBodyState3D — 提供可重写的虚拟方法，用于创建自定义 PhysicsDirectBodyState3D 实现。
+- PhysicsDirectSpaceState2D <- Object — 提供对 PhysicsServer2D 中物理空间的直接访问。
+- PhysicsDirectSpaceState2DExtension <- PhysicsDirectSpaceState2D — 提供可重写的虚拟方法，用于创建自定义 PhysicsDirectSpaceState2D 实现。
+- PhysicsDirectSpaceState3D <- Object — 提供对 PhysicsServer3D 中物理空间的直接访问。
+- PhysicsDirectSpaceState3DExtension <- PhysicsDirectSpaceState3D — 提供可重写的虚拟方法，用于创建自定义 PhysicsDirectSpaceState3D 实现。
+- PhysicsMaterial <- Resource — 保存表面与物理相关的属性，即粗糙度和弹性。
+- PhysicsPointQueryParameters2D <- RefCounted — 为 `PhysicsDirectSpaceState2D.` 提供参数。
+- PhysicsPointQueryParameters3D <- RefCounted — 为 `PhysicsDirectSpaceState3D.` 提供参数。
+- PhysicsRayQueryParameters2D <- RefCounted — 为 `PhysicsDirectSpaceState2D.` 提供参数。
+- PhysicsRayQueryParameters3D <- RefCounted — 为 `PhysicsDirectSpaceState3D.` 提供参数。
+- PhysicsServer2D <- Object — 低层级二维物理访问的服务器接口。
+- PhysicsServer2DExtension <- PhysicsServer2D — 提供可重写的虚拟方法，用于创建自定义 PhysicsServer2D 实现。
+- PhysicsServer2DManager <- Object — 管理 PhysicsServer2D 实现的单例。
+- PhysicsServer3D <- Object — 低层级三维物理访问的服务器接口。
+- PhysicsServer3DExtension <- PhysicsServer3D — 提供可重写的虚拟方法，用于创建自定义 PhysicsServer3D 实现。
+- PhysicsServer3DManager <- Object — 管理 PhysicsServer3D 实现的单例。
+- PhysicsServer3DRenderingServerHandler <- Object — 用于为 `PhysicsServer3DExtension.` 提供实现的类。
+- PhysicsShapeQueryParameters2D <- RefCounted — 为 PhysicsDirectSpaceState2D 的方法提供参数。
+- PhysicsShapeQueryParameters3D <- RefCounted — 为 PhysicsDirectSpaceState3D 的方法提供参数。
+- PhysicsTestMotionParameters2D <- RefCounted — 为 `PhysicsServer2D.` 提供参数。
+- PhysicsTestMotionParameters3D <- RefCounted — 为 `PhysicsServer3D.` 提供参数。
+- PhysicsTestMotionResult2D <- RefCounted — 描述 `PhysicsServer2D.` 的运动和碰撞结果。
+- PhysicsTestMotionResult3D <- RefCounted — 描述 `PhysicsServer3D.` 的运动和碰撞结果。
+- PinJoint2D <- Joint2D — 将两个二维物理体连接在单个点上的物理关节，允许自由旋转。
+- PinJoint3D <- Joint3D — 将两个三维物理体连接在单个点上的物理关节，允许自由旋转。
+- PlaceholderCubemap <- PlaceholderTextureLayered — 没有图像数据的 Cubemap。
+- PlaceholderCubemapArray <- PlaceholderTextureLayered — 没有图像数据的 CubemapArray。
+- PlaceholderMaterial <- Material — 材质的占位类。
+- PlaceholderMesh <- Mesh — 网格的占位类。
+- PlaceholderTexture2D <- Texture2D — 二维纹理的占位类。
+- PlaceholderTexture2DArray <- PlaceholderTextureLayered — 二维纹理数组的占位类。
+- PlaceholderTexture3D <- Texture3D — 三维纹理的占位类。
+- PlaceholderTextureLayered <- TextureLayered — 二维纹理数组的占位类。
+- PointMesh <- PrimitiveMesh — 带一个点图元的网格。
+- Polygon2D <- Node2D — 二维多边形。
+- PolygonOccluder3D <- Occluder3D — 用于 OccluderInstance3D 遮挡剔除的平面二维多边形形状。
+- PolygonPathFinder <- Resource
+- Popup <- Window — 具有固定位置的上下文窗口和面板的基类。
+- PopupMenu <- Popup — 用于显示选项列表的模态窗口。
+- PopupPanel <- Popup — 带有面板背景的弹出窗口。
+- PortableCompressedTexture2D <- Texture2D — 以可移植方式提供用于磁盘和/或显存的压缩纹理。
+- PrismMesh <- PrimitiveMesh — 表示棱柱形 PrimitiveMesh 的类。
+- ProceduralSkyMaterial <- Material — 为 Sky 资源定义简单天空的材质。
+- ProjectSettings <- Object — 存储全局可访问的变量。
+- Projection — 用于三维投影变换的 4×4 矩阵。
+- PropertyTweener <- Tweener — 随时间插值对象属性。
+- QuadMesh <- PlaneMesh — 表示面向摄像头的方形网格的类。
+- QuadOccluder3D <- Occluder3D — 用于 OccluderInstance3D 遮挡剔除的平面形状。
+- RDAttachmentFormat <- RefCounted — 附件格式（由 RenderingDevice 使用）。
+- RDFramebufferPass <- RefCounted — 帧缓冲传递附件描述（由 RenderingDevice 使用）。
+- RDPipelineColorBlendState <- RefCounted — 管线颜色混合状态（由 RenderingDevice 使用）。
+- RDPipelineColorBlendStateAttachment <- RefCounted — 管线颜色混合状态附件（由 RenderingDevice 使用）。
+- RDPipelineDepthStencilState <- RefCounted — 管线深度/模板状态（由 RenderingDevice 使用）。
+- RDPipelineMultisampleState <- RefCounted — 管线多重采样状态（由 RenderingDevice 使用）。
+- RDPipelineRasterizationState <- RefCounted — 管线光栅化状态（由 RenderingDevice 使用）。
+- RDPipelineSpecializationConstant <- RefCounted — 管线特化常量（由 RenderingDevice 使用）。
+- RDSamplerState <- RefCounted — 采样器状态（由 RenderingDevice 使用）。
+- RDShaderFile <- Resource — SPIR-V 格式的编译后着色器文件（由 RenderingDevice 使用）。
+- RDShaderSPIRV <- Resource — RDShaderFile 中的 SPIR-V 中间表示（由 RenderingDevice 使用）。
+- RDShaderSource <- RefCounted — 着色器源代码（由 RenderingDevice 使用）。
+- RDTextureFormat <- RefCounted — 纹理格式（由 RenderingDevice 使用）。
+- RDTextureView <- RefCounted — 纹理视图（由 RenderingDevice 使用）。
+- RDUniform <- RefCounted — 着色器 uniform（由 RenderingDevice 使用）。
+- RDVertexAttribute <- RefCounted — 顶点属性（由 RenderingDevice 使用）。
+- RID — 资源唯一标识符的句柄。
+- RandomNumberGenerator <- RefCounted — 提供生成伪随机数的方法。
+- Range <- Control — 表示范围内数值的控件的抽象基类。
+- Rect2i — 使用整数坐标的二维轴对齐包围盒。
+- ReferenceRect <- Control — 用于 UI 设计的矩形框。
+- ReflectionProbe <- VisualInstance3D — 捕获周围环境以从给定点创建快速准确的反射。
+- RemoteTransform2D <- Node2D — RemoteTransform2D 将其自身的 Transform2D 推送到场景中另一个派生自 Node2D 的节点。
+- RemoteTransform3D <- Node3D — RemoteTransform3D 将其自身的 Transform3D 推送到场景中另一个派生自 Node3D 的节点。
+- RenderData <- Object — 抽象渲染数据对象，保存与绘制视口单帧相关的帧数据。
+- RenderDataExtension <- RenderData — 允许在 GDExtension 中实现 RenderData 的类。
+- RenderDataRD <- RenderData — 基于 RenderingDevice 的渲染器的渲染数据实现。
+- RenderSceneBuffers <- RefCounted — 抽象场景缓冲对象，为每个进行三维渲染的视口创建。
+- RenderSceneBuffersConfiguration <- RefCounted — 用于设置 RenderSceneBuffers 对象的配置对象。
+- RenderSceneBuffersExtension <- RenderSceneBuffers — 允许在 GDExtension 中实现 RenderSceneBuffer 的类。
+- RenderSceneBuffersRD <- RenderSceneBuffers — 基于 RenderingDevice 的渲染器的渲染场景缓冲实现。
+- RenderSceneData <- Object — 抽象渲染数据对象，保存与绘制视口单帧相关的场景数据。
+- RenderSceneDataExtension <- RenderSceneData — 允许在 GDExtension 中实现 RenderSceneData 的类。
+- RenderSceneDataRD <- RenderSceneData — 基于 RenderingDevice 的渲染器的渲染场景数据实现。
+- RenderingDevice <- Object — 使用现代低级图形 API 的抽象层。
+- ResourceFormatLoader <- RefCounted — 从文件加载特定资源类型。
+- ResourceFormatSaver <- RefCounted — 将特定资源类型保存到文件。
+- ResourceImporter <- RefCounted — 资源导入器的基类。
+- ResourceImporterBMFont <- ResourceImporter — 导入 BMFont（`.）格式的位图字体。
+- ResourceImporterBitMap <- ResourceImporter — 导入 BitMap 资源（布尔值二维数组）。
+- ResourceImporterCSVTranslation <- ResourceImporter — 将逗号分隔值作为翻译资源导入。
+- ResourceImporterDynamicFont <- ResourceImporter — 导入 TTF、TTC、OTF、OTC、WOFF 或 WOFF2 字体文件，用于适应任意大小的字体渲染。
+- ResourceImporterImage <- ResourceImporter — 导入图像用于脚本使用，无渲染功能。
+- ResourceImporterImageFont <- ResourceImporter — 导入所有字形具有相同宽度和高度的位图字体。
+- ResourceImporterLayeredTexture <- ResourceImporter — 导入三维纹理（Texture3D）、Texture2DArray、Cubemap 或 CubemapArray。
+- ResourceImporterOBJ <- ResourceImporter — 将 OBJ 三维模型作为独立网格或场景导入。
+- ResourceImporterSVG <- ResourceImporter — 导入 SVG 文件作为自动可缩放纹理，用于 UI 元素和二维渲染。
+- ResourceImporterScene <- ResourceImporter — 导入 glTF、FBX、COLLADA 或 Blender 三维场景。
+- ResourceImporterShaderFile <- ResourceImporter — 将原生 GLSL 着色器（非 Godot 着色器）作为 RDShaderFile 导入。
+- ResourceImporterTexture <- ResourceImporter — 导入图像用于二维或三维渲染。
+- ResourceImporterTextureAtlas <- ResourceImporter — 将 PNG 图像中的纹理集合导入为用于二维渲染的优化 AtlasTexture。
+- ResourceImporterWAV <- ResourceImporter — 导入 WAV 音频文件用于播放。
+- ResourceLoader <- Object — 用于加载资源文件的单例。
+- ResourcePreloader <- Node — 用于预加载场景内子资源的节点。
+- ResourceSaver <- Object — 用于将资源保存到文件系统的单例。
+- ResourceUID <- Object — 管理项目中所有资源唯一标识符的单例。
+- RetargetModifier3D <- SkeletonModifier3D — 将父骨骼的姿势（或全局姿势）以不同静态姿势转换到子骨骼模型空间的修饰器。
+- RibbonTrailMesh <- PrimitiveMesh — 表示可变宽度的直带状 PrimitiveMesh。
+- RichTextEffect <- Resource — 用于 RichTextLabel 的自定义效果。
+- RichTextLabel <- Control — 用于显示可包含不同字体样式、图像和基本格式的文本的控件。
+- RootMotionView <- VisualInstance3D — 仅编辑器的辅助工具，用于在 AnimationMixer 中设置根运动。
+- SceneState <- RefCounted — 提供对场景文件信息的访问。
+- SceneTreeTimer <- RefCounted — 一次性定时器。
+- Script <- Resource — 作为资源存储的类。
+- ScriptBacktrace <- RefCounted — 特定脚本语言的捕获回溯。
+- ScriptCreateDialog <- ConfirmationDialog — Godot 编辑器中用于创建新脚本文件的弹出对话框。
+- ScriptEditor <- PanelContainer — Godot 编辑器的脚本编辑器。
+- ScriptEditorBase <- Control — 在 ScriptEditor 中编辑脚本的基础编辑器。
+- ScriptExtension <- Script
+- ScriptLanguage <- Object
+- ScriptLanguageExtension <- ScriptLanguage
+- ScrollBar <- Range — 滚动条的抽象基类。
+- SegmentShape2D <- Shape2D — 用于物理碰撞的二维线段形状。
+- Semaphore <- RefCounted — 用于控制线程对共享资源访问的同步机制。
+- SeparationRayShape2D <- Shape2D — 用于物理碰撞的二维射线形状，尝试与任何碰撞体分离。
+- SeparationRayShape3D <- Shape3D — 用于物理碰撞的三维射线形状，尝试与任何碰撞体分离。
+- Separator <- Control — 分隔器的抽象基类。
+- Shader <- Resource — 以 Godot 着色语言实现的着色器。
+- ShaderGlobalsOverride <- Node — 用于在场景中覆盖全局着色器参数值的节点。
+- ShaderInclude <- Resource — 通过 `#include` 包含到 Shader 中的着色器代码片段。
+- ShaderIncludeDB <- Object — 内置着色器包含文件的内部数据库。
+- Shortcut <- Resource — 用于绑定输入的快捷键。
+- Skeleton2D <- Node2D — Bone2D 层次结构的父节点，用于创建二维骨骼动画。
+- Skeleton3D <- Node3D — 包含骨骼层次结构的节点，用于创建三维骨骼动画。
+- SkeletonIK3D <- SkeletonModifier3D — 用于旋转 Skeleton3D 骨骼链中所有骨骼，使末端骨骼到达指定三维位置的节点。
+- SkeletonModification2D <- Resource — 对 Skeleton2D 中的 Bone2D 进行操作的资源的基类。
+- SkeletonModification2DCCDIK <- SkeletonModification2D — 使用 CCDIK 操作一系列骨骼以在二维中到达目标的修改器。
+- SkeletonModification2DFABRIK <- SkeletonModification2D — 使用 FABRIK 操作一系列 Bone2D 节点以到达目标的修改器。
+- SkeletonModification2DJiggle <- SkeletonModification2D — 使 Bone2D 节点在移向目标时抖动的修改器。
+- SkeletonModification2DLookAt <- SkeletonModification2D — 旋转 Bone2D 节点使其看向目标的修改器。
+- SkeletonModification2DPhysicalBones <- SkeletonModification2D — 将 PhysicalBone2D 节点的变换应用到 Bone2D 节点的修改器。
+- SkeletonModification2DStackHolder <- SkeletonModification2D — 持有并执行 SkeletonModificationStack2D 的修改器。
+- SkeletonModification2DTwoBoneIK <- SkeletonModification2D — 使用余弦定理旋转两根骨骼以到达目标的修改器。
+- SkeletonModificationStack2D <- Resource — 持有 SkeletonModification2D 堆栈的资源。
+- SkeletonModifier3D <- Node3D — 可修改 Skeleton3D 骨骼的节点。
+- SkeletonProfile <- Resource — 用作重定向目标的虚拟骨骼配置文件的基类。
+- SkeletonProfileHumanoid <- SkeletonProfile — 人形 SkeletonProfile 预设。
+- Skin <- Resource
+- SkinReference <- RefCounted — 用于 RenderingServer 中骨骼 RID 的引用计数持有对象。
+- Sky <- Resource — 通过使用材质定义三维环境背景。
+- SliderJoint3D <- Joint3D — 将三维物理体的运动限制在相对于另一个物理体的轴上的物理关节。
+- SoftBody3D <- MeshInstance3D — 可变形三维物理网格。
+- SphereOccluder3D <- Occluder3D — 用于 OccluderInstance3D 遮挡剔除的球形形状。
+- SpinBox <- Range — 数字输入字段。
+- SplineIK3D <- ChainIK3D — 用于沿 Path3D 对齐骨骼的 SkeletonModifier3D。
+- SplitContainer <- Container — 水平或垂直排列子控件并提供拖拽柄调整分割比例的容器。
+- SpringArm3D <- Node3D — 动态将其子节点移动到碰撞点附近的三维射线检测。
+- SpringBoneCollision3D <- Node3D — 与 SpringBoneSimulator3D 交互的碰撞基类。
+- SpringBoneCollisionCapsule3D <- SpringBoneCollision3D — 与 SpringBoneSimulator3D 交互的胶囊体碰撞形状。
+- SpringBoneCollisionPlane3D <- SpringBoneCollision3D — 与 SpringBoneSimulator3D 交互的无限平面碰撞。
+- SpringBoneCollisionSphere3D <- SpringBoneCollision3D — 与 SpringBoneSimulator3D 交互的球形碰撞。
+- SpringBoneSimulator3D <- SkeletonModifier3D — 对骨骼链施加惯性摆动的 SkeletonModifier3D。
+- SpriteBase3D <- GeometryInstance3D — 三维环境中的二维精灵节点。
+- SpriteFrames <- Resource — 用于 AnimatedSprite2D 和 AnimatedSprite3D 的精灵帧库。
+- StatusIndicator <- Node — 应用程序状态指示器（即通知区域图标）。
+- StreamPeer <- RefCounted — 与流交互的抽象基类。
+- StreamPeerBuffer <- StreamPeer — 处理二进制数据流的流对等端。
+- StreamPeerExtension <- StreamPeer
+- StreamPeerGZIP <- StreamPeer — 处理 GZIP 和 deflate 压缩/解压缩的流对等端。
+- StreamPeerSocket <- StreamPeer — 与套接字流交互的抽象基类。
+- StreamPeerTCP <- StreamPeerSocket — 处理 TCP 连接的流对等端。
+- StreamPeerTLS <- StreamPeer — 处理 TLS 连接的流对等端。
+- StreamPeerUDS <- StreamPeerSocket — 处理 UNIX 域套接字连接的流对等端。
+- String — 字符串的内置类型。
+- StringName — 唯一字符串的内置类型。
+- StyleBox <- Resource — 为 UI 元素定义样式的抽象基类。
+- StyleBoxEmpty <- StyleBox — 空 StyleBox（不显示任何内容）。
+- StyleBoxFlat <- StyleBox — 不使用纹理的可自定义 StyleBox。
+- StyleBoxLine <- StyleBox — 显示给定颜色和粗细的单线的 StyleBox。
+- StyleBoxTexture <- StyleBox — 基于纹理的九宫格 StyleBox。
+- SubViewport <- Viewport — 不创建窗口也不直接绘制到屏幕的游戏世界接口。
+- SubViewportContainer <- Container — 用于显示 SubViewport 内容的容器。
+- SubtweenTweener <- Tweener — 在另一个 Tween 中运行嵌套 Tween。
+- SurfaceTool <- RefCounted — 创建几何体的辅助工具。
+- SyntaxHighlighter <- Resource — 语法高亮器的基类。
+- SystemFont <- Font — 从系统字体加载的字体。
+- TLSOptions <- RefCounted — 客户端和服务器的 TLS 配置。
+- TabBar <- Control — 提供带标签的水平栏的控件。
+- TabContainer <- Container — 为每个子控件创建标签页的容器，仅显示当前活动标签页的控件。
+- TextEdit <- Control — 多行文本编辑器。
+- TextLine <- RefCounted — 保存一行文本。
+- TextMesh <- PrimitiveMesh — 从文本生成 PrimitiveMesh。
+- TextParagraph <- RefCounted — 保存一段文本。
+- TextServerDummy <- TextServerExtension — 无法渲染文本或管理字体的虚拟文本服务器。
+- TextServerExtension <- TextServer — 自定义 TextServer 实现（插件）的基类。
+- TextServerManager <- Object — 管理 TextServer 实现的单例。
+- Texture <- Resource — 所有纹理类型的基类。
+- Texture2DArray <- ImageTextureLayered — 由多个独立图像组成的单一纹理资源。
+- Texture2DArrayRD <- TextureLayeredRD — 绑定到 RenderingDevice 上创建的纹理的二维纹理数组。
+- Texture2DRD <- Texture2D — 绑定到 RenderingDevice 上创建的纹理的二维纹理。
+- Texture3D <- Texture — 三维纹理的基类。
+- Texture3DRD <- Texture3D — 绑定到 RenderingDevice 上创建的纹理的三维纹理。
+- TextureCubemapArrayRD <- TextureLayeredRD — 绑定到 RenderingDevice 上创建的纹理的 Cubemap 纹理数组。
+- TextureCubemapRD <- TextureLayeredRD — 绑定到 RenderingDevice 上创建的纹理的 Cubemap 纹理。
+- TextureLayered <- Texture — 包含多个图像数据的纹理类型的基类。
+- TextureLayeredRD <- TextureLayered — 分层纹理 RD 类型的抽象基类。
+- TextureProgressBar <- Range — 基于纹理的进度条。
+- Theme <- Resource — 用于样式化/皮肤化 Controls 和 Windows 的资源。
+- ThemeDB <- Object — 提供对引擎和项目使用的 Theme 资源静态信息访问的单例。
+- Thread <- RefCounted — 进程中的执行单元。
+- TileData <- Object — TileSet 中单个瓦片的设置。
+- TileMap <- Node2D — 基于瓦片的二维地图节点。
+- TileMapPattern <- Resource — 保存要从 TileMap 复制或粘贴的图案。
+- TileSetAtlasSource <- TileSetSource — 将二维图集纹理作为 TileSet 资源的一组瓦片暴露出来。
+- TileSetScenesCollectionSource <- TileSetSource — 将一组场景作为 TileSet 资源的瓦片暴露出来。
+- TileSetSource <- Resource — 为 TileSet 资源暴露一组瓦片。
+- Time <- Object — 处理时间数据的单例。
+- TorusMesh <- PrimitiveMesh — 表示环形 PrimitiveMesh 的类。
+- TouchScreenButton <- Node2D — 用于游戏操作的触摸屏按钮。
+- Translation <- Resource — 将字符串集合映射到各自翻译的语言翻译资源。
+- TranslationDomain <- RefCounted — 自包含的翻译资源集合。
+- Tree <- Control — 以层级结构显示 TreeItem 集的控件。
+- TreeItem <- Object — Tree 中单个项目的内部控制。
+- TriangleMesh <- RefCounted — 用于高效无物理相交查询的三角形几何体。
+- TubeTrailMesh <- PrimitiveMesh — 表示可变宽度的直管状 PrimitiveMesh。
+- Tweener <- RefCounted — Tween 使用的所有 Tweener 的抽象类。
+- TwoBoneIK3D <- IKModifier3D — 基于旋转的两个圆相交逆运动学求解器。
+- UndoRedo <- Object — 提供撤销和重做操作的高级接口。
+- UniformSetCacheRD <- Object — 基于 RenderingDevice 的渲染器的 uniform 集缓存管理器。
+- VFlowContainer <- FlowContainer — 垂直排列子控件并在边界处自动换行的容器。
+- VScrollBar <- ScrollBar — 从上（最小值）到下（最大值）的垂直滚动条。
+- VSeparator <- Separator — 用于分隔其他控件的垂直线。
+- VSplitContainer <- SplitContainer — 垂直分割两个子控件并提供拖拽柄调整分割比例的容器。
+- Variant — Godot 中最重要的数据类型。
+- Vector2i — 使用整数坐标的二维向量。
+- Vector3i — 使用整数坐标的三维向量。
+- Vector4i — 使用整数坐标的四维向量。
+- VehicleBody3D <- RigidBody3D — 模拟汽车行为的三维物理体。
+- VehicleWheel3D <- Node3D — VehicleBody3D 的三维物理体，模拟车轮行为。
+- VideoStream <- Resource — 视频流的基资源。
+- VideoStreamPlayback <- Resource — VideoStream 使用的内部类，用于管理从 VideoStreamPlayer 播放时的状态。
+- VideoStreamPlayer <- Control — 用于视频播放的控件。
+- Viewport <- Node — 视口的抽象基类。
+- ViewportTexture <- Texture2D — 将视口的内容作为动态纹理提供。
+- VirtualJoystick <- Control — 用于触摸屏设备的虚拟摇杆控件。
+- VisibleOnScreenEnabler2D <- VisibleOnScreenNotifier2D — 在屏幕上可见时启用目标节点的二维矩形区域。
+- VisibleOnScreenEnabler3D <- VisibleOnScreenNotifier3D — 在屏幕上可见时启用目标节点的盒形三维区域。
+- VisibleOnScreenNotifier2D <- Node2D — 检测是否在屏幕上可见的二维矩形区域。
+- VisibleOnScreenNotifier3D <- VisualInstance3D — 检测是否在屏幕上可见的盒形三维区域。
+- VisualInstance3D <- Node3D — 所有三维可视化节点的父类。
+- VisualShader <- Shader — 具有可视化编辑器的自定义着色器程序。
+- VisualShaderNode <- Resource — VisualShader 节点的基类。
+- VisualShaderNodeBillboard <- VisualShaderNode — 控制对象在可视化着色器图中如何面向摄像头的节点。
+- VisualShaderNodeBooleanConstant <- VisualShaderNodeConstant — 在可视化着色器图中使用的布尔常量。
+- VisualShaderNodeBooleanParameter <- VisualShaderNodeParameter — 在可视化着色器图中使用的布尔参数。
+- VisualShaderNodeClamp <- VisualShaderNode — 在可视化着色器图中钳制一个值。
+- VisualShaderNodeColorConstant <- VisualShaderNodeConstant — 在可视化着色器图中使用的颜色常量。
+- VisualShaderNodeColorFunc <- VisualShaderNode — 在可视化着色器图中使用的颜色函数。
+- VisualShaderNodeColorOp <- VisualShaderNode — 在可视化着色器图中使用的颜色运算符。
+- VisualShaderNodeColorParameter <- VisualShaderNodeParameter — 在可视化着色器图中使用的颜色参数。
+- VisualShaderNodeComment <- VisualShaderNodeFrame — 仅用于兼容性。
+- VisualShaderNodeCompare <- VisualShaderNode — 在可视化着色器图中用于常见类型的比较函数。
+- VisualShaderNodeConstant <- VisualShaderNode — 可视化着色器图中常量的基类型。
+- VisualShaderNodeCubemap <- VisualShaderNode — 在可视化着色器图中使用的 Cubemap 采样节点。
+- VisualShaderNodeCubemapParameter <- VisualShaderNodeTextureParameter — 在可视化着色器图中使用的 Cubemap 参数节点。
+- VisualShaderNodeCurveTexture <- VisualShaderNodeResizableBase — 在可视化着色器图中执行 CurveTexture 查找。
+- VisualShaderNodeCurveXYZTexture <- VisualShaderNodeResizableBase — 在可视化着色器图中执行 CurveXYZTexture 查找。
+- VisualShaderNodeCustom <- VisualShaderNode — 定义自定义 VisualShaderNode 用于可视化着色器编辑器的虚类。
+- VisualShaderNodeDerivativeFunc <- VisualShaderNode — 在可视化着色器图中计算导数。
+- VisualShaderNodeDeterminant <- VisualShaderNode — 在可视化着色器图中计算 Transform3D 的行列式。
+- VisualShaderNodeDistanceFade <- VisualShaderNode — 表示距离淡出效果的可视化着色器节点。
+- VisualShaderNodeDotProduct <- VisualShaderNode — 在可视化着色器图中计算两个向量的点积。
+- VisualShaderNodeExpression <- VisualShaderNodeGroupBase — 以 Godot 着色语言编写的自定义可视化着色器图表达式。
+- VisualShaderNodeFaceForward <- VisualShaderNodeVectorBase — 返回与参考向量同向的向量（在可视化着色器图中）。
+- VisualShaderNodeFloatConstant <- VisualShaderNodeConstant — 在可视化着色器图中使用的标量浮点常量。
+- VisualShaderNodeFloatFunc <- VisualShaderNode — 在可视化着色器图中使用的标量浮点函数。
+- VisualShaderNodeFloatOp <- VisualShaderNode — 在可视化着色器图中使用的浮点标量运算符。
+- VisualShaderNodeFloatParameter <- VisualShaderNodeParameter — 在可视化着色器图中使用的标量浮点参数。
+- VisualShaderNodeFrame <- VisualShaderNodeResizableBase — 其他可视化着色器节点可附加到其上的框架，用于更好地组织。
+- VisualShaderNodeFresnel <- VisualShaderNode — 在可视化着色器图中使用的菲涅尔效果。
+- VisualShaderNodeGlobalExpression <- VisualShaderNodeExpression — 以 Godot 着色语言编写的自定义全局可视化着色器图表达式。
+- VisualShaderNodeGroupBase <- VisualShaderNodeResizableBase — 可视化着色器图中具有可变数量输入和输出端口的节点族的基类。
+- VisualShaderNodeIf <- VisualShaderNode — 基于浮点比较结果输出三维向量的节点（在可视化着色器图中）。
+- VisualShaderNodeInput <- VisualShaderNode — 表示可视化着色器图中的输入着色器参数。
+- VisualShaderNodeIntConstant <- VisualShaderNodeConstant — 在可视化着色器图中使用的标量整数常量。
+- VisualShaderNodeIntFunc <- VisualShaderNode — 在可视化着色器图中使用的标量整数函数。
+- VisualShaderNodeIntOp <- VisualShaderNode — 在可视化着色器图中使用的整数标量运算符。
+- VisualShaderNodeIntParameter <- VisualShaderNodeParameter — 用于类型为 [int] 的着色器参数（uniform）的可视化着色器节点。
+- VisualShaderNodeIs <- VisualShaderNode — 在可视化着色器图中使用的布尔比较运算符。
+- VisualShaderNodeLinearSceneDepth <- VisualShaderNode — 返回线性空间中 DEPTH_TEXTURE 节点深度值的可视化着色器节点。
+- VisualShaderNodeMix <- VisualShaderNode — 在可视化着色器图中线性插值两个值。
+- VisualShaderNodeMultiplyAdd <- VisualShaderNode — 在可视化着色器图中执行融合乘加操作。
+- VisualShaderNodeOuterProduct <- VisualShaderNode — 在可视化着色器图中计算两个向量的外积。
+- VisualShaderNodeOutput <- VisualShaderNode — 表示可视化着色器图中的输出着色器参数。
+- VisualShaderNodeParameter <- VisualShaderNode — 可视化着色器图中参数的基类型。
+- VisualShaderNodeParameterRef <- VisualShaderNode — 对现有 VisualShaderNodeParameter 的引用。
+- VisualShaderNodeParticleAccelerator <- VisualShaderNode — 加速粒子的可视化着色器节点。
+- VisualShaderNodeParticleBoxEmitter <- VisualShaderNodeParticleEmitter — 使粒子以盒形发射的可视化着色器节点。
+- VisualShaderNodeParticleConeVelocity <- VisualShaderNode — 使粒子以锥形移动的可视化着色器节点。
+- VisualShaderNodeParticleEmit <- VisualShaderNode — 强制从子发射器发射粒子的可视化着色器节点。
+- VisualShaderNodeParticleEmitter <- VisualShaderNode — 粒子发射器的基类。
+- VisualShaderNodeParticleMeshEmitter <- VisualShaderNodeParticleEmitter — 使粒子以网格定义形状发射的可视化着色器节点。
+- VisualShaderNodeParticleMultiplyByAxisAngle <- VisualShaderNode — 用于乘以粒子位置和旋转的可视化着色器辅助节点。
+- VisualShaderNodeParticleOutput <- VisualShaderNodeOutput — 定义粒子发射输出值的可视化着色器节点。
+- VisualShaderNodeParticleRandomness <- VisualShaderNode — 用于随机化粒子值的可视化着色器节点。
+- VisualShaderNodeParticleRingEmitter <- VisualShaderNodeParticleEmitter — 使粒子以环形发射的可视化着色器节点。
+- VisualShaderNodeParticleSphereEmitter <- VisualShaderNodeParticleEmitter — 使粒子以球形发射的可视化着色器节点。
+- VisualShaderNodeProximityFade <- VisualShaderNode — 表示邻近淡出效果的可视化着色器节点。
+- VisualShaderNodeRandomRange <- VisualShaderNode — 生成伪随机标量的可视化着色器节点。
+- VisualShaderNodeRemap <- VisualShaderNode — 用于重映射函数的可视化着色器节点。
+- VisualShaderNodeReroute <- VisualShaderNode — 允许在可视化着色器图中重新布线连接的节点。
+- VisualShaderNodeResizableBase <- VisualShaderNode — 可视化着色器图中可调整大小节点的基类。
+- VisualShaderNodeRotationByAxis <- VisualShaderNode — 使用旋转矩阵修改对象旋转的可视化着色器节点。
+- VisualShaderNodeSDFRaymarch <- VisualShaderNode — 在可视化着色器图中使用的 SDF 光线步进算法。
+- VisualShaderNodeSDFToScreenUV <- VisualShaderNode — 将 SDF（有符号距离场）转换为屏幕 UV 的函数，用于可视化着色器图。
+- VisualShaderNodeSample3D <- VisualShaderNode — 在可视化着色器图中采样三维纹理的节点的基节点。
+- VisualShaderNodeScreenNormalWorldSpace <- VisualShaderNode — 在世界空间中解包屏幕法线纹理的可视化着色器节点。
+- VisualShaderNodeScreenUVToSDF <- VisualShaderNode — 将屏幕 UV 转换为 SDF（有符号距离场）的函数，用于可视化着色器图。
+- VisualShaderNodeSmoothStep <- VisualShaderNode — 在可视化着色器图中计算 SmoothStep 函数。
+- VisualShaderNodeStep <- VisualShaderNode — 在可视化着色器图中计算 Step 函数。
+- VisualShaderNodeSwitch <- VisualShaderNode — 在可视化着色器图中使用的选择函数。
+- VisualShaderNodeTexture <- VisualShaderNode — 在可视化着色器图中执行二维纹理查找。
+- VisualShaderNodeTexture2DArray <- VisualShaderNodeSample3D — 在可视化着色器图中使用的二维纹理 uniform 数组。
+- VisualShaderNodeTexture2DArrayParameter <- VisualShaderNodeTextureParameter — 用于类型为 Texture2DArray 的着色器参数（uniform）的可视化着色器节点。
+- VisualShaderNodeTexture2DParameter <- VisualShaderNodeTextureParameter — 在可视化着色器图中提供二维纹理参数。
+- VisualShaderNodeTexture3D <- VisualShaderNodeSample3D — 在可视化着色器图中执行三维纹理查找。
+- VisualShaderNodeTexture3DParameter <- VisualShaderNodeTextureParameter — 在可视化着色器图中提供三维纹理参数。
+- VisualShaderNodeTextureParameter <- VisualShaderNodeParameter — 在可视化着色器图中执行 uniform 纹理查找。
+- VisualShaderNodeTextureParameterTriplanar <- VisualShaderNodeTextureParameter — 在可视化着色器图中执行三平面 uniform 纹理查找。
+- VisualShaderNodeTextureSDF <- VisualShaderNode — 在可视化着色器图中执行 SDF（有符号距离场）纹理查找。
+- VisualShaderNodeTextureSDFNormal <- VisualShaderNode — 在可视化着色器图中执行 SDF（有符号距离场）法线纹理查找。
+- VisualShaderNodeTransformCompose <- VisualShaderNode — 在可视化着色器图中从四个 Vector3 组合 Transform3D。
+- VisualShaderNodeTransformConstant <- VisualShaderNodeConstant — 在可视化着色器图中使用的 Transform3D 常量。
+- VisualShaderNodeTransformDecompose <- VisualShaderNode — 在可视化着色器图中将 Transform3D 分解为四个 Vector3。
+- VisualShaderNodeTransformFunc <- VisualShaderNode — 在可视化着色器图中计算 Transform3D 函数。
+- VisualShaderNodeTransformOp <- VisualShaderNode — 在可视化着色器图中使用的 Transform3D 运算符。
+- VisualShaderNodeTransformParameter <- VisualShaderNodeParameter — 在可视化着色器图中使用的 Transform3D 参数。
+- VisualShaderNodeTransformVecMult <- VisualShaderNode — 在可视化着色器图中将 Transform3D 与 Vector3 相乘。
+- VisualShaderNodeUIntConstant <- VisualShaderNodeConstant — 在可视化着色器图中使用的无符号标量整数常量。
+- VisualShaderNodeUIntFunc <- VisualShaderNode — 在可视化着色器图中使用的无符号标量整数函数。
+- VisualShaderNodeUIntOp <- VisualShaderNode — 在可视化着色器图中使用的无符号整数标量运算符。
+- VisualShaderNodeUIntParameter <- VisualShaderNodeParameter — 用于无符号 [int] 类型的着色器参数（uniform）的可视化着色器节点。
+- VisualShaderNodeUVFunc <- VisualShaderNode — 包含修改纹理坐标（`uv`）函数的节点，用于可视化着色器图。
+- VisualShaderNodeUVPolarCoord <- VisualShaderNode — 使用极坐标修改纹理 UV 的可视化着色器节点。
+- VisualShaderNodeVarying <- VisualShaderNode — 表示着色器 "varying" 值的可视化着色器节点。
+- VisualShaderNodeVaryingGetter <- VisualShaderNodeVarying — 获取 varying 值的可视化着色器节点。
+- VisualShaderNodeVaryingSetter <- VisualShaderNodeVarying — 设置 varying 值的可视化着色器节点。
+- VisualShaderNodeVec2Constant <- VisualShaderNodeConstant — 在可视化着色器图中使用的 Vector2 常量。
+- VisualShaderNodeVec2Parameter <- VisualShaderNodeParameter — 在可视化着色器图中使用的 Vector2 参数。
+- VisualShaderNodeVec3Constant <- VisualShaderNodeConstant — 在可视化着色器图中使用的 Vector3 常量。
+- VisualShaderNodeVec3Parameter <- VisualShaderNodeParameter — 在可视化着色器图中使用的 Vector3 参数。
+- VisualShaderNodeVec4Constant <- VisualShaderNodeConstant — 在可视化着色器图中使用的四维向量常量。
+- VisualShaderNodeVec4Parameter <- VisualShaderNodeParameter — 在可视化着色器图中使用的四维向量参数。
+- VisualShaderNodeVectorBase <- VisualShaderNode — 在可视化着色器图中执行向量操作的节点的基类型。
+- VisualShaderNodeVectorCompose <- VisualShaderNodeVectorBase — 从标量组合 Vector2、Vector3 或四维向量（以 Quaternion 表示）的节点（在可视化着色器图中）。
+- VisualShaderNodeVectorDecompose <- VisualShaderNodeVectorBase — 将 Vector2、Vector3 或四维向量（以 Quaternion 表示）分解为标量的节点（在可视化着色器图中）。
+- VisualShaderNodeVectorDistance <- VisualShaderNodeVectorBase — 返回两点之间的距离。
+- VisualShaderNodeVectorFunc <- VisualShaderNodeVectorBase — 在可视化着色器图中使用的向量函数。
+- VisualShaderNodeVectorLen <- VisualShaderNodeVectorBase — 返回可视化着色器图中 Vector3 的长度。
+- VisualShaderNodeVectorOp <- VisualShaderNodeVectorBase — 在可视化着色器图中使用的向量运算符。
+- VisualShaderNodeVectorRefract <- VisualShaderNodeVectorBase — 返回指向折射方向的向量。
+- VisualShaderNodeWorldPositionFromDepth <- VisualShaderNode — 使用深度纹理计算像素在世界空间位置的可视化着色器节点。
+- VoxelGI <- VisualInstance3D — 实时全局光照探针。
+- VoxelGIData <- Resource — 包含在 VoxelGI 节点中使用的烘焙体素全局光照数据。
+- WeakRef <- RefCounted — 持有一个 Object 的弱引用。
+- Window <- Viewport — 所有窗口、对话框和弹出窗口的基类。
+- WorkerThreadPool <- Object — 启动时分配线程的单例，用于将任务卸载到这些线程。
+- World2D <- Resource — 保存二维世界所有组件（如画布和物理空间）的资源。
+- World3D <- Resource — 保存三维世界所有组件（如视觉场景和物理空间）的资源。
+- WorldBoundaryShape2D <- Shape2D — 用于物理碰撞的二维世界边界（半平面）形状。
+- WorldBoundaryShape3D <- Shape3D — 用于物理碰撞的三维世界边界（半空间）形状。
+- WorldEnvironment <- Node — 整个场景的默认环境属性（后处理效果、光照和背景设置）。
+- X509Certificate <- Resource — X509 证书（例如）。
+- XMLParser <- RefCounted — 为 XML 文件创建解析器的低级接口。
+- XRAnchor3D <- XRNode3D — AR 空间中的锚点。
+- XRBodyModifier3D <- SkeletonModifier3D — 用于从 XRBodyTracker 数据驱动身体网格的节点。
+- XRBodyTracker <- XRPositionalTracker — XR 中追踪的身体。
+- XRCamera3D <- Camera3D — 基于 XR 追踪数据自动定位的相机节点。
+- XRController3D <- XRNode3D — 表示空间追踪控制器的三维节点。
+- XRControllerTracker <- XRPositionalTracker — 被追踪的控制器。
+- XRFaceModifier3D <- Node3D — 用于从 XRFaceTracker 权重驱动标准面部网格的节点。
+- XRFaceTracker <- XRTracker — 被追踪的面部。
+- XRHandModifier3D <- SkeletonModifier3D — 用于从 XRHandTracker 数据驱动手部网格的节点。
+- XRHandTracker <- XRPositionalTracker — XR 中追踪的手部。
+- XRInterface <- RefCounted — XR 接口实现的基类。
+- XRInterfaceExtension <- XRInterface — XR 接口扩展（插件）的基类。
+- XRNode3D <- Node3D — 位置由 XRServer 自动更新的三维节点。
+- XROrigin3D <- Node3D — AR/VR 中的原点。
+- XRPose <- RefCounted — 包含追踪对象上某个姿态的所有数据。
+- XRPositionalTracker <- XRTracker — 被追踪的对象。
+- XRTracker <- RefCounted — 被追踪的对象。
+- XRVRS <- Object — 为生成 VRS 图像的 XR 接口辅助类。
+- bool — 内置布尔类型。
+- float — 内置浮点数类型。
+- int — 内置整数类型。

@@ -1,0 +1,24 @@
+[gd_resource type="Theme" format=3 uid="uid://dpurq16q71hq1"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_nkt1k"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_plvta"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_r4lpi"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uf2gs"]
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4ide7"]
+bg_color = Color(1, 1, 1, 0)
+
+[resource]
+Label/colors/font_color = Color(1, 1, 1, 1)
+Label/font_sizes/font_size = 18
+LineEdit/colors/font_color = Color(1, 1, 1, 1)
+LineEdit/font_sizes/font_size = 18
+LineEdit/styles/focus = SubResource("StyleBoxEmpty_nkt1k")
+LineEdit/styles/normal = SubResource("StyleBoxEmpty_plvta")
+LineEdit/styles/read_only = SubResource("StyleBoxEmpty_r4lpi")
+VScrollBar/styles/scroll = SubResource("StyleBoxFlat_uf2gs")
+VScrollBar/styles/scroll_focus = SubResource("StyleBoxFlat_4ide7")

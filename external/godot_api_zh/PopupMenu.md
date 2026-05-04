@@ -1,0 +1,99 @@
+## PopupMenu（弹出菜单） <- Popup（弹出窗口）
+
+PopupMenu 是一个模态窗口，用于显示选项列表。适用于工具栏和上下文菜单。PopupMenu 的大小可通过 `Window.max_size` 限制。如果项目列表的高度大于 PopupMenu 的最大高度，弹出窗口内的 ScrollContainer 将允许用户滚动内容。如果未设置最大大小或设置为 `0`，PopupMenu 的高度将受其父矩形限制。所有 `set_*` 方法允许负项索引，例如 `-1` 访问最后一项，`-2` 选择倒数第二项，依此类推。**增量搜索：** 与 ItemList 和 Tree 类似，PopupMenu 在控件获得焦点时支持在列表中搜索。按与项名称首字母匹配的键可选择以给定字母开头的第一个项。之后有两种方式执行增量搜索：1) 在超时前再次按相同键选择下一个以相同字母开头的项。2) 在超时前按匹配单词其余部分的字母键直接选择该项。如果自上次按键以来超过了超时时间，这两种操作都将重置到列表开头。您可以通过更改 `ProjectSettings.gui/timers/incremental_search_max_interval_msec` 来调整超时时间。**注意：** PopupMenu 默认不可见。要使其可见，请在节点上调用 Window 中的某个 `popup_*` 方法，例如 `Window.popup_centered_clamped`。**注意：** 用于项的 ID 值限制为 32 位，而非 [int] 的完整 64 位。范围为 `-2^32` 到 `2^32 - 1`，即 `-2147483648` 到 `2147483647`。
+
+**属性（Props）：**
+- allow_search: bool = true —— 允许搜索
+- hide_on_checkable_item_selection: bool = true —— 选中可勾选项时隐藏
+- hide_on_item_selection: bool = true —— 选中项时隐藏
+- hide_on_state_item_selection: bool = false —— 选中状态项时隐藏
+- item_count: int = 0 —— 项数量
+- prefer_native_menu: bool = false —— 优先使用原生菜单
+- shrink_height: bool = true —— 收缩高度
+- shrink_width: bool = true —— 收缩宽度
+- submenu_popup_delay: float = 0.2 —— 子菜单弹出延迟
+- system_menu_id: int (NativeMenu.SystemMenus) = 0 —— 系统菜单 ID
+- transparent: bool = true —— 透明
+- transparent_bg: bool = true —— 透明背景
+
+**方法（Methods）：**
+- activate_item_by_event(event: InputEvent, for_global_only: bool = false) -> bool —— 通过事件激活项
+- add_check_item(label: String, id: int = -1, accel: int = 0) —— 添加勾选项
+- add_check_shortcut(shortcut: Shortcut, id: int = -1, global: bool = false) —— 添加勾选快捷键
+- add_icon_check_item(texture: Texture2D, label: String, id: int = -1, accel: int = 0) —— 添加图标勾选项
+- add_icon_check_shortcut(texture: Texture2D, shortcut: Shortcut, id: int = -1, global: bool = false) —— 添加图标勾选快捷键
+- add_icon_item(texture: Texture2D, label: String, id: int = -1, accel: int = 0) —— 添加图标项
+- add_icon_radio_check_item(texture: Texture2D, label: String, id: int = -1, accel: int = 0) —— 添加图标单选勾选项
+- add_icon_radio_check_shortcut(texture: Texture2D, shortcut: Shortcut, id: int = -1, global: bool = false) —— 添加图标单选勾选快捷键
+- add_icon_shortcut(texture: Texture2D, shortcut: Shortcut, id: int = -1, global: bool = false, allow_echo: bool = false) —— 添加快捷键
+- add_item(label: String, id: int = -1, accel: int = 0) —— 添加项
+- add_multistate_item(label: String, max_states: int, default_state: int = 0, id: int = -1, accel: int = 0) —— 添加多状态项
+- add_radio_check_item(label: String, id: int = -1, accel: int = 0) —— 添加单选勾选项
+- add_radio_check_shortcut(shortcut: Shortcut, id: int = -1, global: bool = false) —— 添加单选勾选快捷键
+- add_separator(label: String = "", id: int = -1) —— 添加分隔符
+- add_shortcut(shortcut: Shortcut, id: int = -1, global: bool = false, allow_echo: bool = false) —— 添加快捷键
+- add_submenu_item(label: String, submenu: String, id: int = -1) —— 添加子菜单项
+- add_submenu_node_item(label: String, submenu: PopupMenu, id: int = -1) —— 添加子菜单节点项
+- clear(free_submenus: bool = false) —— 清除
+- get_focused_item() -> int —— 获取焦点项
+- get_item_accelerator(index: int) -> int —— 获取项加速键
+- get_item_auto_translate_mode(index: int) -> int —— 获取项自动翻译模式
+- get_item_icon(index: int) -> Texture2D —— 获取项图标
+- get_item_icon_max_width(index: int) -> int —— 获取项图标最大宽度
+- get_item_icon_modulate(index: int) -> Color —— 获取项图标颜色调制
+- get_item_id(index: int) -> int —— 获取项 ID
+- get_item_indent(index: int) -> int —— 获取项缩进
+- get_item_index(id: int) -> int —— 通过 ID 获取项索引
+- get_item_language(index: int) -> String —— 获取项语言
+- get_item_metadata(index: int) -> Variant —— 获取项元数据
+- get_item_multistate(index: int) -> int —— 获取项多状态
+- get_item_multistate_max(index: int) -> int —— 获取项多状态最大值
+- get_item_shortcut(index: int) -> Shortcut —— 获取项快捷键
+- get_item_submenu(index: int) -> String —— 获取项子菜单
+- get_item_submenu_node(index: int) -> PopupMenu —— 获取项子菜单节点
+- get_item_text(index: int) -> String —— 获取项文本
+- get_item_text_direction(index: int) -> int —— 获取项文本方向
+- get_item_tooltip(index: int) -> String —— 获取项工具提示
+- is_item_checkable(index: int) -> bool —— 项是否可勾选
+- is_item_checked(index: int) -> bool —— 项是否已勾选
+- is_item_disabled(index: int) -> bool —— 项是否禁用
+- is_item_radio_checkable(index: int) -> bool —— 项是否为单选勾选
+- is_item_separator(index: int) -> bool —— 项是否为分隔符
+- is_item_shortcut_disabled(index: int) -> bool —— 项快捷键是否禁用
+- is_native_menu() -> bool —— 是否为原生菜单
+- is_system_menu() -> bool —— 是否为系统菜单
+- remove_item(index: int) —— 移除项
+- scroll_to_item(index: int) —— 滚动到项
+- set_focused_item(index: int) —— 设置焦点项
+- set_item_accelerator(index: int, accel: int) —— 设置项加速键
+- set_item_as_checkable(index: int, enable: bool) —— 将项设为可勾选
+- set_item_as_radio_checkable(index: int, enable: bool) —— 将项设为单选勾选
+- set_item_as_separator(index: int, enable: bool) —— 将项设为分隔符
+- set_item_auto_translate_mode(index: int, mode: int) —— 设置项自动翻译模式
+- set_item_checked(index: int, checked: bool) —— 设置项勾选状态
+- set_item_disabled(index: int, disabled: bool) —— 设置项禁用状态
+- set_item_icon(index: int, icon: Texture2D) —— 设置项图标
+- set_item_icon_max_width(index: int, width: int) —— 设置项图标最大宽度
+- set_item_icon_modulate(index: int, modulate: Color) —— 设置项图标颜色调制
+- set_item_id(index: int, id: int) —— 设置项 ID
+- set_item_indent(index: int, indent: int) —— 设置项缩进
+- set_item_index(index: int, target_index: int) —— 设置项索引
+- set_item_language(index: int, language: String) —— 设置项语言
+- set_item_metadata(index: int, metadata: Variant) —— 设置项元数据
+- set_item_multistate(index: int, state: int) —— 设置项多状态
+- set_item_multistate_max(index: int, max_states: int) —— 设置项多状态最大值
+- set_item_shortcut(index: int, shortcut: Shortcut, global: bool = false) —— 设置项快捷键
+- set_item_shortcut_disabled(index: int, disabled: bool) —— 设置项快捷键禁用
+- set_item_submenu(index: int, submenu: String) —— 设置项子菜单
+- set_item_submenu_node(index: int, submenu: PopupMenu) —— 设置项子菜单节点
+- set_item_text(index: int, text: String) —— 设置项文本
+- set_item_text_direction(index: int, direction: int) —— 设置项文本方向
+- set_item_tooltip(index: int, tooltip: String) —— 设置项工具提示
+- toggle_item_checked(index: int) —— 切换项勾选
+- toggle_item_multistate(index: int) —— 切换项多状态
+
+**信号（Signals）：**
+- id_focused(id: int) —— ID 获得焦点
+- id_pressed(id: int) —— ID 被按下
+- index_pressed(index: int) —— 索引被按下
+- menu_changed —— 菜单已更改

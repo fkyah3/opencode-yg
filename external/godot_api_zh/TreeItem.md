@@ -1,0 +1,129 @@
+## TreeItem <- Object（对象）
+
+Tree 控件的单个项目。它可以包含其他 TreeItem 作为子项，从而创建层次结构。还可以包含文本和按钮。TreeItem 不是 Node，它是 Tree 的内部数据结构。要创建 TreeItem，使用 `Tree.create_item` 或 `TreeItem.create_child`。要移除 TreeItem，使用 `Object.free`。**注意：** 用于按钮的 ID 值为 32 位，而 [int] 始终是 64 位。其范围为 `-2147483648` 到 `2147483647`。
+
+**属性（Props）：**
+- collapsed: bool —— 是否折叠
+- custom_minimum_height: int —— 自定义最小高度
+- disable_folding: bool —— 禁用折叠
+- visible: bool —— 是否可见
+
+**方法（Methods）：**
+- add_button(column: int, button: Texture2D, id: int = -1, disabled: bool = false, tooltip_text: String = "", description: String = "") —— 添加按钮
+- add_child(child: TreeItem) —— 添加子项
+- call_recursive(method: StringName) —— 递归调用方法
+- clear_buttons() —— 清除所有按钮
+- clear_custom_bg_color(column: int) —— 清除自定义背景色
+- clear_custom_color(column: int) —— 清除自定义颜色
+- create_child(index: int = -1) -> TreeItem —— 创建子项
+- deselect(column: int) —— 取消选择
+- erase_button(column: int, button_index: int) —— 擦除按钮
+- get_auto_translate_mode(column: int) -> int —— 获取自动翻译模式
+- get_autowrap_mode(column: int) -> int —— 获取自动换行模式
+- get_autowrap_trim_flags(column: int) -> int —— 获取自动换行裁剪标志
+- get_button(column: int, button_index: int) -> Texture2D —— 获取按钮纹理
+- get_button_by_id(column: int, id: int) -> int —— 按 ID 获取按钮索引
+- get_button_color(column: int, id: int) -> Color —— 获取按钮颜色
+- get_button_count(column: int) -> int —— 获取按钮数量
+- get_button_id(column: int, button_index: int) -> int —— 获取按钮 ID
+- get_button_tooltip_text(column: int, button_index: int) -> String —— 获取按钮工具提示文本
+- get_cell_mode(column: int) -> int —— 获取单元格模式
+- get_child(index: int) -> TreeItem —— 获取子项
+- get_child_count() -> int —— 获取子项数量
+- get_children() -> TreeItem[] —— 获取所有子项
+- get_custom_bg_color(column: int) -> Color —— 获取自定义背景色
+- get_custom_color(column: int) -> Color —— 获取自定义颜色
+- get_custom_draw_callback(column: int) -> Callable —— 获取自定义绘制回调
+- get_custom_font(column: int) -> Font —— 获取自定义字体
+- get_custom_font_size(column: int) -> int —— 获取自定义字体大小
+- get_custom_stylebox(column: int) -> StyleBox —— 获取自定义样式盒
+- get_description(column: int) -> String —— 获取描述
+- get_expand_right(column: int) -> bool —— 获取向右扩展
+- get_first_child() -> TreeItem —— 获取第一个子项
+- get_icon(column: int) -> Texture2D —— 获取图标
+- get_icon_max_width(column: int) -> int —— 获取图标最大宽度
+- get_icon_modulate(column: int) -> Color —— 获取图标调制颜色
+- get_icon_overlay(column: int) -> Texture2D —— 获取图标覆盖纹理
+- get_icon_region(column: int) -> Rect2 —— 获取图标区域
+- get_index() -> int —— 获取索引
+- get_language(column: int) -> String —— 获取语言
+- get_metadata(column: int) -> Variant —— 获取元数据
+- get_next() -> TreeItem —— 获取下一个兄弟项
+- get_next_in_tree(wrap: bool = false) -> TreeItem —— 获取树中下一个项
+- get_next_visible(wrap: bool = false) -> TreeItem —— 获取下一个可见项
+- get_parent() -> TreeItem —— 获取父项
+- get_prev() -> TreeItem —— 获取上一个兄弟项
+- get_prev_in_tree(wrap: bool = false) -> TreeItem —— 获取树中上一个项
+- get_prev_visible(wrap: bool = false) -> TreeItem —— 获取上一个可见项
+- get_range(column: int) -> float —— 获取范围值
+- get_range_config(column: int) -> Dictionary —— 获取范围配置
+- get_structured_text_bidi_override(column: int) -> int —— 获取结构化文本双向覆盖
+- get_structured_text_bidi_override_options(column: int) -> Array —— 获取结构化文本双向覆盖选项
+- get_suffix(column: int) -> String —— 获取后缀
+- get_text(column: int) -> String —— 获取文本
+- get_text_alignment(column: int) -> int —— 获取文本对齐方式
+- get_text_direction(column: int) -> int —— 获取文本方向
+- get_text_overrun_behavior(column: int) -> int —— 获取文本溢出行为
+- get_tooltip_text(column: int) -> String —— 获取工具提示文本
+- get_tree() -> Tree —— 获取所属 Tree
+- is_any_collapsed(only_visible: bool = false) -> bool —— 是否有任意项折叠
+- is_button_disabled(column: int, button_index: int) -> bool —— 按钮是否禁用
+- is_checked(column: int) -> bool —— 是否已勾选
+- is_custom_set_as_button(column: int) -> bool —— 自定义是否设为按钮
+- is_edit_multiline(column: int) -> bool —— 是否多行编辑
+- is_editable(column: int) -> bool —— 是否可编辑
+- is_indeterminate(column: int) -> bool —— 是否不确定状态
+- is_selectable(column: int) -> bool —— 是否可选择
+- is_selected(column: int) -> bool —— 是否已选中
+- is_visible_in_tree() -> bool —— 在树中是否可见
+- move_after(item: TreeItem) —— 移动到指定项之后
+- move_before(item: TreeItem) —— 移动到指定项之前
+- propagate_check(column: int, emit_signal: bool = true) —— 传播勾选状态
+- remove_child(child: TreeItem) —— 移除子项
+- select(column: int) —— 选择
+- set_auto_translate_mode(column: int, mode: int) —— 设置自动翻译模式
+- set_autowrap_mode(column: int, autowrap_mode: int) —— 设置自动换行模式
+- set_autowrap_trim_flags(column: int, flags: int) —— 设置自动换行裁剪标志
+- set_button(column: int, button_index: int, button: Texture2D) —— 设置按钮
+- set_button_color(column: int, button_index: int, color: Color) —— 设置按钮颜色
+- set_button_description(column: int, button_index: int, description: String) —— 设置按钮描述
+- set_button_disabled(column: int, button_index: int, disabled: bool) —— 设置按钮禁用
+- set_button_tooltip_text(column: int, button_index: int, tooltip: String) —— 设置按钮工具提示文本
+- set_cell_mode(column: int, mode: int) —— 设置单元格模式
+- set_checked(column: int, checked: bool) —— 设置勾选状态
+- set_collapsed_recursive(enable: bool) —— 递归设置折叠状态
+- set_custom_as_button(column: int, enable: bool) —— 设置自定义为按钮
+- set_custom_bg_color(column: int, color: Color, just_outline: bool = false) —— 设置自定义背景色
+- set_custom_color(column: int, color: Color) —— 设置自定义颜色
+- set_custom_draw(column: int, object: Object, callback: StringName) —— 设置自定义绘制
+- set_custom_draw_callback(column: int, callback: Callable) —— 设置自定义绘制回调
+- set_custom_font(column: int, font: Font) —— 设置自定义字体
+- set_custom_font_size(column: int, font_size: int) —— 设置自定义字体大小
+- set_custom_stylebox(column: int, stylebox: StyleBox) —— 设置自定义样式盒
+- set_description(column: int, description: String) —— 设置描述
+- set_edit_multiline(column: int, multiline: bool) —— 设置多行编辑
+- set_editable(column: int, enabled: bool) —— 设置可编辑
+- set_expand_right(column: int, enable: bool) —— 设置向右扩展
+- set_icon(column: int, texture: Texture2D) —— 设置图标
+- set_icon_max_width(column: int, width: int) —— 设置图标最大宽度
+- set_icon_modulate(column: int, modulate: Color) —— 设置图标调制颜色
+- set_icon_overlay(column: int, texture: Texture2D) —— 设置图标覆盖纹理
+- set_icon_region(column: int, region: Rect2) —— 设置图标区域
+- set_indeterminate(column: int, indeterminate: bool) —— 设置不确定状态
+- set_language(column: int, language: String) —— 设置语言
+- set_metadata(column: int, meta: Variant) —— 设置元数据
+- set_range(column: int, value: float) —— 设置范围值
+- set_range_config(column: int, min: float, max: float, step: float, expr: bool = false) —— 设置范围配置
+- set_selectable(column: int, selectable: bool) —— 设置可选择
+- set_structured_text_bidi_override(column: int, parser: int) —— 设置结构化文本双向覆盖
+- set_structured_text_bidi_override_options(column: int, args: Array) —— 设置结构化文本双向覆盖选项
+- set_suffix(column: int, text: String) —— 设置后缀
+- set_text(column: int, text: String) —— 设置文本
+- set_text_alignment(column: int, text_alignment: int) —— 设置文本对齐方式
+- set_text_direction(column: int, direction: int) —— 设置文本方向
+- set_text_overrun_behavior(column: int, overrun_behavior: int) —— 设置文本溢出行为
+- set_tooltip_text(column: int, tooltip: String) —— 设置工具提示文本
+- uncollapse_tree() —— 展开整个树
+
+**枚举（Enums）：**
+**TreeCellMode（树单元格模式）：** CELL_MODE_STRING=0（字符串）, CELL_MODE_CHECK=1（复选框）, CELL_MODE_RANGE=2（范围）, CELL_MODE_ICON=3（图标）, CELL_MODE_CUSTOM=4（自定义）

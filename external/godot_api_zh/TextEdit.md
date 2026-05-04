@@ -1,0 +1,228 @@
+## TextEdit（文本编辑）<- Control（控件）
+
+多行文本编辑器。它还提供有限的代码编辑功能，如语法高亮支持。有关更高级的代码编辑功能，请参阅 CodeEdit。输入文本时，可以使用 Unicode、OEM 或 Windows 的 alt 代码插入特殊字符：- 要输入 Unicode 码点，按住 [kbd]Alt[/kbd] 并在数字键盘上键入码点。例如，要输入字符 `á`（U+00E1），按住 [kbd]Alt[/kbd] 并在数字键盘上键入 [kbd]+E1[/kbd]（前导零可以省略）。- 要输入 OEM 码点，按住 [kbd]Alt[/kbd] 并在数字键盘上键入代码。例如，要输入字符 `á`（OEM 160），按住 [kbd]Alt[/kbd] 并在数字键盘上键入 `160`。- 要输入 Windows 码点，按住 [kbd]Alt[/kbd] 并在数字键盘上键入代码。例如，要输入字符 `á`（Windows 0225），按住 [kbd]Alt[/kbd] 并在数字键盘上依次键入 [kbd]0[/kbd]、[kbd]2[/kbd]、[kbd]2[/kbd]、[kbd]5[/kbd]。此处的前导零**不能**省略，因为这是区分 Windows 码点和 OEM 码点的方式。**注意：** 大多数视口、光标和编辑方法包含一个 `caret_index` 参数以支持 `caret_multiple`。该参数应为以下之一：`-1` 表示所有光标，`0` 表示主光标，或大于 `0` 表示按创建顺序排列的辅助光标。**注意：** 按住 [kbd]Alt[/kbd] 时，垂直滚轮将比正常速度快 5 倍。这在 Godot 脚本编辑器中同样有效。
+
+**属性（Props）：**
+- autowrap_mode: int (TextServer.AutowrapMode) = 3 —— 自动换行模式
+- backspace_deletes_composite_character_enabled: bool = false —— 退格键删除组合字符
+- caret_blink: bool = false —— 光标闪烁
+- caret_blink_interval: float = 0.65 —— 光标闪烁间隔
+- caret_draw_when_editable_disabled: bool = false —— 可编辑禁用时绘制光标
+- caret_mid_grapheme: bool = false —— 光标位于字素中间
+- caret_move_on_right_click: bool = true —— 右键点击移动光标
+- caret_multiple: bool = true —— 多光标
+- caret_type: int (TextEdit.CaretType) = 0 —— 光标类型
+- context_menu_enabled: bool = true —— 启用上下文菜单
+- custom_word_separators: String = "" —— 自定义单词分隔符
+- deselect_on_focus_loss_enabled: bool = true —— 失去焦点时取消选择
+- drag_and_drop_selection_enabled: bool = true —— 启用拖拽选择
+- draw_control_chars: bool = false —— 绘制控制字符
+- draw_spaces: bool = false —— 绘制空格
+- draw_tabs: bool = false —— 绘制制表符
+- editable: bool = true —— 可编辑
+- emoji_menu_enabled: bool = true —— 启用表情菜单
+- empty_selection_clipboard_enabled: bool = true —— 空选择时启用剪贴板
+- focus_mode: int (Control.FocusMode) = 2 —— 焦点模式
+- highlight_all_occurrences: bool = false —— 高亮所有匹配项
+- highlight_current_line: bool = false —— 高亮当前行
+- indent_wrapped_lines: bool = false —— 缩进换行行
+- language: String = "" —— 语言
+- middle_mouse_paste_enabled: bool = true —— 启用鼠标中键粘贴
+- minimap_draw: bool = false —— 绘制小地图
+- minimap_width: int = 80 —— 小地图宽度
+- mouse_default_cursor_shape: int (Control.CursorShape) = 1 —— 鼠标默认光标形状
+- placeholder_text: String = "" —— 占位文本
+- scroll_fit_content_height: bool = false —— 滚动适应内容高度
+- scroll_fit_content_width: bool = false —— 滚动适应内容宽度
+- scroll_horizontal: int = 0 —— 水平滚动
+- scroll_past_end_of_file: bool = false —— 滚动超过文件末尾
+- scroll_smooth: bool = false —— 平滑滚动
+- scroll_v_scroll_speed: float = 80.0 —— 垂直滚动速度
+- scroll_vertical: float = 0.0 —— 垂直滚动位置
+- selecting_enabled: bool = true —— 启用选择
+- shortcut_keys_enabled: bool = true —— 启用快捷键
+- structured_text_bidi_override: int (TextServer.StructuredTextParser) = 0 —— 结构化文本双向覆盖
+- structured_text_bidi_override_options: Array = [] —— 结构化文本双向覆盖选项
+- syntax_highlighter: SyntaxHighlighter —— 语法高亮器
+- tab_input_mode: bool = true —— 制表符输入模式
+- text: String = "" —— 文本
+- text_direction: int (Control.TextDirection) = 0 —— 文本方向
+- use_custom_word_separators: bool = false —— 使用自定义单词分隔符
+- use_default_word_separators: bool = true —— 使用默认单词分隔符
+- virtual_keyboard_enabled: bool = true —— 启用虚拟键盘
+- virtual_keyboard_show_on_focus: bool = true —— 获得焦点时显示虚拟键盘
+- wrap_mode: int (TextEdit.LineWrappingMode) = 0 —— 换行模式
+
+**方法（Methods）：**
+- add_caret(line: int, column: int) -> int —— 添加光标
+- add_caret_at_carets(below: bool) —— 在光标处添加光标
+- add_gutter(at: int = -1) —— 添加行槽
+- add_selection_for_next_occurrence() —— 为下一处匹配添加选择
+- adjust_carets_after_edit(caret: int, from_line: int, from_col: int, to_line: int, to_col: int) —— 编辑后调整光标
+- adjust_viewport_to_caret(caret_index: int = 0) —— 调整视口到光标
+- apply_ime() —— 应用输入法
+- backspace(caret_index: int = -1) —— 退格
+- begin_complex_operation() —— 开始复杂操作
+- begin_multicaret_edit() —— 开始多光标编辑
+- cancel_ime() —— 取消输入法
+- center_viewport_to_caret(caret_index: int = 0) —— 居中视口到光标
+- clear() —— 清除
+- clear_undo_history() —— 清除撤销历史
+- collapse_carets(from_line: int, from_column: int, to_line: int, to_column: int, inclusive: bool = false) —— 折叠光标
+- copy(caret_index: int = -1) —— 复制
+- cut(caret_index: int = -1) —— 剪切
+- delete_selection(caret_index: int = -1) —— 删除选择
+- deselect(caret_index: int = -1) —— 取消选择
+- end_action() —— 结束动作
+- end_complex_operation() —— 结束复杂操作
+- end_multicaret_edit() —— 结束多光标编辑
+- get_caret_column(caret_index: int = 0) -> int —— 获取光标列
+- get_caret_count() -> int —— 获取光标数量
+- get_caret_draw_pos(caret_index: int = 0) -> Vector2 —— 获取光标绘制位置
+- get_caret_index_edit_order() -> PackedInt32Array —— 获取光标索引编辑顺序
+- get_caret_line(caret_index: int = 0) -> int —— 获取光标行
+- get_caret_wrap_index(caret_index: int = 0) -> int —— 获取光标换行索引
+- get_first_non_whitespace_column(line: int) -> int —— 获取行中首个非空白列
+- get_first_visible_line() -> int —— 获取首个可见行
+- get_gutter_count() -> int —— 获取行槽数量
+- get_gutter_name(gutter: int) -> String —— 获取行槽名称
+- get_gutter_type(gutter: int) -> int —— 获取行槽类型
+- get_gutter_width(gutter: int) -> int —— 获取行槽宽度
+- get_h_scroll_bar() -> HScrollBar —— 获取水平滚动条
+- get_indent_level(line: int) -> int —— 获取缩进级别
+- get_last_full_visible_line() -> int —— 获取最后一个完整可见行
+- get_last_full_visible_line_wrap_index() -> int —— 获取最后一个完整可见行的换行索引
+- get_last_unhidden_line() -> int —— 获取最后一个未隐藏行
+- get_line(line: int) -> String —— 获取行
+- get_line_background_color(line: int) -> Color —— 获取行背景颜色
+- get_line_column_at_pos(position: Vector2i, clamp_line: bool = true, clamp_column: bool = true) -> Vector2i —— 根据位置获取行列
+- get_line_count() -> int —— 获取行数
+- get_line_gutter_icon(line: int, gutter: int) -> Texture2D —— 获取行槽图标
+- get_line_gutter_item_color(line: int, gutter: int) -> Color —— 获取行槽项颜色
+- get_line_gutter_metadata(line: int, gutter: int) -> Variant —— 获取行槽元数据
+- get_line_gutter_text(line: int, gutter: int) -> String —— 获取行槽文本
+- get_line_height() -> int —— 获取行高
+- get_line_ranges_from_carets(only_selections: bool = false, merge_adjacent: bool = true) -> Vector2i[] —— 从光标获取行范围
+- get_line_width(line: int, wrap_index: int = -1) -> int —— 获取行宽
+- get_line_with_ime(line: int) -> String —— 获取带输入法的行
+- get_line_wrap_count(line: int) -> int —— 获取行换行数
+- get_line_wrap_index_at_column(line: int, column: int) -> int —— 获取指定列的行换行索引
+- get_line_wrapped_text(line: int) -> PackedStringArray —— 获取行换行文本
+- get_local_mouse_pos() -> Vector2 —— 获取本地鼠标位置
+- get_menu() -> PopupMenu —— 获取菜单
+- get_minimap_line_at_pos(position: Vector2i) -> int —— 获取小地图上指定位置的行
+- get_minimap_visible_lines() -> int —— 获取小地图可见行数
+- get_next_composite_character_column(line: int, column: int) -> int —— 获取下一个组合字符的列
+- get_next_visible_line_index_offset_from(line: int, wrap_index: int, visible_amount: int) -> Vector2i —— 从指定位置获取下一个可见行索引
+- get_next_visible_line_offset_from(line: int, visible_amount: int) -> int —— 从指定行获取下一个可见行
+- get_pos_at_line_column(line: int, column: int) -> Vector2i —— 获取行列对应的位置
+- get_previous_composite_character_column(line: int, column: int) -> int —— 获取上一个组合字符的列
+- get_rect_at_line_column(line: int, column: int) -> Rect2i —— 获取行列对应的矩形
+- get_saved_version() -> int —— 获取已保存版本
+- get_scroll_pos_for_line(line: int, wrap_index: int = 0) -> float —— 获取指定行的滚动位置
+- get_selected_text(caret_index: int = -1) -> String —— 获取选中的文本
+- get_selection_at_line_column(line: int, column: int, include_edges: bool = true, only_selections: bool = true) -> int —— 获取行列处的选择
+- get_selection_column(caret_index: int = 0) -> int —— 获取选择列
+- get_selection_from_column(caret_index: int = 0) -> int —— 获取选择起始列
+- get_selection_from_line(caret_index: int = 0) -> int —— 获取选择起始行
+- get_selection_line(caret_index: int = 0) -> int —— 获取选择行
+- get_selection_mode() -> int —— 获取选择模式
+- get_selection_origin_column(caret_index: int = 0) -> int —— 获取选择原点列
+- get_selection_origin_line(caret_index: int = 0) -> int —— 获取选择原点行
+- get_selection_to_column(caret_index: int = 0) -> int —— 获取选择结束列
+- get_selection_to_line(caret_index: int = 0) -> int —— 获取选择结束行
+- get_sorted_carets(include_ignored_carets: bool = false) -> PackedInt32Array —— 获取排序后的光标
+- get_tab_size() -> int —— 获取制表符大小
+- get_total_gutter_width() -> int —— 获取总行槽宽度
+- get_total_visible_line_count() -> int —— 获取总可见行数
+- get_v_scroll_bar() -> VScrollBar —— 获取垂直滚动条
+- get_version() -> int —— 获取版本
+- get_visible_line_count() -> int —— 获取可见行数
+- get_visible_line_count_in_range(from_line: int, to_line: int) -> int —— 获取范围内的可见行数
+- get_word_at_pos(position: Vector2) -> String —— 获取指定位置的单词
+- get_word_under_caret(caret_index: int = -1) -> String —— 获取光标下的单词
+- has_ime_text() -> bool —— 是否有输入法文本
+- has_redo() -> bool —— 是否有重做
+- has_selection(caret_index: int = -1) -> bool —— 是否有选择
+- has_undo() -> bool —— 是否有撤销
+- insert_line_at(line: int, text: String) —— 在指定行插入
+- insert_text(text: String, line: int, column: int, before_selection_begin: bool = true, before_selection_end: bool = false) —— 插入文本
+- insert_text_at_caret(text: String, caret_index: int = -1) —— 在光标处插入文本
+- is_caret_after_selection_origin(caret_index: int = 0) -> bool —— 光标是否在选择原点之后
+- is_caret_visible(caret_index: int = 0) -> bool —— 光标是否可见
+- is_dragging_cursor() -> bool —— 是否正在拖拽光标
+- is_gutter_clickable(gutter: int) -> bool —— 行槽是否可点击
+- is_gutter_drawn(gutter: int) -> bool —— 行槽是否已绘制
+- is_gutter_overwritable(gutter: int) -> bool —— 行槽是否可覆盖
+- is_in_mulitcaret_edit() -> bool —— 是否在多光标编辑中
+- is_line_gutter_clickable(line: int, gutter: int) -> bool —— 行行槽是否可点击
+- is_line_wrapped(line: int) -> bool —— 行是否换行
+- is_menu_visible() -> bool —— 菜单是否可见
+- is_mouse_over_selection(edges: bool, caret_index: int = -1) -> bool —— 鼠标是否在选择上
+- is_overtype_mode_enabled() -> bool —— 是否启用覆写模式
+- menu_option(option: int) —— 菜单选项
+- merge_gutters(from_line: int, to_line: int) —— 合并行槽
+- merge_overlapping_carets() —— 合并重叠光标
+- multicaret_edit_ignore_caret(caret_index: int) -> bool —— 多光标编辑忽略光标
+- paste(caret_index: int = -1) —— 粘贴
+- paste_primary_clipboard(caret_index: int = -1) —— 粘贴主剪贴板
+- redo() —— 重做
+- remove_caret(caret: int) —— 移除光标
+- remove_gutter(gutter: int) —— 移除行槽
+- remove_line_at(line: int, move_carets_down: bool = true) —— 移除行
+- remove_secondary_carets() —— 移除辅助光标
+- remove_text(from_line: int, from_column: int, to_line: int, to_column: int) —— 移除文本
+- search(text: String, flags: int, from_line: int, from_column: int) -> Vector2i —— 搜索
+- select(origin_line: int, origin_column: int, caret_line: int, caret_column: int, caret_index: int = 0) —— 选择
+- select_all() —— 全选
+- select_word_under_caret(caret_index: int = -1) —— 选择光标下的单词
+- set_caret_column(column: int, adjust_viewport: bool = true, caret_index: int = 0) —— 设置光标列
+- set_caret_line(line: int, adjust_viewport: bool = true, can_be_hidden: bool = true, wrap_index: int = 0, caret_index: int = 0) —— 设置光标行
+- set_gutter_clickable(gutter: int, clickable: bool) —— 设置行槽可点击
+- set_gutter_custom_draw(column: int, draw_callback: Callable) —— 设置行槽自定义绘制
+- set_gutter_draw(gutter: int, draw: bool) —— 设置行槽绘制
+- set_gutter_name(gutter: int, name: String) —— 设置行槽名称
+- set_gutter_overwritable(gutter: int, overwritable: bool) —— 设置行槽可覆盖
+- set_gutter_type(gutter: int, type: int) —— 设置行槽类型
+- set_gutter_width(gutter: int, width: int) —— 设置行槽宽度
+- set_line(line: int, new_text: String) —— 设置行
+- set_line_as_center_visible(line: int, wrap_index: int = 0) —— 将行设为中心可见
+- set_line_as_first_visible(line: int, wrap_index: int = 0) —— 将行设为第一个可见
+- set_line_as_last_visible(line: int, wrap_index: int = 0) —— 将行设为最后一个可见
+- set_line_background_color(line: int, color: Color) —— 设置行背景颜色
+- set_line_gutter_clickable(line: int, gutter: int, clickable: bool) —— 设置行行槽可点击
+- set_line_gutter_icon(line: int, gutter: int, icon: Texture2D) —— 设置行行槽图标
+- set_line_gutter_item_color(line: int, gutter: int, color: Color) —— 设置行行槽项颜色
+- set_line_gutter_metadata(line: int, gutter: int, metadata: Variant) —— 设置行行槽元数据
+- set_line_gutter_text(line: int, gutter: int, text: String) —— 设置行行槽文本
+- set_overtype_mode_enabled(enabled: bool) —— 设置覆写模式
+- set_search_flags(flags: int) —— 设置搜索标志
+- set_search_text(search_text: String) —— 设置搜索文本
+- set_selection_mode(mode: int) —— 设置选择模式
+- set_selection_origin_column(column: int, caret_index: int = 0) —— 设置选择原点列
+- set_selection_origin_line(line: int, can_be_hidden: bool = true, wrap_index: int = -1, caret_index: int = 0) —— 设置选择原点行
+- set_tab_size(size: int) —— 设置制表符大小
+- set_tooltip_request_func(callback: Callable) —— 设置工具提示请求函数
+- skip_selection_for_next_occurrence() —— 跳过下一处匹配的选择
+- start_action(action: int) —— 开始动作
+- swap_lines(from_line: int, to_line: int) —— 交换行
+- tag_saved_version() —— 标记已保存版本
+- undo() —— 撤销
+
+**信号（Signals）：**
+- caret_changed —— 光标改变
+- gutter_added —— 行槽已添加
+- gutter_clicked(line: int, gutter: int) —— 行槽被点击
+- gutter_removed —— 行槽已移除
+- lines_edited_from(from_line: int, to_line: int) —— 行被编辑
+- text_changed —— 文本改变
+- text_set —— 文本已设置
+
+**枚举（Enums）：**
+**MenuItems（菜单项）：** MENU_CUT=0（剪切），MENU_COPY=1（复制），MENU_PASTE=2（粘贴），MENU_CLEAR=3（清除），MENU_SELECT_ALL=4（全选），MENU_UNDO=5（撤销），MENU_REDO=6（重做），MENU_SUBMENU_TEXT_DIR=7（文本方向子菜单），MENU_DIR_INHERITED=8（继承方向），MENU_DIR_AUTO=9（自动方向），...
+**EditAction（编辑动作）：** ACTION_NONE=0（无），ACTION_TYPING=1（打字），ACTION_BACKSPACE=2（退格），ACTION_DELETE=3（删除）
+**SearchFlags（搜索标志）：** SEARCH_MATCH_CASE=1（区分大小写），SEARCH_WHOLE_WORDS=2（全词匹配），SEARCH_BACKWARDS=4（反向搜索）
+**CaretType（光标类型）：** CARET_TYPE_LINE=0（线条），CARET_TYPE_BLOCK=1（块状）
+**SelectionMode（选择模式）：** SELECTION_MODE_NONE=0（无），SELECTION_MODE_SHIFT=1（Shift），SELECTION_MODE_POINTER=2（指针），SELECTION_MODE_WORD=3（单词），SELECTION_MODE_LINE=4（行）
+**LineWrappingMode（行换行模式）：** LINE_WRAPPING_NONE=0（无换行），LINE_WRAPPING_BOUNDARY=1（边界换行）
+**GutterType（行槽类型）：** GUTTER_TYPE_STRING=0（字符串），GUTTER_TYPE_ICON=1（图标），GUTTER_TYPE_CUSTOM=2（自定义）

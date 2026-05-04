@@ -1,0 +1,3 @@
+extends Label
+
+class_name TerminalCommandOutputLabel

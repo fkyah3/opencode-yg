@@ -1,0 +1,121 @@
+## String（字符串）
+
+这是内置的字符串 Variant 类型（也是 GDScript 使用的类型）。字符串可以包含任意数量的 Unicode 字符，并公开了用于操作和生成字符串的方法。字符串是引用计数的，并采用写时复制（copy-on-write）方式（每次修改字符串都会返回一个新的 String），因此在资源上传递它们是很廉价的。某些字符串方法有相应的变体。后缀为 `n` 的变体（`countn`、`findn`、`replacen` 等）是**不区分大小写**的。前缀为 `r` 的方法变体（`rfind`、`rsplit` 等）是反向的，从字符串末尾开始，而不是开头。要将任何 Variant 与字符串之间相互转换，请参阅 `@GlobalScope.str`、`@GlobalScope.str_to_var` 和 `@GlobalScope.var_to_str`。**注意：** 在布尔上下文中，空字符串（`""`）的计算结果为 `false`。否则，字符串始终计算为 `true`。
+
+**方法（Methods）：**
+- begins_with(text: String) -> bool —— 是否以指定文本开头
+- bigrams() -> PackedStringArray —— 获取二元组数组
+- bin_to_int() -> int —— 二进制字符串转整数
+- c_escape() -> String —— C语言转义
+- c_unescape() -> String —— C语言反转义
+- capitalize() -> String —— 首字母大写
+- casecmp_to(to: String) -> int —— 区分大小写比较
+- chr(code: int) -> String —— Unicode码点转字符
+- contains(what: String) -> bool —— 是否包含（区分大小写）
+- containsn(what: String) -> bool —— 是否包含（不区分大小写）
+- count(what: String, from: int = 0, to: int = 0) -> int —— 计数（区分大小写）
+- countn(what: String, from: int = 0, to: int = 0) -> int —— 计数（不区分大小写）
+- dedent() -> String —— 取消缩进
+- ends_with(text: String) -> bool —— 是否以指定文本结尾
+- erase(position: int, chars: int = 1) -> String —— 擦除
+- filecasecmp_to(to: String) -> int —— 文件名区分大小写比较
+- filenocasecmp_to(to: String) -> int —— 文件名不区分大小写比较
+- find(what: String, from: int = 0) -> int —— 查找（区分大小写）
+- findn(what: String, from: int = 0) -> int —— 查找（不区分大小写）
+- format(values: Variant, placeholder: String = "{_}") -> String —— 格式化
+- get_base_dir() -> String —— 获取基础目录
+- get_basename() -> String —— 获取基础名称
+- get_extension() -> String —— 获取扩展名
+- get_file() -> String —— 获取文件名
+- get_slice(delimiter: String, slice: int) -> String —— 获取切片
+- get_slice_count(delimiter: String) -> int —— 获取切片数量
+- get_slicec(delimiter: int, slice: int) -> String —— 按字符获取切片
+- hash() -> int —— 哈希值
+- hex_decode() -> PackedByteArray —— 十六进制解码
+- hex_to_int() -> int —— 十六进制转整数
+- humanize_size(size: int) -> String —— 人类可读的文件大小
+- indent(prefix: String) -> String —— 缩进
+- insert(position: int, what: String) -> String —— 插入
+- is_absolute_path() -> bool —— 是否为绝对路径
+- is_empty() -> bool —— 是否为空
+- is_relative_path() -> bool —— 是否为相对路径
+- is_subsequence_of(text: String) -> bool —— 是否为子序列（区分大小写）
+- is_subsequence_ofn(text: String) -> bool —— 是否为子序列（不区分大小写）
+- is_valid_ascii_identifier() -> bool —— 是否为有效ASCII标识符
+- is_valid_filename() -> bool —— 是否为有效文件名
+- is_valid_float() -> bool —— 是否为有效浮点数
+- is_valid_hex_number(with_prefix: bool = false) -> bool —— 是否为有效十六进制数
+- is_valid_html_color() -> bool —— 是否为有效HTML颜色
+- is_valid_identifier() -> bool —— 是否为有效标识符
+- is_valid_int() -> bool —— 是否为有效整数
+- is_valid_ip_address() -> bool —— 是否为有效IP地址
+- is_valid_unicode_identifier() -> bool —— 是否为有效Unicode标识符
+- join(parts: PackedStringArray) -> String —— 连接
+- json_escape() -> String —— JSON转义
+- left(length: int) -> String —— 获取左侧子串
+- length() -> int —— 长度
+- lpad(min_length: int, character: String = " ") -> String —— 左侧填充
+- lstrip(chars: String) -> String —— 左侧去除
+- match(expr: String) -> bool —— 匹配（区分大小写）
+- matchn(expr: String) -> bool —— 匹配（不区分大小写）
+- md5_buffer() -> PackedByteArray —— MD5缓冲区
+- md5_text() -> String —— MD5文本
+- naturalcasecmp_to(to: String) -> int —— 自然顺序比较（区分大小写）
+- naturalnocasecmp_to(to: String) -> int —— 自然顺序比较（不区分大小写）
+- nocasecmp_to(to: String) -> int —— 不区分大小写比较
+- num(number: float, decimals: int = -1) -> String —— 数字转字符串
+- num_int64(number: int, base: int = 10, capitalize_hex: bool = false) -> String —— 64位整数转字符串
+- num_scientific(number: float) -> String —— 科学计数法转字符串
+- num_uint64(number: int, base: int = 10, capitalize_hex: bool = false) -> String —— 64位无符号整数转字符串
+- pad_decimals(digits: int) -> String —— 填充小数位
+- pad_zeros(digits: int) -> String —— 填充零
+- path_join(path: String) -> String —— 路径连接
+- remove_char(what: int) -> String —— 移除字符
+- remove_chars(chars: String) -> String —— 移除多个字符
+- repeat(count: int) -> String —— 重复
+- replace(what: String, forwhat: String) -> String —— 替换（区分大小写）
+- replace_char(key: int, with: int) -> String —— 替换字符
+- replace_chars(keys: String, with: int) -> String —— 替换多个字符
+- replacen(what: String, forwhat: String) -> String —— 替换（不区分大小写）
+- reverse() -> String —— 反转
+- rfind(what: String, from: int = -1) -> int —— 反向查找（区分大小写）
+- rfindn(what: String, from: int = -1) -> int —— 反向查找（不区分大小写）
+- right(length: int) -> String —— 获取右侧子串
+- rpad(min_length: int, character: String = " ") -> String —— 右侧填充
+- rsplit(delimiter: String = "", allow_empty: bool = true, maxsplit: int = 0) -> PackedStringArray —— 反向分割
+- rstrip(chars: String) -> String —— 右侧去除
+- sha1_buffer() -> PackedByteArray —— SHA-1缓冲区
+- sha1_text() -> String —— SHA-1文本
+- sha256_buffer() -> PackedByteArray —— SHA-256缓冲区
+- sha256_text() -> String —— SHA-256文本
+- similarity(text: String) -> float —— 相似度
+- simplify_path() -> String —— 简化路径
+- split(delimiter: String = "", allow_empty: bool = true, maxsplit: int = 0) -> PackedStringArray —— 分割
+- split_floats(delimiter: String, allow_empty: bool = true) -> PackedFloat64Array —— 分割为浮点数数组
+- strip_edges(left: bool = true, right: bool = true) -> String —— 去除首尾空白
+- strip_escapes() -> String —— 去除转义字符
+- substr(from: int, len: int = -1) -> String —— 子串
+- to_ascii_buffer() -> PackedByteArray —— 转ASCII缓冲区
+- to_camel_case() -> String —— 转驼峰命名
+- to_float() -> float —— 转浮点数
+- to_int() -> int —— 转整数
+- to_kebab_case() -> String —— 转短横线命名
+- to_lower() -> String —— 转小写
+- to_multibyte_char_buffer(encoding: String = "") -> PackedByteArray —— 转多字节字符缓冲区
+- to_pascal_case() -> String —— 转帕斯卡命名
+- to_snake_case() -> String —— 转蛇形命名
+- to_upper() -> String —— 转大写
+- to_utf8_buffer() -> PackedByteArray —— 转UTF-8缓冲区
+- to_utf16_buffer() -> PackedByteArray —— 转UTF-16缓冲区
+- to_utf32_buffer() -> PackedByteArray —— 转UTF-32缓冲区
+- to_wchar_buffer() -> PackedByteArray —— 转宽字符缓冲区
+- trim_prefix(prefix: String) -> String —— 去除前缀
+- trim_suffix(suffix: String) -> String —— 去除后缀
+- unicode_at(at: int) -> int —— 获取指定位置的Unicode码点
+- uri_decode() -> String —— URI解码
+- uri_encode() -> String —— URI编码
+- uri_file_decode() -> String —— URI文件解码
+- validate_filename() -> String —— 验证文件名
+- validate_node_name() -> String —— 验证节点名称
+- xml_escape(escape_quotes: bool = false) -> String —— XML转义
+- xml_unescape() -> String —— XML反转义

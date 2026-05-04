@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://buktfxd073666"]
+
+[ext_resource type="Theme" uid="uid://dpurq16q71hq1" path="res://Applications/Terminal/terminal_theme.tres" id="1_733ai"]
+[ext_resource type="Script" uid="uid://b1mu4va2vhte4" path="res://Applications/Terminal/src/command_output_label/terminal_command_output_label.gd" id="2_3nvlv"]
+
+[node name="command_output_label" type="Label" unique_id=1181793475]
+offset_right = 40.0
+offset_bottom = 22.3333
+theme = ExtResource("1_733ai")
+autowrap_mode = 3
+script = ExtResource("2_3nvlv")

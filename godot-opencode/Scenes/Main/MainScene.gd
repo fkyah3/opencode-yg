@@ -36,9 +36,6 @@ var _sse: SSEClient
 var _current_session_id: String = ""
 var _streaming_text: String = ""
 var _streaming_reasoning_text: String = ""
-var _streaming_dirty: bool = false  # label 需要刷新
-var _streaming_frame_count: int = 0  # 流式节流帧计数器
-var _streaming_initial_scroll: bool = true  # 首帧内容需滚动跟随
 var _scroll_pending: bool = false
 var _scroll_pending_locked: bool = false  # 防反复推底锁
 
@@ -53,7 +50,6 @@ var _row_data: Array = []
 
 # ── 流式渲染相关 ──
 var _streaming_label: RichTextLabel
-var _streaming_reasoning_label: RichTextLabel
 var _streaming_node: Control
 
 # ── 上下文 ──
@@ -96,15 +92,13 @@ func _create_sse_handler() -> SSEHandler:
 		if sid != _current_session_id:
 			return
 		if field == "reasoning":
-			if _streaming_reasoning_label == null:
-				return
-			_streaming_reasoning_text += delta
-			_streaming_dirty = true
-		elif field == "text":
-			if _streaming_label == null:
-				return
 			_streaming_text += delta
-			_streaming_dirty = true
+			if _streaming_label != null:
+				_streaming_label.text = _streaming_text
+		elif field == "text":
+			_streaming_text += delta
+			if _streaming_label != null:
+				_streaming_label.text = _streaming_text
 			_rate_tokens += delta.length()
 			if _rate_time < 0.001:
 				_rate_time = 0.001
@@ -126,7 +120,9 @@ func _create_sse_handler() -> SSEHandler:
 			return
 		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
 		_streaming_text += "\n[b]" + icon + " " + tool_name + "[/b]"
-		_streaming_dirty = true
+		if _streaming_label != null:
+			_streaming_label.text = _streaming_text
+			_scroll_to_newest()
 
 	h.on_message_updated = func(sid: String) -> void:
 		if sid == _current_session_id and _streaming_label == null:
@@ -445,25 +441,6 @@ func _process(delta: float) -> void:
 			_scroll_pending_locked = true
 
 	# 注意：VBoxContainer 自动管理总高，滚动路径不碰 custom_minimum_size
-
-	# ── 流式节流刷新：每 N 帧刷一次推理/文字标签 ──
-	_streaming_frame_count += 1
-	if _streaming_dirty and _streaming_frame_count >= 6:
-		_streaming_frame_count = 0
-		_streaming_dirty = false
-		# 推理标签
-		if _streaming_reasoning_label != null and is_instance_valid(_streaming_reasoning_label):
-			if not _streaming_reasoning_text.is_empty():
-				var col := theme_config.color_text_dim.to_html(false)
-				_streaming_reasoning_label.visible = true
-				_streaming_reasoning_label.text = "[color=#" + col + "]" + _streaming_reasoning_text + "[/color]"
-		# 文字标签
-		if _streaming_label != null and is_instance_valid(_streaming_label):
-			_streaming_label.text = _streaming_text
-		# 滚动跟随（仅首次内容）
-		if _streaming_initial_scroll:
-			_streaming_initial_scroll = false
-			_scroll_to_newest()
 
 
 func _bootstrap() -> void:
@@ -847,8 +824,6 @@ func _create_streaming_widget() -> VBoxContainer:
 	# 重置流式状态
 	_streaming_text = ""
 	_streaming_reasoning_text = ""
-	_streaming_frame_count = 6  # 第一帧立即刷新
-	_streaming_initial_scroll = true
 
 	var msg_vbox := VBoxContainer.new()
 	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -878,16 +853,6 @@ func _create_streaming_widget() -> VBoxContainer:
 	style.content_margin_top = 6
 	style.content_margin_bottom = 6
 	bubble.add_theme_stylebox_override("panel", style)
-
-	# 思考标签（独立于文字标签，推理内容灰色，文字开始后隐藏）
-	_streaming_reasoning_label = RichTextLabel.new()
-	_streaming_reasoning_label.bbcode_enabled = true
-	_streaming_reasoning_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_streaming_reasoning_label.fit_content = true
-	_streaming_reasoning_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_streaming_reasoning_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 1)
-	_streaming_reasoning_label.add_theme_color_override("default_color", theme_config.color_text_dim)
-	bubble.add_child(_streaming_reasoning_label)
 
 	_streaming_label = RichTextLabel.new()
 	_streaming_label.bbcode_enabled = true
@@ -1007,7 +972,6 @@ func _append_message(msg: Dictionary) -> void:
 		_streaming_node.queue_free()
 		_streaming_node = null
 	_streaming_label = null
-	_streaming_reasoning_label = null
 	_row_data.append(msg)
 	var toks: Dictionary = msg.get("tokens", {})
 	if not toks.is_empty():

@@ -1,0 +1,446 @@
+## ProjectSettings（项目设置） <- Object（对象）
+
+存储可从任何地方访问的变量。使用 `get_setting`、`set_setting` 或 `has_setting` 来访问它们。存储在 `project.godot` 中的变量也会加载到 ProjectSettings 中，使该对象对于读取自定义游戏配置选项非常有用。命名项目设置属性时，请使用设置的完整路径，包括类别。例如，项目名称为 `"application/config/name"`。类别和属性名称可以在项目设置对话框中查看。**功能标签（Feature tags）：** 项目设置可以针对特定平台和配置（调试、发布等）使用功能标签进行覆盖。**覆盖（Overriding）：** 任何项目设置都可以通过在项目根目录中创建名为 `override.cfg` 的文件来覆盖。导出项目中也可以使用此方法，方法是将该文件放在项目二进制文件所在的目录中。覆盖仍会考虑基础项目设置。因此，如果希望在所有平台和配置上覆盖基础项目设置，请确保*同时*使用所需的功能标签覆盖该设置。
+
+**属性（Props）：**
+- accessibility/general/accessibility_support: int = 0 —— 无障碍支持
+- accessibility/general/updates_per_second: int = 60 —— 每秒更新数
+- animation/compatibility/default_parent_skeleton_in_mesh_instance_3d: bool = false —— 3D网格实例中默认父级骨骼
+- animation/warnings/check_angle_interpolation_type_conflicting: bool = true —— 检查角度插值类型冲突
+- animation/warnings/check_invalid_track_paths: bool = true —— 检查无效轨道路径
+- application/boot_splash/bg_color: Color = Color(0.14, 0.14, 0.14, 1) —— 启动画面背景色
+- application/boot_splash/image: String = "" —— 启动画面图像
+- application/boot_splash/minimum_display_time: int = 0 —— 最小显示时间
+- application/boot_splash/show_image: bool = true —— 显示图像
+- application/boot_splash/stretch_mode: int = 1 —— 拉伸模式
+- application/boot_splash/use_filter: bool = true —— 使用滤镜
+- application/config/auto_accept_quit: bool = true —— 自动接受退出
+- application/config/custom_user_dir_name: String = "" —— 自定义用户目录名
+- application/config/description: String = "" —— 描述
+- application/config/disable_project_settings_override: bool = false —— 禁用项目设置覆盖
+- application/config/icon: String = "" —— 图标
+- application/config/macos_native_icon: String = "" —— macOS 原生图标
+- application/config/name: String = "" —— 项目名称
+- application/config/name_localized: Dictionary = {} —— 本地化项目名称
+- application/config/project_settings_override: String = "" —— 项目设置覆盖文件
+- application/config/quit_on_go_back: bool = true —— 返回时退出
+- application/config/use_custom_user_dir: bool = false —— 使用自定义用户目录
+- application/config/use_hidden_project_data_directory: bool = true —— 使用隐藏项目数据目录
+- application/config/version: String = "" —— 版本
+- application/config/windows_native_icon: String = "" —— Windows 原生图标
+- application/run/delta_smoothing: bool = true —— Delta 平滑
+- application/run/disable_stderr: bool = false —— 禁用标准错误
+- application/run/disable_stdout: bool = false —— 禁用标准输出
+- application/run/enable_alt_space_menu: bool = false —— 启用 Alt+Space 菜单
+- application/run/flush_stdout_on_print: bool = false —— 打印时刷新标准输出
+- application/run/flush_stdout_on_print.debug: bool = true —— 打印时刷新标准输出（调试）
+- application/run/frame_delay_msec: int = 0 —— 帧延迟毫秒
+- application/run/load_shell_environment: bool = false —— 加载 shell 环境
+- application/run/low_processor_mode: bool = false —— 低处理器模式
+- application/run/low_processor_mode_sleep_usec: int = 6900 —— 低处理器模式休眠微秒
+- application/run/main_loop_type: String = "SceneTree" —— 主循环类型
+- application/run/main_scene: String = "" —— 主场景
+- application/run/max_fps: int = 0 —— 最大 FPS
+- application/run/print_header: bool = true —— 打印头部
+- audio/buses/channel_disable_threshold_db: float = -60.0 —— 声道禁用阈值分贝
+- audio/buses/channel_disable_time: float = 2.0 —— 声道禁用时间
+- audio/buses/default_bus_layout: String = "res://default_bus_layout.tres" —— 默认总线布局
+- audio/driver/driver: String —— 音频驱动
+- audio/driver/enable_input: bool = false —— 启用输入
+- audio/driver/mix_rate: int = 44100 —— 混合率
+- audio/driver/mix_rate.web: int = 0 —— 混合率（Web）
+- audio/driver/output_latency: int = 15 —— 输出延迟
+- audio/driver/output_latency.web: int = 50 —— 输出延迟（Web）
+- audio/general/2d_panning_strength: float = 0.5 —— 2D 声像强度
+- audio/general/3d_panning_strength: float = 0.5 —— 3D 声像强度
+- audio/general/default_playback_type: int = 0 —— 默认播放类型
+- audio/general/default_playback_type.web: int = 1 —— 默认播放类型（Web）
+- audio/general/ios/mix_with_others: bool = false —— iOS 混合其他音频
+- audio/general/ios/session_category: int = 0 —— iOS 会话类别
+- audio/general/text_to_speech: bool = false —— 文本转语音
+- audio/video/video_delay_compensation_ms: int = 0 —— 视频延迟补偿毫秒
+- collada/use_ambient: bool = false —— 使用环境光
+- compression/formats/gzip/compression_level: int = -1 —— gzip 压缩级别
+- compression/formats/zlib/compression_level: int = -1 —— zlib 压缩级别
+- compression/formats/zstd/compression_level: int = 3 —— zstd 压缩级别
+- compression/formats/zstd/long_distance_matching: bool = false —— zstd 长距离匹配
+- compression/formats/zstd/window_log_size: int = 27 —— zstd 窗口日志大小
+- debug/canvas_items/debug_redraw_color: Color = Color(1, 0.2, 0.2, 0.5) —— 调试重绘颜色
+- debug/canvas_items/debug_redraw_time: float = 1.0 —— 调试重绘时间
+- debug/file_logging/enable_file_logging: bool = false —— 启用文件日志
+- debug/file_logging/enable_file_logging.pc: bool = true —— 启用文件日志（PC）
+- debug/file_logging/log_path: String = "user://logs/godot.log" —— 日志路径
+- debug/file_logging/max_log_files: int = 5 —— 最大日志文件数
+- debug/gdscript/warnings/assert_always_false: int = 1 —— 始终为 false 的断言
+- debug/gdscript/warnings/assert_always_true: int = 1 —— 始终为 true 的断言
+- debug/gdscript/warnings/confusable_capture_reassignment: int = 1 —— 易混淆的捕获重新赋值
+- debug/gdscript/warnings/confusable_identifier: int = 1 —— 易混淆的标识符
+- debug/gdscript/warnings/confusable_local_declaration: int = 1 —— 易混淆的局部声明
+- debug/gdscript/warnings/confusable_local_usage: int = 1 —— 易混淆的局部使用
+- debug/gdscript/warnings/deprecated_keyword: int = 1 —— 弃用关键字
+- debug/gdscript/warnings/directory_rules: Dictionary = { "res://addons": 0 } —— 目录规则
+- debug/gdscript/warnings/empty_file: int = 1 —— 空文件
+- debug/gdscript/warnings/enable: bool = true —— 启用
+- debug/gdscript/warnings/enum_variable_without_default: int = 1 —— 枚举变量无默认值
+- debug/gdscript/warnings/get_node_default_without_onready: int = 2 —— 无 onready 的 get_node
+- debug/gdscript/warnings/incompatible_ternary: int = 1 —— 不兼容的三元运算
+- debug/gdscript/warnings/inference_on_variant: int = 2 —— Variant 类型推断
+- debug/gdscript/warnings/inferred_declaration: int = 0 —— 推断声明
+- debug/gdscript/warnings/int_as_enum_without_cast: int = 1 —— 整数作为枚举无强制转换
+- debug/gdscript/warnings/int_as_enum_without_match: int = 1 —— 整数作为枚举无匹配
+- debug/gdscript/warnings/integer_division: int = 1 —— 整数除法
+- debug/gdscript/warnings/missing_await: int = 0 —— 缺少 await
+- debug/gdscript/warnings/missing_tool: int = 1 —— 缺少 tool
+- debug/gdscript/warnings/narrowing_conversion: int = 1 —— 窄化转换
+- debug/gdscript/warnings/native_method_override: int = 2 —— 原生方法覆盖
+- debug/gdscript/warnings/onready_with_export: int = 2 —— onready 与 export 一起使用
+- debug/gdscript/warnings/redundant_await: int = 1 —— 冗余 await
+- debug/gdscript/warnings/redundant_static_unload: int = 1 —— 冗余静态卸载
+- debug/gdscript/warnings/renamed_in_godot_4_hint: bool = true —— Godot 4 重命名提示
+- debug/gdscript/warnings/return_value_discarded: int = 0 —— 返回值被丢弃
+- debug/gdscript/warnings/shadowed_global_identifier: int = 1 —— 遮蔽全局标识符
+- debug/gdscript/warnings/shadowed_variable: int = 1 —— 遮蔽变量
+- debug/gdscript/warnings/shadowed_variable_base_class: int = 1 —— 遮蔽基类变量
+- debug/gdscript/warnings/standalone_expression: int = 1 —— 独立表达式
+- debug/gdscript/warnings/standalone_ternary: int = 1 —— 独立三元运算
+- debug/gdscript/warnings/static_called_on_instance: int = 1 —— 在实例上调用静态方法
+- debug/gdscript/warnings/unassigned_variable: int = 1 —— 未赋值变量
+- debug/gdscript/warnings/unassigned_variable_op_assign: int = 1 —— 未赋值变量操作赋值
+- debug/gdscript/warnings/unreachable_code: int = 1 —— 不可达代码
+- debug/gdscript/warnings/unreachable_pattern: int = 1 —— 不可达模式
+- debug/gdscript/warnings/unsafe_call_argument: int = 0 —— 不安全的调用参数
+- debug/gdscript/warnings/unsafe_cast: int = 0 —— 不安全转换
+- debug/gdscript/warnings/unsafe_method_access: int = 0 —— 不安全方法访问
+- debug/gdscript/warnings/unsafe_property_access: int = 0 —— 不安全属性访问
+- debug/gdscript/warnings/unsafe_void_return: int = 1 —— 不安全 void 返回
+- debug/gdscript/warnings/untyped_declaration: int = 0 —— 无类型声明
+- debug/gdscript/warnings/unused_local_constant: int = 1 —— 未使用的局部常量
+- debug/gdscript/warnings/unused_parameter: int = 1 —— 未使用的参数
+- debug/gdscript/warnings/unused_private_class_variable: int = 1 —— 未使用的私有类变量
+- debug/gdscript/warnings/unused_signal: int = 1 —— 未使用的信号
+- debug/gdscript/warnings/unused_variable: int = 1 —— 未使用的变量
+- debug/settings/crash_handler/message: String = "Please include this when reporting the bug to the project developer." —— 崩溃处理程序消息
+- debug/settings/crash_handler/message.editor: String = "Please include this when reporting the bug on: https://github.com/godotengine/godot/issues" —— 崩溃处理程序消息（编辑器）
+- debug/settings/gdscript/always_track_call_stacks: bool = false —— 始终跟踪调用栈
+- debug/settings/gdscript/always_track_local_variables: bool = false —— 始终跟踪局部变量
+- debug/settings/gdscript/max_call_stack: int = 1024 —— 最大调用栈
+- debug/settings/physics_interpolation/enable_warnings: bool = true —— 启用物理插值警告
+- debug/settings/profiler/max_functions: int = 16384 —— 分析器最大函数数
+- debug/settings/profiler/max_timestamp_query_elements: int = 256 —— 分析器最大时间戳查询元素数
+- debug/settings/stdout/print_fps: bool = false —— 打印 FPS
+- debug/settings/stdout/print_gpu_profile: bool = false —— 打印 GPU 分析
+- debug/settings/stdout/verbose_stdout: bool = false —— 详细标准输出
+- debug/shader_language/warnings/device_limit_exceeded: bool = true —— 超出设备限制
+- debug/shader_language/warnings/enable: bool = true —— 启用
+- debug/shader_language/warnings/float_comparison: bool = true —— 浮点数比较
+- debug/shader_language/warnings/formatting_error: bool = true —— 格式错误
+- debug/shader_language/warnings/magic_position_write: bool = true —— 魔法位置写入
+- debug/shader_language/warnings/treat_warnings_as_errors: bool = false —— 将警告视为错误
+- debug/shader_language/warnings/unused_constant: bool = true —— 未使用的常量
+- debug/shader_language/warnings/unused_function: bool = true —— 未使用的函数
+- debug/shader_language/warnings/unused_local_variable: bool = true —— 未使用的局部变量
+- debug/shader_language/warnings/unused_struct: bool = true —— 未使用的结构体
+- debug/shader_language/warnings/unused_uniform: bool = true —— 未使用的 uniform
+- debug/shader_language/warnings/unused_varying: bool = true —— 未使用的 varying
+- debug/shapes/avoidance/2d/agents_radius_color: Color = Color(1, 1, 0, 0.25) —— 2D 代理半径颜色
+- debug/shapes/avoidance/2d/enable_agents_radius: bool = true —— 2D 启用代理半径
+- debug/shapes/avoidance/2d/enable_obstacles_radius: bool = true —— 2D 启用障碍物半径
+- debug/shapes/avoidance/2d/enable_obstacles_static: bool = true —— 2D 启用静态障碍物
+- debug/shapes/avoidance/2d/obstacles_radius_color: Color = Color(1, 0.5, 0, 0.25) —— 2D 障碍物半径颜色
+- debug/shapes/avoidance/2d/obstacles_static_edge_pushin_color: Color = Color(1, 0, 0, 1) —— 2D 静态障碍物边缘推入颜色
+- debug/shapes/avoidance/2d/obstacles_static_edge_pushout_color: Color = Color(1, 1, 0, 1) —— 2D 静态障碍物边缘推出颜色
+- debug/shapes/avoidance/2d/obstacles_static_face_pushin_color: Color = Color(1, 0, 0, 0) —— 2D 静态障碍物面推入颜色
+- debug/shapes/avoidance/2d/obstacles_static_face_pushout_color: Color = Color(1, 1, 0, 0.5) —— 2D 静态障碍物面推出颜色
+- debug/shapes/avoidance/3d/agents_radius_color: Color = Color(1, 1, 0, 0.25) —— 3D 代理半径颜色
+- debug/shapes/avoidance/3d/enable_agents_radius: bool = true —— 3D 启用代理半径
+- debug/shapes/avoidance/3d/enable_obstacles_radius: bool = true —— 3D 启用障碍物半径
+- debug/shapes/avoidance/3d/enable_obstacles_static: bool = true —— 3D 启用静态障碍物
+- debug/shapes/avoidance/3d/obstacles_radius_color: Color = Color(1, 0.5, 0, 0.25) —— 3D 障碍物半径颜色
+- debug/shapes/avoidance/3d/obstacles_static_edge_pushin_color: Color = Color(1, 0, 0, 1) —— 3D 静态障碍物边缘推入颜色
+- debug/shapes/avoidance/3d/obstacles_static_edge_pushout_color: Color = Color(1, 1, 0, 1) —— 3D 静态障碍物边缘推出颜色
+- debug/shapes/avoidance/3d/obstacles_static_face_pushin_color: Color = Color(1, 0, 0, 0) —— 3D 静态障碍物面推入颜色
+- debug/shapes/avoidance/3d/obstacles_static_face_pushout_color: Color = Color(1, 1, 0, 0.5) —— 3D 静态障碍物面推出颜色
+- debug/shapes/collision/contact_color: Color = Color(1, 0.2, 0.1, 0.8) —— 碰撞接触颜色
+- debug/shapes/collision/draw_2d_outlines: bool = true —— 绘制 2D 轮廓
+- debug/shapes/collision/max_contacts_displayed: int = 10000 —— 最大显示接触数
+- debug/shapes/collision/shape_color: Color = Color(0, 0.6, 0.7, 0.42) —— 碰撞形状颜色
+- debug/shapes/navigation/2d/agent_path_color: Color = Color(1, 0, 0, 1) —— 2D 代理路径颜色
+- debug/shapes/navigation/2d/agent_path_point_size: float = 4.0 —— 2D 代理路径点大小
+- debug/shapes/navigation/2d/edge_connection_color: Color = Color(1, 0, 1, 1) —— 2D 边缘连接颜色
+- debug/shapes/navigation/2d/enable_agent_paths: bool = true —— 2D 启用代理路径
+- debug/shapes/navigation/2d/enable_edge_connections: bool = true —— 2D 启用边缘连接
+- debug/shapes/navigation/2d/enable_edge_lines: bool = true —— 2D 启用边缘线
+- debug/shapes/navigation/2d/enable_geometry_face_random_color: bool = true —— 2D 启用几何面随机颜色
+- debug/shapes/navigation/2d/enable_link_connections: bool = true —— 2D 启用链接连接
+- debug/shapes/navigation/2d/geometry_edge_color: Color = Color(0.5, 1, 1, 1) —— 2D 几何边缘颜色
+- debug/shapes/navigation/2d/geometry_edge_disabled_color: Color = Color(0.5, 0.5, 0.5, 1) —— 2D 几何边缘禁用颜色
+- debug/shapes/navigation/2d/geometry_face_color: Color = Color(0.5, 1, 1, 0.4) —— 2D 几何面颜色
+- debug/shapes/navigation/2d/geometry_face_disabled_color: Color = Color(0.5, 0.5, 0.5, 0.4) —— 2D 几何面禁用颜色
+- debug/shapes/navigation/2d/link_connection_color: Color = Color(1, 0.5, 1, 1) —— 2D 链接连接颜色
+- debug/shapes/navigation/2d/link_connection_disabled_color: Color = Color(0.5, 0.5, 0.5, 1) —— 2D 链接连接禁用颜色
+- debug/shapes/navigation/3d/agent_path_color: Color = Color(1, 0, 0, 1) —— 3D 代理路径颜色
+- debug/shapes/navigation/3d/agent_path_point_size: float = 4.0 —— 3D 代理路径点大小
+- debug/shapes/navigation/3d/edge_connection_color: Color = Color(1, 0, 1, 1) —— 3D 边缘连接颜色
+- debug/shapes/navigation/3d/enable_agent_paths: bool = true —— 3D 启用代理路径
+- debug/shapes/navigation/3d/enable_agent_paths_xray: bool = true —— 3D 启用代理路径 X 光
+- debug/shapes/navigation/3d/enable_edge_connections: bool = true —— 3D 启用边缘连接
+- debug/shapes/navigation/3d/enable_edge_connections_xray: bool = true —— 3D 启用边缘连接 X 光
+- debug/shapes/navigation/3d/enable_edge_lines: bool = true —— 3D 启用边缘线
+- debug/shapes/navigation/3d/enable_edge_lines_xray: bool = true —— 3D 启用边缘线 X 光
+- debug/shapes/navigation/3d/enable_geometry_face_random_color: bool = true —— 3D 启用几何面随机颜色
+- debug/shapes/navigation/3d/enable_link_connections: bool = true —— 3D 启用链接连接
+- debug/shapes/navigation/3d/enable_link_connections_xray: bool = true —— 3D 启用链接连接 X 光
+- debug/shapes/navigation/3d/geometry_edge_color: Color = Color(0.5, 1, 1, 1) —— 3D 几何边缘颜色
+- debug/shapes/navigation/3d/geometry_edge_disabled_color: Color = Color(0.5, 0.5, 0.5, 1) —— 3D 几何边缘禁用颜色
+- debug/shapes/navigation/3d/geometry_face_color: Color = Color(0.5, 1, 1, 0.4) —— 3D 几何面颜色
+- debug/shapes/navigation/3d/geometry_face_disabled_color: Color = Color(0.5, 0.5, 0.5, 0.4) —— 3D 几何面禁用颜色
+- debug/shapes/navigation/3d/link_connection_color: Color = Color(1, 0.5, 1, 1) —— 3D 链接连接颜色
+- debug/shapes/navigation/3d/link_connection_disabled_color: Color = Color(0.5, 0.5, 0.5, 1) —— 3D 链接连接禁用颜色
+- debug/shapes/paths/geometry_color: Color = Color(0.1, 1, 0.7, 0.4) —— 路径几何颜色
+- debug/shapes/paths/geometry_width: float = 2.0 —— 路径几何宽度
+- display/display_server/driver: String —— 显示服务器驱动
+- display/mouse_cursor/custom_image: String = "" —— 自定义鼠标图像
+- display/mouse_cursor/custom_image_hotspot: Vector2 = Vector2(0, 0) —— 自定义鼠标图像热点
+- display/mouse_cursor/tooltip_position_offset: Vector2 = Vector2(10, 10) —— 工具提示位置偏移
+- display/window/dpi/allow_hidpi: bool = true —— 允许高 DPI
+- display/window/energy_saving/keep_screen_on: bool = true —— 保持屏幕常亮
+- display/window/frame_pacing/android/enable_frame_pacing: bool = true —— Android 启用帧 pacing
+- display/window/frame_pacing/android/swappy_mode: int = 2 —— Android Swappy 模式
+- display/window/handheld/orientation: int = 0 —— 手持设备方向
+- display/window/hdr/request_hdr_output: bool = false —— 请求 HDR 输出
+- display/window/ios/allow_high_refresh_rate: bool = true —— iOS 允许高刷新率
+- display/window/ios/hide_home_indicator: bool = true —— iOS 隐藏 Home 指示器
+- display/window/ios/hide_status_bar: bool = true —— iOS 隐藏状态栏
+- display/window/ios/suppress_ui_gesture: bool = true —— iOS 抑制 UI 手势
+- display/window/per_pixel_transparency/allowed: bool = false —— 允许逐像素透明
+- display/window/size/always_on_top: bool = false —— 始终置顶
+- display/window/size/borderless: bool = false —— 无边框
+- display/window/size/extend_to_title: bool = false —— 扩展到标题栏
+- display/window/size/initial_position: Vector2i = Vector2i(0, 0) —— 初始位置
+- display/window/size/initial_position_type: int = 1 —— 初始位置类型
+- display/window/size/initial_screen: int = 0 —— 初始屏幕
+- display/window/size/maximize_disabled: bool = false —— 禁用最大化
+- display/window/size/minimize_disabled: bool = false —— 禁用最小化
+- display/window/size/mode: int = 0 —— 窗口模式
+- display/window/size/no_focus: bool = false —— 无焦点
+- display/window/size/resizable: bool = true —— 可调整大小
+- display/window/size/sharp_corners: bool = false —— 尖锐角落
+- display/window/size/transparent: bool = false —— 透明窗口
+- display/window/size/viewport_height: int = 648 —— 视口高度
+- display/window/size/viewport_width: int = 1152 —— 视口宽度
+- display/window/size/window_height_override: int = 0 —— 窗口高度覆盖
+- display/window/size/window_width_override: int = 0 —— 窗口宽度覆盖
+- display/window/stretch/aspect: String = "keep" —— 拉伸宽高比
+- display/window/stretch/mode: String = "disabled" —— 拉伸模式
+- display/window/stretch/scale: float = 1.0 —— 拉伸缩放
+- display/window/stretch/scale_mode: String = "fractional" —— 缩放模式
+- display/window/subwindows/embed_subwindows: bool = true —— 嵌入子窗口
+- display/window/vsync/vsync_mode: int = 1 —— 垂直同步模式
+- dotnet/project/assembly_name: String = "" —— 程序集名称
+- dotnet/project/assembly_reload_attempts: int = 3 —— 程序集重载尝试次数
+- dotnet/project/solution_directory: String = "" —— 解决方案目录
+- editor/export/convert_text_resources_to_binary: bool = true —— 转换文本资源为二进制
+- editor/import/atlas_max_width: int = 2048 —— 图集最大宽度
+- editor/import/reimport_missing_imported_files: bool = true —— 重新导入缺失文件
+- editor/import/use_multiple_threads: bool = true —— 使用多线程
+- editor/movie_writer/audio_bit_depth: int = 16 —— 音频位深度
+- editor/movie_writer/disable_vsync: bool = false —— 禁用垂直同步
+- editor/movie_writer/fps: int = 60 —— FPS
+- editor/movie_writer/mix_rate: int = 48000 —— 混合率
+- editor/movie_writer/movie_file: String = "" —— 影片文件
+- editor/movie_writer/ogv/audio_quality: float = 0.5 —— OGV 音频质量
+- editor/movie_writer/ogv/encoding_speed: int = 4 —— OGV 编码速度
+- editor/movie_writer/ogv/keyframe_interval: int = 64 —— OGV 关键帧间隔
+- editor/movie_writer/speaker_mode: int = 0 —— 扬声器模式
+- editor/movie_writer/video_quality: float = 0.75 —— 视频质量
+- editor/naming/default_signal_callback_name: String = "_on_{node_name}_{signal_name}" —— 默认信号回调名称
+- editor/naming/default_signal_callback_to_self_name: String = "_on_{signal_name}" —— 默认信号自回调名称
+- editor/naming/node_name_casing: int = 0 —— 节点名称大小写
+- editor/naming/node_name_num_separator: int = 0 —— 节点名称数字分隔符
+- editor/naming/scene_name_casing: int = 2 —— 场景名称大小写
+- editor/naming/script_name_casing: int = 0 —— 脚本名称大小写
+- editor/run/main_run_args: String = "" —— 主运行参数
+- editor/script/search_in_file_extensions: PackedStringArray —— 文件扩展名搜索
+- editor/script/templates_search_path: String = "res://script_templates" —— 模板搜索路径
+- editor/version_control/autoload_on_startup: bool = false —— 启动时自动加载
+- editor/version_control/plugin_name: String = "" —— 插件名称
+- filesystem/import/blender/enabled: bool = true —— 启用 Blender 导入
+- filesystem/import/blender/enabled.android: bool = false —— 启用 Blender 导入（Android）
+- filesystem/import/fbx2gltf/enabled: bool = true —— 启用 FBX2glTF 导入
+- gui/common/default_scroll_deadzone: int = 0 —— 默认滚动死区
+- gui/common/drag_threshold: int = 10 —— 拖拽阈值
+- gui/common/show_focus_state_on_pointer_event: int = 1 —— 在指针事件上显示焦点状态
+- gui/common/snap_controls_to_pixels: bool = true —— 控件对齐到像素
+- gui/common/swap_cancel_ok: int = 0 —— 交换取消/确定
+- gui/common/text_edit_undo_stack_max_size: int = 1024 —— 文本编辑撤销栈最大大小
+- gui/fonts/dynamic_fonts/use_oversampling: bool = true —— 使用过采样
+- gui/theme/custom: String = "" —— 自定义主题
+- gui/theme/custom_font: String = "" —— 自定义字体
+- gui/theme/default_font_antialiasing: int = 1 —— 默认字体抗锯齿
+- gui/theme/default_font_generate_mipmaps: bool = false —— 默认字体生成 Mipmap
+- gui/theme/default_font_hinting: int = 1 —— 默认字体提示
+- gui/theme/default_font_multichannel_signed_distance_field: bool = false —— 默认字体多通道有符号距离场
+- gui/theme/default_font_subpixel_positioning: int = 1 —— 默认字体亚像素定位
+- gui/theme/default_theme_scale: float = 1.0 —— 默认主题缩放
+- gui/theme/lcd_subpixel_layout: int = 1 —— LCD 亚像素布局
+- gui/timers/button_shortcut_feedback_highlight_time: float = 0.2 —— 按钮快捷键反馈高亮时间
+- gui/timers/incremental_search_max_interval_msec: int = 2000 —— 增量搜索最大间隔毫秒
+- gui/timers/text_edit_idle_detect_sec: float = 3 —— 文本编辑闲置检测秒数
+- gui/timers/tooltip_delay_sec: float = 0.5 —— 工具提示延迟秒数
+- input/ui_accept: Dictionary —— 接受
+- input/ui_cancel: Dictionary —— 取消
+- input/ui_close_dialog: Dictionary —— 关闭对话框
+- input/ui_copy: Dictionary —— 复制
+- input/ui_cut: Dictionary —— 剪切
+- input/ui_down: Dictionary —— 向下
+- input/ui_end: Dictionary —— 末尾
+- input/ui_home: Dictionary —— 首页
+- input/ui_left: Dictionary —— 向左
+- input/ui_menu: Dictionary —— 菜单
+- input/ui_page_down: Dictionary —— 下翻页
+- input/ui_page_up: Dictionary —— 上翻页
+- input/ui_paste: Dictionary —— 粘贴
+- input/ui_redo: Dictionary —— 重做
+- input/ui_right: Dictionary —— 向右
+- input/ui_select: Dictionary —— 选择
+- input/ui_text_backspace: Dictionary —— 退格
+- input/ui_text_caret_down: Dictionary —— 光标向下
+- input/ui_text_caret_left: Dictionary —— 光标向左
+- input/ui_text_caret_right: Dictionary —— 光标向右
+- input/ui_text_caret_up: Dictionary —— 光标向上
+- input/ui_text_delete: Dictionary —— 删除
+- input/ui_text_indent: Dictionary —— 增加缩进
+- input/ui_text_dedent: Dictionary —— 减少缩进
+- input/ui_text_newline: Dictionary —— 换行
+- input/ui_text_select_all: Dictionary —— 全选
+- input/ui_text_submit: Dictionary —— 提交
+- input/ui_text_undo: Dictionary —— 撤销
+- input/ui_up: Dictionary —— 向上
+- input_devices/buffering/agile_event_flushing: bool = false —— 敏捷事件刷新
+- input_devices/compatibility/legacy_just_pressed_behavior: bool = false —— 传统刚按下行为
+- input_devices/pen_tablet/driver: String —— 笔/数位板驱动
+- input_devices/pointing/android/disable_scroll_deadzone: bool = false —— Android 禁用滚动死区
+- input_devices/pointing/android/enable_long_press_as_right_click: bool = false —— Android 启用长按作为右键
+- input_devices/pointing/android/enable_pan_and_scale_gestures: bool = false —— Android 启用平移和缩放手势
+- input_devices/pointing/android/override_volume_buttons: bool = false —— Android 覆盖音量按钮
+- input_devices/pointing/android/rotary_input_scroll_axis: int = 1 —— Android 旋钮输入滚动轴
+- input_devices/pointing/emulate_mouse_from_touch: bool = true —— 从触摸模拟鼠标
+- input_devices/pointing/emulate_touch_from_mouse: bool = false —— 从鼠标模拟触摸
+- input_devices/sensors/enable_accelerometer: bool = false —— 启用加速度计
+- input_devices/sensors/enable_gravity: bool = false —— 启用重力
+- input_devices/sensors/enable_gyroscope: bool = false —— 启用陀螺仪
+- input_devices/sensors/enable_magnetometer: bool = false —— 启用磁力计
+- internationalization/locale/fallback: String = "en" —— 区域设置回退
+- internationalization/locale/include_text_server_data: bool = false —— 包含文本服务器数据
+- internationalization/locale/line_breaking_strictness: int = 0 —— 换行严格度
+- internationalization/locale/test: String = "" —— 测试区域设置
+- internationalization/pseudolocalization/override: bool = false —— 伪本地化覆盖
+- internationalization/rendering/force_right_to_left_layout_direction: bool = false —— 强制从右到左布局方向
+- internationalization/rendering/root_node_auto_translate: bool = true —— 根节点自动翻译
+- internationalization/rendering/root_node_layout_direction: int = 0 —— 根节点布局方向
+- internationalization/rendering/text_driver: String = "" —— 文本驱动
+- layer_names/2d_navigation/layer_1..32: String = "" —— 2D 导航层名称
+- layer_names/2d_physics/layer_1..32: String = "" —— 2D 物理层名称
+- layer_names/2d_render/layer_1..32: String = "" —— 2D 渲染层名称
+- layer_names/3d_navigation/layer_1..32: String = "" —— 3D 导航层名称
+- layer_names/3d_physics/layer_1..32: String = "" —— 3D 物理层名称
+- layer_names/3d_render/layer_1..32: String = "" —— 3D 渲染层名称
+- layer_names/avoidance/layer_1..32: String = "" —— 避障层名称
+- memory/limits/message_queue/max_size_mb: int = 32 —— 消息队列最大大小 MB
+- navigation/2d/default_cell_size: float = 1.0 —— 2D 默认单元大小
+- navigation/2d/default_edge_connection_margin: float = 1.0 —— 2D 默认边缘连接边距
+- navigation/2d/default_link_connection_radius: float = 4.0 —— 2D 默认链接连接半径
+- navigation/2d/merge_rasterizer_cell_scale: float = 1.0 —— 2D 合并光栅化单元缩放
+- navigation/2d/navigation_engine: String = "DEFAULT" —— 2D 导航引擎
+- navigation/2d/use_edge_connections: bool = true —— 2D 使用边缘连接
+- navigation/3d/default_cell_height: float = 0.25 —— 3D 默认单元高度
+- navigation/3d/default_cell_size: float = 0.25 —— 3D 默认单元大小
+- navigation/3d/default_edge_connection_margin: float = 0.25 —— 3D 默认边缘连接边距
+- navigation/3d/default_link_connection_radius: float = 1.0 —— 3D 默认链接连接半径
+- navigation/3d/default_up: Vector3 = Vector3(0, 1, 0) —— 3D 默认朝上方向
+- navigation/3d/merge_rasterizer_cell_scale: float = 1.0 —— 3D 合并光栅化单元缩放
+- navigation/3d/navigation_engine: String = "DEFAULT" —— 3D 导航引擎
+- navigation/3d/use_edge_connections: bool = true —— 3D 使用边缘连接
+- navigation/avoidance/thread_model/avoidance_use_high_priority_threads: bool = true —— 避障使用高优先级线程
+- navigation/avoidance/thread_model/avoidance_use_multiple_threads: bool = true —— 避障使用多线程
+- navigation/baking/thread_model/baking_use_high_priority_threads: bool = true —— 烘焙使用高优先级线程
+- navigation/baking/thread_model/baking_use_multiple_threads: bool = true —— 烘焙使用多线程
+- navigation/baking/use_crash_prevention_checks: bool = true —— 使用崩溃预防检查
+- navigation/pathfinding/max_threads: int = 4 —— 寻路最大线程数
+- navigation/world/map_use_async_iterations: bool = true —— 地图使用异步迭代
+- navigation/world/region_use_async_iterations: bool = true —— 区域使用异步迭代
+- network/limits/debugger/max_chars_per_second: int = 32768 —— 调试器每秒最大字符数
+- network/limits/debugger/max_errors_per_second: int = 400 —— 调试器每秒最大错误数
+- network/limits/debugger/max_queued_messages: int = 2048 —— 调试器最大排队消息数
+- network/limits/debugger/max_warnings_per_second: int = 400 —— 调试器每秒最大警告数
+- network/limits/packet_peer_stream/max_buffer_po2: int = 16 —— 数据包对等流最大缓冲区 2 的幂
+- network/limits/tcp/connect_timeout_seconds: int = 30 —— TCP 连接超时秒数
+- network/limits/webrtc/max_channel_in_buffer_kb: int = 64 —— WebRTC 最大输入缓冲区 KB
+- network/tls/certificate_bundle_override: String = "" —— TLS 证书包覆盖
+- network/tls/enable_tls_v1.3: bool = true —— 启用 TLS 1.3
+- physics/2d/default_angular_damp: float = 1.0 —— 2D 默认角阻尼
+- physics/2d/default_gravity: float = 980.0 —— 2D 默认重力
+- physics/2d/default_gravity_vector: Vector2 = Vector2(0, 1) —— 2D 默认重力方向
+- physics/2d/default_linear_damp: float = 0.1 —— 2D 默认线性阻尼
+- physics/2d/physics_engine: String = "DEFAULT" —— 2D 物理引擎
+- physics/2d/run_on_separate_thread: bool = false —— 2D 在单独线程运行
+- physics/2d/sleep_threshold_angular: float = 0.13962634 —— 2D 休眠角度阈值
+- physics/2d/sleep_threshold_linear: float = 2.0 —— 2D 休眠线性阈值
+- physics/2d/solver/contact_max_allowed_penetration: float = 0.3 —— 2D 最大允许接触穿透
+- physics/2d/solver/contact_max_separation: float = 1.5 —— 2D 最大接触分离
+- physics/2d/solver/contact_recycle_radius: float = 1.0 —— 2D 接触回收半径
+- physics/2d/solver/default_constraint_bias: float = 0.2 —— 2D 默认约束偏置
+- physics/2d/solver/default_contact_bias: float = 0.8 —— 2D 默认接触偏置
+- physics/2d/solver/solver_iterations: int = 16 —— 2D 求解器迭代次数
+- physics/2d/time_before_sleep: float = 0.5 —— 2D 休眠前时间
+- physics/3d/default_angular_damp: float = 0.1 —— 3D 默认角阻尼
+- physics/3d/default_gravity: float = 9.8 —— 3D 默认重力
+- physics/3d/default_gravity_vector: Vector3 = Vector3(0, -1, 0) —— 3D 默认重力方向
+- physics/3d/default_linear_damp: float = 0.1 —— 3D 默认线性阻尼
+- physics/3d/physics_engine: String = "DEFAULT" —— 3D 物理引擎
+- physics/3d/run_on_separate_thread: bool = false —— 3D 在单独线程运行
+- physics/3d/sleep_threshold_angular: float = 0.13962634 —— 3D 休眠角度阈值
+- physics/3d/sleep_threshold_linear: float = 0.1 —— 3D 休眠线性阈值
+- physics/3d/solver/contact_max_allowed_penetration: float = 0.01 —— 3D 最大允许接触穿透
+- physics/3d/solver/contact_max_separation: float = 0.05 —— 3D 最大接触分离
+- physics/3d/solver/contact_recycle_radius: float = 0.01 —— 3D 接触回收半径
+- physics/3d/solver/default_contact_bias: float = 0.8 —— 3D 默认接触偏置
+- physics/3d/solver/solver_iterations: int = 16 —— 3D 求解器迭代次数
+- physics/3d/time_before_sleep: float = 0.5 —— 3D 休眠前时间
+- physics/common/enable_object_picking: bool = true —— 启用对象拾取
+- physics/common/max_physics_steps_per_frame: int = 8 —— 每帧最大物理步数
+- physics/common/physics_interpolation: bool = false —— 物理插值
+- physics/common/physics_jitter_fix: float = 0.5 —— 物理抖动修正
+- physics/common/physics_ticks_per_second: int = 60 —— 每秒物理滴答数
+- physics/jolt_physics_3d/* —— Jolt 物理 3D 相关设置
+- rendering/* —— 渲染相关设置
+- threading/worker_pool/low_priority_thread_ratio: float = 0.3 —— 工作线程池低优先级线程比例
+- threading/worker_pool/max_threads: int = -1 —— 工作线程池最大线程数
+- xr/openxr/* —— OpenXR 相关设置
+- xr/shaders/enabled: bool = false —— 启用 XR 着色器
+
+**方法（Methods）：**
+- add_property_info(hint: Dictionary) —— 添加属性信息
+- check_changed_settings_in_group(setting_prefix: String) -> bool —— 检查组中已更改的设置
+- clear(name: String) —— 清除
+- get_changed_settings() -> PackedStringArray —— 获取已更改的设置
+- get_global_class_list() -> Dictionary[] —— 获取全局类列表
+- get_order(name: String) -> int —— 获取顺序
+- get_setting(name: String, default_value: Variant = null) -> Variant —— 获取设置
+- get_setting_with_override(name: StringName) -> Variant —— 获取带覆盖的设置
+- get_setting_with_override_and_custom_features(name: StringName, features: PackedStringArray) -> Variant —— 获取带覆盖和自定义功能的设置
+- globalize_path(path: String) -> String —— 全局化路径
+- has_setting(name: String) -> bool —— 是否有设置
+- load_resource_pack(pack: String, replace_files: bool = true, offset: int = 0) -> bool —— 加载资源包
+- localize_path(path: String) -> String —— 本地化路径
+- save() -> int —— 保存
+- save_custom(file: String) -> int —— 自定义保存
+- set_as_basic(name: String, basic: bool) —— 设为基本
+- set_as_internal(name: String, internal: bool) —— 设为内部
+- set_initial_value(name: String, value: Variant) —— 设置初始值
+- set_order(name: String, position: int) —— 设置顺序
+- set_restart_if_changed(name: String, restart: bool) —— 设置更改后重启
+- set_setting(name: String, value: Variant) —— 设置设置值
+
+**信号（Signals）：**
+- settings_changed —— 设置已更改

@@ -1,0 +1,96 @@
+## FontFile（字体文件） <- Font（字体）
+
+FontFile 包含一组字形，用于表示从字体文件导入的 Unicode 字符，以及光栅化字形的缓存和一组后备字体。使用 FontVariation 可以访问字体的特定 OpenType 变体、创建模拟粗体/斜体版本以及绘制文本行。对于更复杂的文本处理，请将 FontVariation 与 TextLine 或 TextParagraph 结合使用。支持的字体格式：- 动态字体导入器：TrueType (.ttf)、TrueType 集合 (.ttc)、OpenType (.otf)、OpenType 集合 (.otc)、WOFF (.woff)、WOFF2 (.woff2)、Type 1 (.pfb, .pfm)。- 位图字体导入器：AngelCode BMFont (.fnt, .font)，文本和二进制（版本 3）格式变体。- 等宽图像字体导入器：所有支持的图像格式。**注意：** 字符是以抽象方式表示项目（字母、数字等）的符号。**注意：** 字形是用于以上下文相关方式绘制一个或多个字符的位图或形状。字形索引绑定到特定的字体数据源。**注意：** 如果字体数据源中不包含字符串中使用的字符的字形，则该字符将替换为一个显示其十六进制代码的方框。
+
+**属性（Props）：**
+- allow_system_fallback: bool = true —— 允许系统后备字体
+- antialiasing: int (TextServer.FontAntialiasing) = 1 —— 抗锯齿
+- data: PackedByteArray = PackedByteArray() —— 数据
+- disable_embedded_bitmaps: bool = true —— 禁用嵌入位图
+- fixed_size: int = 0 —— 固定大小
+- fixed_size_scale_mode: int (TextServer.FixedSizeScaleMode) = 0 —— 固定大小缩放模式
+- font_name: String = "" —— 字体名称
+- font_stretch: int = 100 —— 字体拉伸
+- font_style: int (TextServer.FontStyle) = 0 —— 字体样式
+- font_weight: int = 400 —— 字体字重
+- force_autohinter: bool = false —— 强制自动微调
+- generate_mipmaps: bool = false —— 生成 mipmap
+- hinting: int (TextServer.Hinting) = 1 —— 微调
+- keep_rounding_remainders: bool = true —— 保留舍入余数
+- modulate_color_glyphs: bool = false —— 调制彩色字形
+- msdf_pixel_range: int = 16 —— MSDF 像素范围
+- msdf_size: int = 48 —— MSDF 大小
+- multichannel_signed_distance_field: bool = false —— 多通道有符号距离场
+- opentype_feature_overrides: Dictionary = {} —— OpenType 特性覆盖
+- oversampling: float = 0.0 —— 过采样
+- style_name: String = "" —— 样式名称
+- subpixel_positioning: int (TextServer.SubpixelPositioning) = 1 —— 亚像素定位
+
+**方法（Methods）：**
+- clear_cache() —— 清除缓存
+- clear_glyphs(cache_index: int, size: Vector2i) —— 清除字形
+- clear_kerning_map(cache_index: int, size: int) —— 清除字距映射
+- clear_size_cache(cache_index: int) —— 清除大小缓存
+- clear_textures(cache_index: int, size: Vector2i) —— 清除纹理
+- get_cache_ascent(cache_index: int, size: int) -> float —— 获取缓存上升高度
+- get_cache_count() -> int —— 获取缓存数量
+- get_cache_descent(cache_index: int, size: int) -> float —— 获取缓存下降高度
+- get_cache_scale(cache_index: int, size: int) -> float —— 获取缓存缩放
+- get_cache_underline_position(cache_index: int, size: int) -> float —— 获取缓存下划线位置
+- get_cache_underline_thickness(cache_index: int, size: int) -> float —— 获取缓存下划线厚度
+- get_char_from_glyph_index(size: int, glyph_index: int) -> int —— 从字形索引获取字符
+- get_embolden(cache_index: int) -> float —— 获取粗体程度
+- get_extra_baseline_offset(cache_index: int) -> float —— 获取额外基线偏移
+- get_extra_spacing(cache_index: int, spacing: int) -> int —— 获取额外间距
+- get_face_index(cache_index: int) -> int —— 获取字面索引
+- get_glyph_advance(cache_index: int, size: int, glyph: int) -> Vector2 —— 获取字形步进
+- get_glyph_index(size: int, char: int, variation_selector: int) -> int —— 获取字形索引
+- get_glyph_list(cache_index: int, size: Vector2i) -> PackedInt32Array —— 获取字形列表
+- get_glyph_offset(cache_index: int, size: Vector2i, glyph: int) -> Vector2 —— 获取字形偏移
+- get_glyph_size(cache_index: int, size: Vector2i, glyph: int) -> Vector2 —— 获取字形大小
+- get_glyph_texture_idx(cache_index: int, size: Vector2i, glyph: int) -> int —— 获取字形纹理索引
+- get_glyph_uv_rect(cache_index: int, size: Vector2i, glyph: int) -> Rect2 —— 获取字形 UV 矩形
+- get_kerning(cache_index: int, size: int, glyph_pair: Vector2i) -> Vector2 —— 获取字距
+- get_kerning_list(cache_index: int, size: int) -> Vector2i[] —— 获取字距列表
+- get_language_support_override(language: String) -> bool —— 获取语言支持覆盖
+- get_language_support_overrides() -> PackedStringArray —— 获取语言支持覆盖列表
+- get_script_support_override(script: String) -> bool —— 获取文字系统支持覆盖
+- get_script_support_overrides() -> PackedStringArray —— 获取文字系统支持覆盖列表
+- get_size_cache_list(cache_index: int) -> Vector2i[] —— 获取大小缓存列表
+- get_texture_count(cache_index: int, size: Vector2i) -> int —— 获取纹理数量
+- get_texture_image(cache_index: int, size: Vector2i, texture_index: int) -> Image —— 获取纹理图像
+- get_texture_offsets(cache_index: int, size: Vector2i, texture_index: int) -> PackedInt32Array —— 获取纹理偏移
+- get_transform(cache_index: int) -> Transform2D —— 获取变换
+- get_variation_coordinates(cache_index: int) -> Dictionary —— 获取变体坐标
+- load_bitmap_font(path: String) -> int —— 加载位图字体
+- load_dynamic_font(path: String) -> int —— 加载动态字体
+- remove_cache(cache_index: int) —— 移除缓存
+- remove_glyph(cache_index: int, size: Vector2i, glyph: int) —— 移除字形
+- remove_kerning(cache_index: int, size: int, glyph_pair: Vector2i) —— 移除字距
+- remove_language_support_override(language: String) —— 移除语言支持覆盖
+- remove_script_support_override(script: String) —— 移除文字系统支持覆盖
+- remove_size_cache(cache_index: int, size: Vector2i) —— 移除大小缓存
+- remove_texture(cache_index: int, size: Vector2i, texture_index: int) —— 移除纹理
+- render_glyph(cache_index: int, size: Vector2i, index: int) —— 渲染字形
+- render_range(cache_index: int, size: Vector2i, start: int, end: int) —— 渲染范围
+- set_cache_ascent(cache_index: int, size: int, ascent: float) —— 设置缓存上升高度
+- set_cache_descent(cache_index: int, size: int, descent: float) —— 设置缓存下降高度
+- set_cache_scale(cache_index: int, size: int, scale: float) —— 设置缓存缩放
+- set_cache_underline_position(cache_index: int, size: int, underline_position: float) —— 设置缓存下划线位置
+- set_cache_underline_thickness(cache_index: int, size: int, underline_thickness: float) —— 设置缓存下划线厚度
+- set_embolden(cache_index: int, strength: float) —— 设置粗体程度
+- set_extra_baseline_offset(cache_index: int, baseline_offset: float) —— 设置额外基线偏移
+- set_extra_spacing(cache_index: int, spacing: int, value: int) —— 设置额外间距
+- set_face_index(cache_index: int, face_index: int) —— 设置字面索引
+- set_glyph_advance(cache_index: int, size: int, glyph: int, advance: Vector2) —— 设置字形步进
+- set_glyph_offset(cache_index: int, size: Vector2i, glyph: int, offset: Vector2) —— 设置字形偏移
+- set_glyph_size(cache_index: int, size: Vector2i, glyph: int, gl_size: Vector2) —— 设置字形大小
+- set_glyph_texture_idx(cache_index: int, size: Vector2i, glyph: int, texture_idx: int) —— 设置字形纹理索引
+- set_glyph_uv_rect(cache_index: int, size: Vector2i, glyph: int, uv_rect: Rect2) —— 设置字形 UV 矩形
+- set_kerning(cache_index: int, size: int, glyph_pair: Vector2i, kerning: Vector2) —— 设置字距
+- set_language_support_override(language: String, supported: bool) —— 设置语言支持覆盖
+- set_script_support_override(script: String, supported: bool) —— 设置文字系统支持覆盖
+- set_texture_image(cache_index: int, size: Vector2i, texture_index: int, image: Image) —— 设置纹理图像
+- set_texture_offsets(cache_index: int, size: Vector2i, texture_index: int, offset: PackedInt32Array) —— 设置纹理偏移
+- set_transform(cache_index: int, transform: Transform2D) —— 设置变换
+- set_variation_coordinates(cache_index: int, variation_coordinates: Dictionary) —— 设置变体坐标

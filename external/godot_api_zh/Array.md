@@ -1,0 +1,56 @@
+## Array（数组）
+
+默认情况下可包含任何 Variant 类型元素序列的数组数据结构。值可以通过创建*类型化数组*来约束为特定类型。元素通过从 `0` 开始的数值索引访问。负索引从末尾开始计数（`-1` 是最后一个元素，`-2` 是倒数第二个，依此类推）。**注意：** 数组始终按**引用**传递。要获取可独立于原始数组修改的副本，请使用 `duplicate`。**注意：** 在遍历数组时擦除元素**不**支持，且会导致不可预测的行为。**注意：** 在布尔上下文中，空数组（`[]`）求值为 `false`，否则始终求值为 `true`。**打包数组、类型化数组和非类型化数组之间的区别：** 打包数组通常比同类型类型化数组的迭代和修改速度快（例如 PackedInt64Array 对比 `Array[int]`）。此外，打包数组消耗更少的内存。缺点是不够灵活，不提供 `Array.map` 等便利方法。类型化数组在迭代和修改方面又比非类型化数组快。
+
+**方法（Methods）：**
+- all(method: Callable) -> bool
+- any(method: Callable) -> bool
+- append(value: Variant)
+- append_array(array: Array)
+- assign(array: Array)
+- back() -> Variant
+- bsearch(value: Variant, before: bool = true) -> int
+- bsearch_custom(value: Variant, func: Callable, before: bool = true) -> int
+- clear()
+- count(value: Variant) -> int
+- duplicate(deep: bool = false) -> Array
+- duplicate_deep(deep_subresources_mode: int = 1) -> Array
+- erase(value: Variant)
+- fill(value: Variant)
+- filter(method: Callable) -> Array
+- find(what: Variant, from: int = 0) -> int
+- find_custom(method: Callable, from: int = 0) -> int
+- front() -> Variant
+- get(index: int) -> Variant
+- get_typed_builtin() -> int
+- get_typed_class_name() -> StringName
+- get_typed_script() -> Variant
+- has(value: Variant) -> bool
+- hash() -> int
+- insert(position: int, value: Variant) -> int
+- is_empty() -> bool
+- is_read_only() -> bool
+- is_same_typed(array: Array) -> bool
+- is_typed() -> bool
+- make_read_only()
+- map(method: Callable) -> Array
+- max() -> Variant
+- min() -> Variant
+- pick_random() -> Variant
+- pop_at(position: int) -> Variant
+- pop_back() -> Variant
+- pop_front() -> Variant
+- push_back(value: Variant)
+- push_front(value: Variant)
+- reduce(method: Callable, accum: Variant = null) -> Variant
+- remove_at(position: int)
+- resize(size: int) -> int
+- reverse()
+- rfind(what: Variant, from: int = -1) -> int
+- rfind_custom(method: Callable, from: int = -1) -> int
+- set(index: int, value: Variant)
+- shuffle()
+- size() -> int
+- slice(begin: int, end: int = 2147483647, step: int = 1, deep: bool = false) -> Array
+- sort()
+- sort_custom(func: Callable)

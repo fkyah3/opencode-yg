@@ -1,0 +1,167 @@
+## NavigationServer3D（3D导航服务器）<- Object（对象）
+
+NavigationServer3D 是处理导航地图、区域和代理的服务器。它不处理来自 AStar3D 的 A* 导航。地图被划分为多个区域，区域由导航网格组成。它们共同定义了 3D 世界中的可导航区域。**注意：** 大多数 NavigationServer3D 的更改会在下一个物理帧后生效，而不是立即生效。这包括场景树中导航相关节点或通过脚本对地图、区域或代理所做的所有更改。两个区域要相互连接，必须共享一条相似的边。如果一条边的两个顶点与另一条边的对应顶点之间的距离小于 `edge_connection_margin`，则认为这两条边已连接。可以使用 `NavigationServer3D.region_set_navigation_layers` 为区域分配导航层，然后在通过 `NavigationServer3D.map_get_path` 请求路径时进行检查。这可用于允许或拒绝某些物体进入特定区域。要使用碰撞避免系统，可以使用代理。您可以设置代理的目标速度，然后服务器将发出带有修改后速度的回调。**注意：** 碰撞避免系统会忽略区域。直接使用修改后的速度可能会将代理移动到可通行区域之外。这是碰撞避免系统的限制，任何更复杂的情况可能需要使用物理引擎。此服务器会跟踪所有调用并在同步阶段执行它们。这意味着您可以在任何线程上请求对地图的任何更改，而无需担心。
+
+**方法（Methods）：**
+- agent_create() -> RID —— 创建代理
+- agent_get_avoidance_enabled(agent: RID) -> bool —— 获取代理避障启用状态
+- agent_get_avoidance_layers(agent: RID) -> int —— 获取代理避障层
+- agent_get_avoidance_mask(agent: RID) -> int —— 获取代理避障遮罩
+- agent_get_avoidance_priority(agent: RID) -> float —— 获取代理避障优先级
+- agent_get_height(agent: RID) -> float —— 获取代理高度
+- agent_get_map(agent: RID) -> RID —— 获取代理所在地图
+- agent_get_max_neighbors(agent: RID) -> int —— 获取代理最大邻居数
+- agent_get_max_speed(agent: RID) -> float —— 获取代理最大速度
+- agent_get_neighbor_distance(agent: RID) -> float —— 获取代理邻居检测距离
+- agent_get_paused(agent: RID) -> bool —— 获取代理暂停状态
+- agent_get_position(agent: RID) -> Vector3 —— 获取代理位置
+- agent_get_radius(agent: RID) -> float —— 获取代理半径
+- agent_get_time_horizon_agents(agent: RID) -> float —— 获取代理时间视界
+- agent_get_time_horizon_obstacles(agent: RID) -> float —— 获取障碍物时间视界
+- agent_get_use_3d_avoidance(agent: RID) -> bool —— 获取代理是否使用 3D 避障
+- agent_get_velocity(agent: RID) -> Vector3 —— 获取代理速度
+- agent_has_avoidance_callback(agent: RID) -> bool —— 代理是否有避障回调
+- agent_is_map_changed(agent: RID) -> bool —— 代理的地图是否已更改
+- agent_set_avoidance_callback(agent: RID, callback: Callable) —— 设置代理避障回调
+- agent_set_avoidance_enabled(agent: RID, enabled: bool) —— 设置代理避障启用
+- agent_set_avoidance_layers(agent: RID, layers: int) —— 设置代理避障层
+- agent_set_avoidance_mask(agent: RID, mask: int) —— 设置代理避障遮罩
+- agent_set_avoidance_priority(agent: RID, priority: float) —— 设置代理避障优先级
+- agent_set_height(agent: RID, height: float) —— 设置代理高度
+- agent_set_map(agent: RID, map: RID) —— 将代理设置到地图
+- agent_set_max_neighbors(agent: RID, count: int) —— 设置代理最大邻居数
+- agent_set_max_speed(agent: RID, max_speed: float) —— 设置代理最大速度
+- agent_set_neighbor_distance(agent: RID, distance: float) —— 设置代理邻居检测距离
+- agent_set_paused(agent: RID, paused: bool) —— 设置代理暂停状态
+- agent_set_position(agent: RID, position: Vector3) —— 设置代理位置
+- agent_set_radius(agent: RID, radius: float) —— 设置代理半径
+- agent_set_time_horizon_agents(agent: RID, time_horizon: float) —— 设置代理时间视界
+- agent_set_time_horizon_obstacles(agent: RID, time_horizon: float) —— 设置障碍物时间视界
+- agent_set_use_3d_avoidance(agent: RID, enabled: bool) —— 设置代理使用 3D 避障
+- agent_set_velocity(agent: RID, velocity: Vector3) —— 设置代理速度
+- agent_set_velocity_forced(agent: RID, velocity: Vector3) —— 强制设置代理速度
+- bake_from_source_geometry_data(navigation_mesh: NavigationMesh, source_geometry_data: NavigationMeshSourceGeometryData3D, callback: Callable = Callable()) —— 从源几何数据烘焙导航网格
+- bake_from_source_geometry_data_async(navigation_mesh: NavigationMesh, source_geometry_data: NavigationMeshSourceGeometryData3D, callback: Callable = Callable()) —— 异步从源几何数据烘焙导航网格
+- free_rid(rid: RID) —— 释放 RID
+- get_debug_enabled() -> bool —— 获取调试是否启用
+- get_maps() -> RID[] —— 获取所有地图
+- get_process_info(process_info: int) -> int —— 获取进程信息
+- is_baking_navigation_mesh(navigation_mesh: NavigationMesh) -> bool —— 导航网格是否正在烘焙
+- link_create() -> RID —— 创建链接
+- link_get_enabled(link: RID) -> bool —— 获取链接启用状态
+- link_get_end_position(link: RID) -> Vector3 —— 获取链接终点位置
+- link_get_enter_cost(link: RID) -> float —— 获取链接进入成本
+- link_get_iteration_id(link: RID) -> int —— 获取链接迭代 ID
+- link_get_map(link: RID) -> RID —— 获取链接所在地图
+- link_get_navigation_layers(link: RID) -> int —— 获取链接导航层
+- link_get_owner_id(link: RID) -> int —— 获取链接所有者 ID
+- link_get_start_position(link: RID) -> Vector3 —— 获取链接起点位置
+- link_get_travel_cost(link: RID) -> float —— 获取链接行进成本
+- link_is_bidirectional(link: RID) -> bool —— 链接是否为双向
+- link_set_bidirectional(link: RID, bidirectional: bool) —— 设置链接双向
+- link_set_enabled(link: RID, enabled: bool) —— 设置链接启用
+- link_set_end_position(link: RID, position: Vector3) —— 设置链接终点位置
+- link_set_enter_cost(link: RID, enter_cost: float) —— 设置链接进入成本
+- link_set_map(link: RID, map: RID) —— 将链接设置到地图
+- link_set_navigation_layers(link: RID, navigation_layers: int) —— 设置链接导航层
+- link_set_owner_id(link: RID, owner_id: int) —— 设置链接所有者 ID
+- link_set_start_position(link: RID, position: Vector3) —— 设置链接起点位置
+- link_set_travel_cost(link: RID, travel_cost: float) —— 设置链接行进成本
+- map_create() -> RID —— 创建地图
+- map_force_update(map: RID) —— 强制更新地图
+- map_get_agents(map: RID) -> RID[] —— 获取地图上的代理
+- map_get_cell_height(map: RID) -> float —— 获取地图单元高度
+- map_get_cell_size(map: RID) -> float —— 获取地图单元大小
+- map_get_closest_point(map: RID, to_point: Vector3) -> Vector3 —— 获取地图上最近的点
+- map_get_closest_point_normal(map: RID, to_point: Vector3) -> Vector3 —— 获取地图上最近点的法线
+- map_get_closest_point_owner(map: RID, to_point: Vector3) -> RID —— 获取地图上最近点的所有者
+- map_get_closest_point_to_segment(map: RID, start: Vector3, end: Vector3, use_collision: bool = false) -> Vector3 —— 获取地图上离线段最近的点
+- map_get_edge_connection_margin(map: RID) -> float —— 获取地图边连接边距
+- map_get_iteration_id(map: RID) -> int —— 获取地图迭代 ID
+- map_get_link_connection_radius(map: RID) -> float —— 获取地图链接连接半径
+- map_get_links(map: RID) -> RID[] —— 获取地图上的链接
+- map_get_merge_rasterizer_cell_scale(map: RID) -> float —— 获取地图合并光栅化单元缩放
+- map_get_obstacles(map: RID) -> RID[] —— 获取地图上的障碍物
+- map_get_path(map: RID, origin: Vector3, destination: Vector3, optimize: bool, navigation_layers: int = 1) -> PackedVector3Array —— 获取地图路径
+- map_get_random_point(map: RID, navigation_layers: int, uniformly: bool) -> Vector3 —— 获取地图随机点
+- map_get_regions(map: RID) -> RID[] —— 获取地图上的区域
+- map_get_up(map: RID) -> Vector3 —— 获取地图的上方向
+- map_get_use_async_iterations(map: RID) -> bool —— 地图是否使用异步迭代
+- map_get_use_edge_connections(map: RID) -> bool —— 地图是否使用边连接
+- map_is_active(map: RID) -> bool —— 地图是否激活
+- map_set_active(map: RID, active: bool) —— 设置地图激活
+- map_set_cell_height(map: RID, cell_height: float) —— 设置地图单元高度
+- map_set_cell_size(map: RID, cell_size: float) —— 设置地图单元大小
+- map_set_edge_connection_margin(map: RID, margin: float) —— 设置地图边连接边距
+- map_set_link_connection_radius(map: RID, radius: float) —— 设置地图链接连接半径
+- map_set_merge_rasterizer_cell_scale(map: RID, scale: float) —— 设置地图合并光栅化单元缩放
+- map_set_up(map: RID, up: Vector3) —— 设置地图的上方向
+- map_set_use_async_iterations(map: RID, enabled: bool) —— 设置地图异步迭代
+- map_set_use_edge_connections(map: RID, enabled: bool) —— 设置地图边连接
+- obstacle_create() -> RID —— 创建障碍物
+- obstacle_get_avoidance_enabled(obstacle: RID) -> bool —— 获取障碍物避障启用
+- obstacle_get_avoidance_layers(obstacle: RID) -> int —— 获取障碍物避障层
+- obstacle_get_height(obstacle: RID) -> float —— 获取障碍物高度
+- obstacle_get_map(obstacle: RID) -> RID —— 获取障碍物所在地图
+- obstacle_get_paused(obstacle: RID) -> bool —— 获取障碍物暂停状态
+- obstacle_get_position(obstacle: RID) -> Vector3 —— 获取障碍物位置
+- obstacle_get_radius(obstacle: RID) -> float —— 获取障碍物半径
+- obstacle_get_use_3d_avoidance(obstacle: RID) -> bool —— 获取障碍物是否使用 3D 避障
+- obstacle_get_velocity(obstacle: RID) -> Vector3 —— 获取障碍物速度
+- obstacle_get_vertices(obstacle: RID) -> PackedVector3Array —— 获取障碍物顶点
+- obstacle_set_avoidance_enabled(obstacle: RID, enabled: bool) —— 设置障碍物避障启用
+- obstacle_set_avoidance_layers(obstacle: RID, layers: int) —— 设置障碍物避障层
+- obstacle_set_height(obstacle: RID, height: float) —— 设置障碍物高度
+- obstacle_set_map(obstacle: RID, map: RID) —— 将障碍物设置到地图
+- obstacle_set_paused(obstacle: RID, paused: bool) —— 设置障碍物暂停状态
+- obstacle_set_position(obstacle: RID, position: Vector3) —— 设置障碍物位置
+- obstacle_set_radius(obstacle: RID, radius: float) —— 设置障碍物半径
+- obstacle_set_use_3d_avoidance(obstacle: RID, enabled: bool) —— 设置障碍物使用 3D 避障
+- obstacle_set_velocity(obstacle: RID, velocity: Vector3) —— 设置障碍物速度
+- obstacle_set_vertices(obstacle: RID, vertices: PackedVector3Array) —— 设置障碍物顶点
+- parse_source_geometry_data(navigation_mesh: NavigationMesh, source_geometry_data: NavigationMeshSourceGeometryData3D, root_node: Node, callback: Callable = Callable()) —— 解析源几何数据
+- query_path(parameters: NavigationPathQueryParameters3D, result: NavigationPathQueryResult3D, callback: Callable = Callable()) —— 查询路径
+- region_bake_navigation_mesh(navigation_mesh: NavigationMesh, root_node: Node) —— 烘焙区域导航网格
+- region_create() -> RID —— 创建区域
+- region_get_bounds(region: RID) -> AABB —— 获取区域边界
+- region_get_closest_point(region: RID, to_point: Vector3) -> Vector3 —— 获取区域中最近的点
+- region_get_closest_point_normal(region: RID, to_point: Vector3) -> Vector3 —— 获取区域中最近点的法线
+- region_get_closest_point_to_segment(region: RID, start: Vector3, end: Vector3, use_collision: bool = false) -> Vector3 —— 获取区域中离线段最近的点
+- region_get_connection_pathway_end(region: RID, connection: int) -> Vector3 —— 获取区域连接的终点
+- region_get_connection_pathway_start(region: RID, connection: int) -> Vector3 —— 获取区域连接的起点
+- region_get_connections_count(region: RID) -> int —— 获取区域连接数
+- region_get_enabled(region: RID) -> bool —— 获取区域启用状态
+- region_get_enter_cost(region: RID) -> float —— 获取区域进入成本
+- region_get_iteration_id(region: RID) -> int —— 获取区域迭代 ID
+- region_get_map(region: RID) -> RID —— 获取区域所在地图
+- region_get_navigation_layers(region: RID) -> int —— 获取区域导航层
+- region_get_owner_id(region: RID) -> int —— 获取区域所有者 ID
+- region_get_random_point(region: RID, navigation_layers: int, uniformly: bool) -> Vector3 —— 获取区域随机点
+- region_get_transform(region: RID) -> Transform3D —— 获取区域变换
+- region_get_travel_cost(region: RID) -> float —— 获取区域行进成本
+- region_get_use_async_iterations(region: RID) -> bool —— 区域是否使用异步迭代
+- region_get_use_edge_connections(region: RID) -> bool —— 区域是否使用边连接
+- region_owns_point(region: RID, point: Vector3) -> bool —— 区域是否拥有该点
+- region_set_enabled(region: RID, enabled: bool) —— 设置区域启用
+- region_set_enter_cost(region: RID, enter_cost: float) —— 设置区域进入成本
+- region_set_map(region: RID, map: RID) —— 将区域设置到地图
+- region_set_navigation_layers(region: RID, navigation_layers: int) —— 设置区域导航层
+- region_set_navigation_mesh(region: RID, navigation_mesh: NavigationMesh) —— 设置区域导航网格
+- region_set_owner_id(region: RID, owner_id: int) —— 设置区域所有者 ID
+- region_set_transform(region: RID, transform: Transform3D) —— 设置区域变换
+- region_set_travel_cost(region: RID, travel_cost: float) —— 设置区域行进成本
+- region_set_use_async_iterations(region: RID, enabled: bool) —— 设置区域使用异步迭代
+- region_set_use_edge_connections(region: RID, enabled: bool) —— 设置区域使用边连接
+- set_active(active: bool) —— 设置服务器激活
+- set_debug_enabled(enabled: bool) —— 设置调试启用
+- simplify_path(path: PackedVector3Array, epsilon: float) -> PackedVector3Array —— 简化路径
+- source_geometry_parser_create() -> RID —— 创建源几何解析器
+- source_geometry_parser_set_callback(parser: RID, callback: Callable) —— 设置源几何解析器回调
+
+**信号（Signals）：**
+- avoidance_debug_changed —— 避障调试信息改变时触发
+- map_changed(map: RID) —— 地图改变时触发
+- navigation_debug_changed —— 导航调试信息改变时触发
+
+**枚举（Enums）：**
+**ProcessInfo（进程信息）：** INFO_ACTIVE_MAPS=0 —— 活跃地图数, INFO_REGION_COUNT=1 —— 区域数, INFO_AGENT_COUNT=2 —— 代理数, INFO_LINK_COUNT=3 —— 链接数, INFO_POLYGON_COUNT=4 —— 多边形数, INFO_EDGE_COUNT=5 —— 边数, INFO_EDGE_MERGE_COUNT=6 —— 边合并数, INFO_EDGE_CONNECTION_COUNT=7 —— 边连接数, INFO_EDGE_FREE_COUNT=8 —— 空闲边数, INFO_OBSTACLE_COUNT=9 —— 障碍物数
