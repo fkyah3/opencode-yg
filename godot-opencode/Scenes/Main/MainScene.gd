@@ -118,11 +118,23 @@ func _create_sse_handler() -> SSEHandler:
 		_context_total = ctx
 		_update_info_bar()
 
-	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String) -> void:
+	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String, state: Dictionary = {}) -> void:
 		if sid != _current_session_id or _streaming_label == null:
 			return
 		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
 		_streaming_text += "\n[b]" + icon + " " + tool_name + "[/b]"
+		# 渲染工具调用的 input（命令内容）和 output（执行结果）
+		var input_val: Variant = state.get("input", {})
+		if input_val is Dictionary:
+			var content: String = input_val.get("content", "")
+			if not content.is_empty():
+				_streaming_text += "\n```\n" + content.left(1500) + "\n```"
+		elif input_val is String and not input_val.is_empty():
+			_streaming_text += "\n```\n" + str(input_val).left(1500) + "\n```"
+		if status == "completed":
+			var output: String = state.get("output", "")
+			if not output.is_empty():
+				_streaming_text += "\n[color=#88cc88]" + output.left(1000) + "[/color]"
 		if _streaming_label != null:
 			_streaming_label.text = _streaming_text
 			_scroll_to_newest()

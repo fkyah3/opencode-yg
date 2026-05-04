@@ -10,7 +10,7 @@ class_name SSEHandler
 # ── 回调（由 MainScene 在初始化时注入） ──
 var on_part_delta: Callable  # Callable(sessionID, partID, field, delta)
 var on_session_status: Callable  # Callable(sessionID, status_dict)
-var on_tool_updated: Callable  # Callable(sessionID, tool_name, status, title)
+var on_tool_updated: Callable  # Callable(sessionID, tool_name, status, title, state)
 var on_message_updated: Callable  # Callable(sessionID)
 var on_permission_asked: Callable  # Callable(properties)
 var on_question_asked: Callable  # Callable(properties)
@@ -60,7 +60,7 @@ func handle_event(event_type: String, properties: Dictionary) -> void:
 					var status: String = state.get("status", "running")
 					var title: String = state.get("title", "")
 					if on_tool_updated.is_valid():
-						on_tool_updated.call(sid, tool_name, status, title)
+						on_tool_updated.call(sid, tool_name, status, title, state)
 
 		"session.status":
 			var sid: String = properties.get("sessionID", "")
