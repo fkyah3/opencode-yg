@@ -1077,6 +1077,7 @@ func _append_message(msg: Dictionary) -> void:
 func _clear_messages() -> void:
 	## 清空消息区所有节点（包括流式），重置滚动位置，为新会话初始化
 	_message_log.clear_all()
+	print("→ _clear_messages after clear: children=" + str(virtual_content.get_child_count()))
 	_row_data.clear()
 	_streaming_label = null
 	_streaming_node = null
