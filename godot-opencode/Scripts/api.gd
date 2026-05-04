@@ -12,6 +12,7 @@ signal connection_failed(reason: String)
 
 var _base_url: String = "http://127.0.0.1:4096"
 var _http: HTTPRequest
+var _reply_http: HTTPRequest
 
 
 ## 修改服务器地址。调用后后续请求使用新地址。
@@ -121,7 +122,7 @@ func reply_permission(request_id: String, reply_type: String, message: String = 
 	var body := {"reply": reply_type}
 	if not message.is_empty():
 		body["message"] = message
-	var data = await _request(url, "POST", JSON.stringify(body))
+	var data = await _reply_request(url, "POST", JSON.stringify(body))
 	return data != null
 
 
@@ -129,7 +130,7 @@ func reply_permission(request_id: String, reply_type: String, message: String = 
 func reply_question(request_id: String, answers: Array) -> bool:
 	var url := _base_url + "/question/%s/reply" % request_id
 	var body := JSON.stringify({"answers": answers})
-	var data = await _request(url, "POST", body)
+	var data = await _reply_request(url, "POST", body)
 	return data != null
 
 
@@ -164,11 +165,21 @@ func get_config() -> Dictionary:
 # ── 核心请求方法 ──
 
 func _lazy_init_http() -> void:
-	if _http != null:
+	if _http and is_instance_valid(_http):
 		return
 	_http = HTTPRequest.new()
+	_http.name = "OpenCodeAPI_HTTP"
 	_http.use_threads = true
 	add_child(_http)
+
+
+func _lazy_init_reply_http() -> void:
+	if _reply_http and is_instance_valid(_reply_http):
+		return
+	_reply_http = HTTPRequest.new()
+	_reply_http.name = "OpenCodeAPI_ReplyHTTP"
+	_reply_http.use_threads = true
+	add_child(_reply_http)
 
 
 func _request(url: String, method: String, body: String = "") -> Variant:
@@ -245,3 +256,29 @@ func _request_full(url: String, method: String, body: String = "") -> Dictionary
 	if parsed == null:
 		return {}
 	return {"result": parsed, "headers": resp_headers}
+
+
+## 独立 HTTP 请求（使用 _reply_http 节点，不与 _request 共享 _http）。
+## 用于 permission/question 回复，避免与主 HTTP 请求竞争。
+func _reply_request(url: String, method: String, body: String = "") -> Variant:
+	_lazy_init_reply_http()
+	var headers := PackedStringArray(["Content-Type: application/json"])
+	var http_method: int = HTTPClient.METHOD_POST if method == "POST" else HTTPClient.METHOD_PATCH if method == "PATCH" else HTTPClient.METHOD_GET
+	var err = _reply_http.request(url, headers, http_method, body)
+	if err != OK:
+		push_error("[OpenCodeAPI] _reply_request ", method, " 失败: ", url, " error=", err)
+		return null
+	var resp = await _reply_http.request_completed
+	var req_result: int = resp[0]
+	var resp_code: int = resp[1]
+	var resp_body: PackedByteArray = resp[3]
+	if req_result != HTTPRequest.RESULT_SUCCESS:
+		push_error("[OpenCodeAPI] _reply_request 失败 result=", str(req_result), " url=", url)
+		return null
+	if resp_code != 200:
+		var body_text := resp_body.get_string_from_utf8()
+		push_error("[OpenCodeAPI] _reply_request 非 200: code=", str(resp_code), " body=", body_text.left(300))
+		return null
+	var body_text := resp_body.get_string_from_utf8()
+	var parsed = JSON.parse_string(body_text)
+	return parsed
