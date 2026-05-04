@@ -113,7 +113,6 @@ var _lazy_cursor: String = ""  # 下一页游标
 var _lazy_loading: bool = false  # 正在加载更多，防止并发重复请求
 var _has_loaded_all: bool = false
 var _prev_max_value: float = 0.0  # 上一次记录的 max_value，用于诊断 thumb 变化
-var _custom_minimum_size_stale: bool = false  # 需在 _process 中重算总高
 
 # ── Agent/模型信息 ──
 var _primary_agent_name: String = "-"
@@ -435,10 +434,8 @@ func _process(delta: float) -> void:
 			scroll.scroll_vertical = int(bar.max_value)
 	# _scroll_pending 在 _on_scroll_changed 中检测真底时清零
 
-	# 高度修正：滚动路径中不逐行改 custom_minimum_size，统一在此重算
-	if _custom_minimum_size_stale:
-		_custom_minimum_size_stale = false
-		virtual_content.custom_minimum_size.y = _y_offsets.back() + _row_heights.back() if not _row_heights.is_empty() else 0.0
+	# 注意：custom_minimum_size 只在会话加载时设一次，滚动路径永不碰它。
+	# 高度修正（_row_heights / _y_offsets）不影响总高，防止布抖动
 
 
 func _bootstrap() -> void:
@@ -748,7 +745,7 @@ func _update_visible_rows(scroll_y: float) -> void:
 					_row_heights[row_idx] = _actual_h
 					for j in range(row_idx + 1, _y_offsets.size()):
 						_y_offsets[j] = _y_offsets[j - 1] + _row_heights[j - 1]
-					_custom_minimum_size_stale = true
+					# 不修改 custom_minimum_size——只做位置修正，防止 max_value 抖动
 		_row_assignments[row_idx] = found
 
 func _row_idx_at_y(y: float) -> int:
