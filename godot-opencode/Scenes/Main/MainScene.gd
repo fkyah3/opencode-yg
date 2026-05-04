@@ -222,6 +222,26 @@ func _apply_layout() -> void:
 		input_panel.add_theme_stylebox_override("panel", pb)
 
 
+func _on_raw_mode_toggled(on: bool) -> void:
+	## RAW 模式切换：重建当前消息
+	_raw_mode = on
+	# 重新渲染所有现有消息（跳过流式节点）
+	var to_rerender: Array[Dictionary] = []
+	for child in virtual_content.get_children():
+		if child == _streaming_node:
+			continue
+		var row_data: Dictionary = child.get_meta("row_data", {})
+		if not row_data.is_empty():
+			to_rerender.append(row_data)
+		child.queue_free()
+	await get_tree().process_frame
+	for msg in to_rerender:
+		var node := _build_message_node(msg)
+		virtual_content.add_child(node)
+	if _streaming_node != null and is_instance_valid(_streaming_node):
+		virtual_content.add_child(_streaming_node)
+
+
 func _apply_font_theme() -> void:
 	print("→ _apply_font_theme")
 	## 加载 JetBrains Mono 字体，设置全场景主题
@@ -1045,6 +1065,7 @@ func _build_message_node(msg: Dictionary) -> Control:
 			bubble.add_child(label)
 			root.add_child(bubble)
 
+	root.set_meta("row_data", msg)
 	return root
 
 
