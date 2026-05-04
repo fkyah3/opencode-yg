@@ -428,11 +428,12 @@ func _init_sse() -> void:
 
 func _process(delta: float) -> void:
 	# 主动推底：设 scroll_vertical，value_changed 在 Layout Pass 后才刷新 max_value
+	# 推底一次即清标记，防止用户上拉后被拽回
 	if _scroll_pending:
+		_scroll_pending = false
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
-	# _scroll_pending 在 _on_scroll_changed 中检测真底时清零
 
 	# 注意：custom_minimum_size 只在会话加载时设一次，滚动路径永不碰它。
 	# 高度修正（_row_heights / _y_offsets）不影响总高，防止布抖动
@@ -744,7 +745,9 @@ func _update_visible_rows(scroll_y: float) -> void:
 				if abs(diff) > 2.0:
 					_row_heights[row_idx] = _actual_h
 					for j in range(row_idx + 1, _y_offsets.size()):
-						_y_offsets[j] = _y_offsets[j - 1] + _row_heights[j - 1]
+						_y_offsets[j] += diff
+						if _row_assignments.has(j):
+							_row_assignments[j].position.y = _y_offsets[j]
 					# 不修改 custom_minimum_size——只做位置修正，防止 max_value 抖动
 		_row_assignments[row_idx] = found
 
