@@ -39,6 +39,7 @@ var _streaming_reasoning_text: String = ""
 var _raw_toggle: CheckBox
 var _scroll_pending: bool = false
 var _auto_scroll: bool = true  # 用户是否在"吸附"状态（插头插在插座里）
+var _pending_frames: int = 0  # _scroll_pending 持续帧数，超时强制清除
 
 # ── 懒加载状态 ──
 var _lazy_cursor: String = ""
@@ -539,6 +540,16 @@ func _process(delta: float) -> void:
 	# 注意：VBoxContainer 自动管理总高，滚动路径不碰 custom_minimum_size
 
 
+	# 安全阀：_scroll_pending 停留超过 0.5 秒（30帧@60fps）强制清除
+	if _scroll_pending:
+		_pending_frames += 1
+		if _pending_frames > 30:
+			_scroll_pending = false
+			_pending_frames = 0
+	else:
+		_pending_frames = 0
+
+
 func _bootstrap() -> void:
 	print("→ _bootstrap")
 	_set_status("连接服务器...")
@@ -692,9 +703,8 @@ func _on_scroll_changed(value: float) -> void:
 		if value >= bar.max_value - 5.0:
 			_auto_scroll = true  # 用户拉到底 → 重新插上
 		elif value < bar.max_value - 10.0:
-			# 被用户手动上拉（不是被 _process 推底）
-			if not _scroll_pending:
-				_auto_scroll = false  # 用户拔出插头
+		if value < bar.max_value - 10.0:
+			_auto_scroll = false  # 用户手动上拉 → 拔出插头
 
 	## 滚动时触发懒加载：拉到顶时加载更旧的消息
 	if not _lazy_loading and not _lazy_cursor.is_empty():
@@ -1008,6 +1018,7 @@ func _finalize_streaming() -> void:
 	_streaming_label = null
 	_streaming_node = null
 	_streaming_just_finalized = true
+	_pending_frames = 0
 	_scroll_to_newest()
 
 
