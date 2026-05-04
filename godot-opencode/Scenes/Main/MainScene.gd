@@ -93,6 +93,7 @@ var _primary_model_name: String = ""
 @export var input_min_height: int = 80
 	## 当前会话状态（用于侧边栏指示器）
 var _session_state: String = "idle"  # idle | sending | thinking | generating | tool_call
+var _streaming_just_finalized: bool = false  # 阻止 message.updated 触发 _refresh_messages 销毁刚完成的流式节点
 
 ## 首次加载的消息条数（默认 50，数值越小启动越快，拉到顶会自动加载更多）
 @export var load_limit: int = 50
@@ -160,7 +161,7 @@ func _create_sse_handler() -> SSEHandler:
 			_scroll_to_newest()
 
 	h.on_message_updated = func(sid: String) -> void:
-		if sid == _current_session_id and _streaming_label == null:
+		if sid == _current_session_id and _streaming_label == null and not _streaming_just_finalized:
 			_refresh_messages()
 
 	h.on_permission_asked = func(props: Dictionary) -> void:
@@ -623,6 +624,7 @@ func _load_session_messages(sid: String) -> void:
 	_streaming_label = null
 	_current_session_id = sid
 	_clear_messages()
+	_streaming_just_finalized = false
 	_set_status("加载消息...")
 
 	var page = await _api.get_messages_page(sid, load_limit)
@@ -936,6 +938,8 @@ func _create_streaming_widget() -> VBoxContainer:
 	print("→ _create_streaming_widget")
 	## 创建流式响应的容器结构（名称 + 思考文本 + 气泡文本区）
 	# 重置流式状态
+	# 重置流式状态——下次流式开始时允许 _refresh_messages
+	_streaming_just_finalized = false
 	_streaming_text = ""
 	_streaming_reasoning_text = ""
 
@@ -988,9 +992,10 @@ func _create_streaming_widget() -> VBoxContainer:
 
 func _finalize_streaming() -> void:
 	print("→ _finalize_streaming")
-	## 完成流式响应：流式节点成为永久消息，只清引用不删节点
+	## 完成流式响应：流式节点成为永久消息
 	_streaming_label = null
 	_streaming_node = null
+	_streaming_just_finalized = true
 	_scroll_to_newest()
 
 
