@@ -13,6 +13,11 @@ import { Log } from "../util"
 import { withStatics } from "@/util/schema"
 import { zod } from "@/util/effect-zod"
 
+// Windows: 替换路径中的非法字符（冒号等），和 NTFS 实际写入时的一致
+const normalizeWindowsPath = process.platform === "win32"
+  ? (p: string) => p.replace(/[:<>"|?*]/g, "_")
+  : (p: string) => p
+
 export const Patch = Schema.Struct({
   hash: Schema.String,
   files: Schema.mutable(Schema.Array(Schema.String)),
@@ -81,8 +86,10 @@ export const layer: Layer.Layer<
     const state = yield* InstanceState.make<State>(
       Effect.fn("Snapshot.state")(function* (ctx) {
         const state = {
-          directory: ctx.directory,
-          worktree: ctx.worktree,
+          // Windows: NTFS 将路径中的冒号静默替换为下划线
+          // snapshot 必须和文件系统实际写入的路径保持一致
+          directory: normalizeWindowsPath(ctx.directory),
+          worktree: normalizeWindowsPath(ctx.worktree),
           gitdir: path.join(Global.Path.data, "snapshot", ctx.project.id, Hash.fast(ctx.worktree)),
           vcs: ctx.project.vcs,
         }
