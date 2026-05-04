@@ -476,9 +476,7 @@ func _send_message_direct(text: String) -> void:
 	if result.is_empty():
 		push_warning("send_message 返回空结果")
 	else:
-		# 移除流式占位，追加 AI 响应到虚拟滚动
 		_finalize_streaming()
-		_append_message(result)
 	_set_status("")
 
 
@@ -849,7 +847,6 @@ func _on_send_pressed() -> void:
 	_create_streaming_widget()
 
 	var send_sid := _current_session_id
-	var row_len_before := _row_data.size()
 	var res = await _api.send_message(send_sid, text)
 	# 安全锁：await 期间切换会话则丢弃结果
 	if _current_session_id != send_sid:
@@ -857,14 +854,8 @@ func _on_send_pressed() -> void:
 		_update_session_state("idle")
 		_set_status("")
 		return
-	if res.is_empty() or not (res is Dictionary):
-		push_warning("send_message 返回异常: " + str(res))
-	else:
-		_finalize_streaming()
-		if _row_data.size() > row_len_before:
-			print("→ skip _append_message: SSE _refresh_messages 已追加")
-		else:
-			_append_message(res)
+	# 流式节点已包含完整内容，直接成为永久消息
+	_finalize_streaming()
 	_set_status("")
 	_update_session_state("idle")
 
@@ -994,8 +985,9 @@ func _create_streaming_widget() -> VBoxContainer:
 
 func _finalize_streaming() -> void:
 	print("→ _finalize_streaming")
-	## 完成流式响应（由 _append_message 清理流式节点）
+	## 完成流式响应：流式节点成为永久消息，只清引用不删节点
 	_streaming_label = null
+	_streaming_node = null
 	_scroll_to_newest()
 
 
@@ -1160,10 +1152,8 @@ func _append_message(msg: Dictionary) -> void:
 
 
 func _clear_messages() -> void:
-	## 清空 VBoxContainer 中所有消息节点（保留流式节点）
+	## 清空 VBoxContainer 中所有消息节点
 	for c in virtual_content.get_children():
-		if c == _streaming_node:
-			continue
 		c.queue_free()
 
 
