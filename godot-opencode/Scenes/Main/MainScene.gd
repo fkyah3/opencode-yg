@@ -1061,7 +1061,16 @@ func _append_message(msg: Dictionary) -> void:
 		return
 	var before := virtual_content.get_child_count()
 	virtual_content.add_child(node)
-	print("→ _append_message added children=" + str(before) + "→" + str(before + 1))
+	# 断言：记录每次 _append_message 后的子节点详情
+	var debug_info := "→ _append_message: children=" + str(before) + "→" + str(virtual_content.get_child_count())
+	var roles := PackedStringArray()
+	for c in virtual_content.get_children():
+		var rd: Dictionary = c.get_meta("row_data", {})
+		var role: String = rd.get("role", "?")
+		var vis: String = "v" if c.visible else "h"
+		roles.append(role + "(" + vis + ")")
+	debug_info += " roles=[" + ",".join(roles) + "]"
+	print(debug_info)
 	await get_tree().process_frame
 
 
