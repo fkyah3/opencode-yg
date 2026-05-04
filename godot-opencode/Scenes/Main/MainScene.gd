@@ -679,6 +679,7 @@ func _on_scroll_changed(_value: float) -> void:
 	if _lazy_cursor.is_empty():
 		_has_loaded_all = true
 	_lazy_loading = false
+	_scroll_pending = false
 	_set_status("")
 
 func _update_visible_rows(scroll_y: float) -> void:
