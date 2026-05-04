@@ -114,13 +114,17 @@ func _create_sse_handler() -> SSEHandler:
 			_streaming_text += delta
 			if _streaming_label != null:
 				_streaming_label.text = _streaming_text
-				_scroll_to_newest()
+				var bar = scroll.get_v_scroll_bar()
+				if bar != null and scroll.scroll_vertical >= bar.max_value - 30:
+					_scroll_to_newest()
 		elif field == "text":
 			_update_session_state("generating")
 			_streaming_text += delta
 			if _streaming_label != null:
 				_streaming_label.text = _streaming_text
-				_scroll_to_newest()
+				var bar = scroll.get_v_scroll_bar()
+				if bar != null and scroll.scroll_vertical >= bar.max_value - 30:
+					_scroll_to_newest()
 			_rate_tokens += delta.length()
 			if _rate_time < 0.001:
 				_rate_time = 0.001
