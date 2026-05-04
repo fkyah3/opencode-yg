@@ -37,7 +37,6 @@ var _current_session_id: String = ""
 var _streaming_text: String = ""
 var _streaming_reasoning_text: String = ""
 var _scroll_pending: bool = false
-var _scroll_pending_locked: bool = false  # 防反复推底锁
 
 # ── 懒加载状态 ──
 var _lazy_cursor: String = ""
@@ -95,10 +94,12 @@ func _create_sse_handler() -> SSEHandler:
 			_streaming_text += delta
 			if _streaming_label != null:
 				_streaming_label.text = _streaming_text
+				_scroll_to_newest()
 		elif field == "text":
 			_streaming_text += delta
 			if _streaming_label != null:
 				_streaming_label.text = _streaming_text
+				_scroll_to_newest()
 			_rate_tokens += delta.length()
 			if _rate_time < 0.001:
 				_rate_time = 0.001
@@ -438,7 +439,6 @@ func _process(delta: float) -> void:
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
-			_scroll_pending_locked = true
 
 	# 注意：VBoxContainer 自动管理总高，滚动路径不碰 custom_minimum_size
 
@@ -602,11 +602,6 @@ func _refresh_messages() -> void:
 
 func _on_scroll_changed(_value: float) -> void:
 	print("→ _on_scroll_changed value=" + str(_value))
-	## 用户手动滚动时解锁推底锁
-	if _scroll_pending_locked:
-		var bar := scroll.get_v_scroll_bar()
-		if bar != null and scroll.scroll_vertical < int(bar.max_value) - 10:
-			_scroll_pending_locked = false
 
 	## 滚动时触发懒加载：拉到顶时加载更旧的消息
 	if not _lazy_loading and not _lazy_cursor.is_empty():
@@ -876,7 +871,6 @@ func _finalize_streaming() -> void:
 	print("→ _finalize_streaming")
 	## 完成流式响应（由 _append_message 清理流式节点）
 	_streaming_label = null
-	_scroll_pending_locked = false
 	_scroll_to_newest()
 
 
@@ -1027,12 +1021,5 @@ func _fetch_balance() -> void:
 
 
 func _scroll_to_newest() -> void:
-	## 标记滚动到底（锁门控制：同一推送被锁定后，用户手动滚动才解锁）
-	if _scroll_pending_locked:
-		return
-	var bar := scroll.get_v_scroll_bar()
-	if bar != null and bar.max_value > 0:
-		if scroll.scroll_vertical < int(bar.max_value) - 30:
-			return
 	if not _scroll_pending:
 		_scroll_pending = true
