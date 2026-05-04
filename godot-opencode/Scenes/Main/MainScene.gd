@@ -38,6 +38,7 @@ var _streaming_text: String = ""
 var _streaming_reasoning_text: String = ""
 var _raw_toggle: CheckBox
 var _scroll_pending: bool = false
+var _auto_scroll: bool = true  # 用户是否在"吸附"状态（插头插在插座里）
 
 # ── 懒加载状态 ──
 var _lazy_cursor: String = ""
@@ -114,16 +115,14 @@ func _create_sse_handler() -> SSEHandler:
 			_streaming_text += delta
 			if _streaming_label != null:
 				_streaming_label.text = _streaming_text
-				var bar = scroll.get_v_scroll_bar()
-				if bar != null and scroll.scroll_vertical >= bar.max_value - 30:
+				if _auto_scroll:
 					_scroll_to_newest()
 		elif field == "text":
 			_update_session_state("generating")
 			_streaming_text += delta
 			if _streaming_label != null:
 				_streaming_label.text = _streaming_text
-				var bar = scroll.get_v_scroll_bar()
-				if bar != null and scroll.scroll_vertical >= bar.max_value - 30:
+				if _auto_scroll:
 					_scroll_to_newest()
 			_rate_tokens += delta.length()
 			if _rate_time < 0.001:
@@ -529,7 +528,7 @@ func _init_sse() -> void:
 func _process(delta: float) -> void:
 	# 主动推底：设 scroll_vertical，value_changed 在 Layout Pass 后才刷新 max_value
 	# 推底一次即清标记，防止用户上拉后被拽回
-	if _scroll_pending:
+	if _auto_scroll and _scroll_pending:
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
@@ -684,8 +683,18 @@ func _refresh_messages() -> void:
 	_scroll_to_newest()
 
 
-func _on_scroll_changed(_value: float) -> void:
-	print("→ _on_scroll_changed value=" + str(_value))
+func _on_scroll_changed(value: float) -> void:
+	print("→ _on_scroll_changed value=" + str(value))
+
+	# ⭐ 插头/插座逻辑：用户上拉断开吸附，用户拉到底重新吸附
+	var bar := scroll.get_v_scroll_bar()
+	if bar != null and bar.max_value > 0:
+		if value >= bar.max_value - 5.0:
+			_auto_scroll = true  # 用户拉到底 → 重新插上
+		elif value < bar.max_value - 10.0:
+			# 被用户手动上拉（不是被 _process 推底）
+			if not _scroll_pending:
+				_auto_scroll = false  # 用户拔出插头
 
 	## 滚动时触发懒加载：拉到顶时加载更旧的消息
 	if not _lazy_loading and not _lazy_cursor.is_empty():
