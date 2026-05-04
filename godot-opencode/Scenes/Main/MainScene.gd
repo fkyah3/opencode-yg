@@ -165,7 +165,7 @@ func _ready() -> void:
 	scroll.get_v_scroll_bar().value_changed.connect(_on_scroll_changed)
 	scroll.resized.connect(_on_scroll_resized)
 	# RAW 模式切换
-	var toggle := get_node_or_null("../RawModeToggle") as CheckBox
+	var toggle := get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/RawModeToggle") as CheckBox
 	if toggle != null:
 		_raw_toggle = toggle
 		_raw_toggle.button_pressed = _raw_mode

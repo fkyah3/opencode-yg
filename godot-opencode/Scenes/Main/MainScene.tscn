@@ -290,6 +290,7 @@ theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
 
 [node name="RawModeToggle" type="CheckBox" parent="Layout/Body/Sidebar/SidebarScroll/SidebarContent" unique_id=1418557761]
 layout_mode = 2
-text = "RAW 模式"
 theme_override_colors/font_color = Color(0.37, 0.37, 0.37, 1)
+text = "RAW 模式"
+
 [connection signal="pressed" from="Layout/Body/ChatArea/InputArea/HBox/SendBtn" to="." method="_on_send_pressed"]
