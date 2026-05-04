@@ -1065,9 +1065,14 @@ func _append_message(msg: Dictionary) -> void:
 
 
 func _clear_messages() -> void:
-	## 清空 VBoxContainer 中所有消息节点
-	for c in virtual_content.get_children():
-		c.queue_free()
+	## 清空消息区所有节点（包括流式），重置状态，为新会话初始化
+	_message_log.clear_all()
+	_row_data.clear()
+	_streaming_label = null
+	_streaming_node = null
+	_streaming_text = ""
+	_streaming_reasoning_text = ""
+	_streaming_just_finalized = false
 
 
 func _set_status(text: String) -> void:
