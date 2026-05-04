@@ -110,6 +110,7 @@ var _streaming_just_finalized: bool = false  # 阻止 message.updated 触发 _re
 @onready var part_renderer: PartRenderer = PartRenderer.new(theme_config)
 @onready var message_log: MessageLog = MessageLog.new(virtual_content, theme_config, part_renderer)
 @onready var sse_handler: SSEHandler = _create_sse_handler()
+@onready var _message_log: MessageLog = MessageLog.new(virtual_content, theme_config, part_renderer)
 
 
 func _create_sse_handler() -> SSEHandler:
@@ -170,8 +171,10 @@ func _create_sse_handler() -> SSEHandler:
 			_streaming_label.text = _streaming_text
 
 	h.on_message_updated = func(sid: String) -> void:
-		if sid == _current_session_id and _streaming_label == null and not _streaming_just_finalized:
-			_refresh_messages()
+		#[Step 1-观察] 不再调 _refresh_messages：流式 delta 已在过程中送达。
+		# 保留此日志观察三天，确认无意外触发后进入 Step 5 删除。
+		if sid == _current_session_id:
+			push_warning("→ on_message_updated (已跳过 _refresh_messages)")
 
 	h.on_permission_asked = func(props: Dictionary) -> void:
 		_on_permission_asked(props)
@@ -269,7 +272,7 @@ func _on_raw_mode_toggled(on: bool) -> void:
 		child.queue_free()
 	await get_tree().process_frame
 	for msg in to_rerender:
-		var node := _build_message_node(msg)
+		var node := _message_log.build_node(msg)
 		virtual_content.add_child(node)
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		virtual_content.add_child(_streaming_node)
@@ -492,7 +495,7 @@ func _send_message_direct(text: String) -> void:
 	_append_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
 	# 创建流式响应容器
-	_create_streaming_widget()
+	_message_log.create_streaming_widget()
 
 	var send_sid := _current_session_id
 	var result := await _api.send_message(_current_session_id, text)
@@ -667,7 +670,7 @@ func _load_session_messages(sid: String) -> void:
 	_update_info_bar()
 	# 顺序追加：msg[0]=最旧 → 先加 → 在顶，msg[N]=最新 → 后加 → 在底
 	for msg in messages:
-		var node := _build_message_node(msg)
+		var node := _message_log.build_node(msg)
 		virtual_content.add_child(node)
 
 	# 消息追加完毕，标记推送到底
@@ -693,7 +696,7 @@ func _refresh_messages() -> void:
 	_row_data = messages
 	_set_status("刷新 " + str(messages.size()) + " 条...")
 	for msg in messages:
-		virtual_content.add_child(_build_message_node(msg))
+		virtual_content.add_child(_message_log.build_node(msg))
 	_refreshing_messages = false
 	await get_tree().process_frame
 	_scroll_to_newest()
@@ -728,7 +731,7 @@ func _lazy_load_more() -> void:
 	# 批量构建所有节点（不加入场景树）
 	var nodes: Array[Control] = []
 	for msg in items:
-		nodes.append(_build_message_node(msg))
+		nodes.append(_message_log.build_node(msg))
 		_row_data.append(msg)
 	# 从末到首移动到 VBoxContainer 顶部 — 保持 old→new 顺序
 	for j in range(nodes.size() - 1, -1, -1):
@@ -950,7 +953,7 @@ func _on_send_pressed() -> void:
 	_append_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
 	# 创建流式响应容器
-	_create_streaming_widget()
+	_message_log.create_streaming_widget()
 
 	var send_sid := _current_session_id
 	var res = await _api.send_message(send_sid, text)
@@ -1035,60 +1038,7 @@ func _on_question_rejected(request_id: String) -> void:
 	await _api.reply_question(request_id, [])
 
 
-func _create_streaming_widget() -> VBoxContainer:
-	print("→ _create_streaming_widget")
-	## 创建流式响应的容器结构（名称 + 思考文本 + 气泡文本区）
-	# 重置流式状态
-	# 重置流式状态——下次流式开始时允许 _refresh_messages
-	_streaming_just_finalized = false
-	_streaming_text = ""
-	_streaming_reasoning_text = ""
 
-	var msg_vbox := VBoxContainer.new()
-	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	msg_vbox.add_theme_constant_override("separation", 2)
-
-	# 名称标签
-	var name_label := RichTextLabel.new()
-	name_label.bbcode_enabled = true
-	name_label.fit_content = true
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 3)
-	name_label.add_theme_color_override("default_color", theme_config.color_text_name)
-	name_label.append_text("AI")
-	msg_vbox.add_child(name_label)
-
-	# 主文本气泡（思考 + 文字合并输出）
-	var bubble := PanelContainer.new()
-	bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var style := StyleBoxFlat.new()
-	style.bg_color = theme_config.bubble_ai_bg
-	style.border_width_left = 3
-	style.border_color = theme_config.bubble_ai_border
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_top_right = 6
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
-	bubble.add_theme_stylebox_override("panel", style)
-
-	_streaming_label = RichTextLabel.new()
-	_streaming_label.bbcode_enabled = true
-	_streaming_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_streaming_label.fit_content = true
-	_streaming_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_streaming_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base)
-	_streaming_label.add_theme_color_override("default_color", theme_config.color_text)
-
-	bubble.add_child(_streaming_label)
-	msg_vbox.add_child(bubble)
-
-	# 将流式节点添加到 VBoxContainer 底部（正常顺序：新消息在末尾）
-	_streaming_node = msg_vbox
-	virtual_content.add_child(msg_vbox)
-	_scroll_to_newest()
-	return msg_vbox
 
 
 func _finalize_streaming() -> void:
@@ -1100,145 +1050,9 @@ func _finalize_streaming() -> void:
 	_scroll_to_newest()
 
 
-func _build_message_node(msg: Dictionary) -> Control:
-	## 创建一个消息节点树
-	var is_user: bool = msg.get("role", "") == "user"
-	var parts: Array = msg.get("parts", [])
-	var root := VBoxContainer.new()
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	# 名称标签
-	var name_label := RichTextLabel.new()
-	name_label.bbcode_enabled = true
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_color_override("default_color", theme_config.color_text_name)
-	name_label.append_text("你" if is_user else "AI")
-	root.add_child(name_label)
-
-	if _raw_mode:
-		# — 统一流式风格：灰色思考，粗体工具，原文文字 —
-		var raw_parts := PackedStringArray()
-		for p in parts:
-			var pt_raw: String = p.get("type", "")
-			var pt: String = pt_raw
-			if pt.begins_with("tool-"):
-				pt = "tool"
-			match pt:
-				"reasoning":
-					var rt: String = p.get("text", "")
-					if not rt.is_empty():
-						raw_parts.append("[color=#" + theme_config.color_text_dim.to_html(false) + "]思考：" + rt + "[/color]")
-				"text":
-					var txt: String = p.get("text", "")
-					if not txt.is_empty():
-						raw_parts.append(txt)
-				"tool", "tool-call":
-					var tool_name: String = p.get("tool", p.get("name", "?"))
-					var state: Dictionary = p.get("state", {})
-					var stype: String = state.get("status", "")
-					var icon: String = "✅" if stype == "completed" else ("❌" if stype == "error" else "🔧")
-					var ttitle: String = state.get("title", "")
-					var fpath: String = state.get("input", {}).get("filePath", "")
-					var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
-					var raw_line: String = "[b]" + icon + " " + tname.trim_suffix(".md") + "[/b]"
-					var raw_content: String = state.get("input", {}).get("content", "")
-					raw_parts.append(raw_line)
-					if not raw_content.is_empty():
-						raw_parts.append("```" + raw_content.left(2000) + "```")
-					if stype == "completed":
-						var output: String = state.get("output", "")
-						if not output.is_empty():
-							raw_parts.append("[color=#88cc88]" + output.left(2000) + "[/color]")
-		if not raw_parts.is_empty():
-			var bubble := PanelContainer.new()
-			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			var style := StyleBoxFlat.new()
-			style.bg_color = theme_config.bubble_user_bg if is_user else theme_config.bubble_ai_bg
-			style.border_color = theme_config.bubble_user_border if is_user else theme_config.bubble_ai_border
-			style.border_width_left = 3
-			style.corner_radius_bottom_right = 6
-			style.corner_radius_top_right = 6
-			style.content_margin_left = 10
-			style.content_margin_right = 10
-			style.content_margin_top = 6
-			style.content_margin_bottom = 6
-			bubble.add_theme_stylebox_override("panel", style)
-			var label := RichTextLabel.new()
-			label.bbcode_enabled = true
-			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			label.fit_content = true
-			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			label.add_theme_color_override("default_color", theme_config.color_text)
-			label.append_text("\n".join(raw_parts))
-			bubble.add_child(label)
-			root.add_child(bubble)
-	else:
-		# — 渲染模式：思考独立标签，文字通过 MarkdownBBCode 转换 —
-		var thinking_text := ""
-		var bbcode_parts := PackedStringArray()
-		for p in parts:
-			var pt_raw: String = p.get("type", "")
-			var pt: String = pt_raw
-			if pt.begins_with("tool-"):
-				pt = "tool"
-			match pt:
-				"reasoning":
-					var rt: String = p.get("text", "")
-					if not rt.is_empty():
-						thinking_text += rt
-				"text":
-					var txt: String = p.get("text", "")
-					if not txt.is_empty():
-						bbcode_parts.append(part_renderer.render_part_text(txt))
-				"tool", "tool-call":
-					bbcode_parts.append(part_renderer.render_part_tool(p))
-
-		if not thinking_text.is_empty():
-			var think_label := RichTextLabel.new()
-			think_label.bbcode_enabled = true
-			think_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			think_label.fit_content = true
-			think_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			think_label.add_theme_color_override("default_color", theme_config.color_text_dim)
-			think_label.append_text("[color=#" + theme_config.color_text_dim.to_html(false) + "]思考：" + thinking_text + "[/color]")
-			root.add_child(think_label)
-
-		if not bbcode_parts.is_empty():
-			var bubble := PanelContainer.new()
-			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			var style := StyleBoxFlat.new()
-			style.bg_color = theme_config.bubble_user_bg if is_user else theme_config.bubble_ai_bg
-			style.border_color = theme_config.bubble_user_border if is_user else theme_config.bubble_ai_border
-			style.border_width_left = 3
-			style.corner_radius_bottom_right = 6
-			style.corner_radius_top_right = 6
-			style.content_margin_left = 10
-			style.content_margin_right = 10
-			style.content_margin_top = 6
-			style.content_margin_bottom = 6
-			bubble.add_theme_stylebox_override("panel", style)
-			var label := RichTextLabel.new()
-			label.bbcode_enabled = true
-			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			label.fit_content = true
-			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			label.add_theme_color_override("default_color", theme_config.color_text)
-			label.append_text("\n".join(bbcode_parts))
-			bubble.add_child(label)
-			root.add_child(bubble)
-
-	root.set_meta("row_data", msg)
-	return root
-
-
 func _append_message(msg: Dictionary) -> void:
-	## 追加消息到 VBoxContainer 末尾（刷新锁开启时跳过，避免与 _refresh_messages 竞争）
-	if _refreshing_messages:
-		print("→ _append_message skipped (refreshing lock)")
-		return
-	if not is_instance_valid(virtual_content) or virtual_content.get_parent() == null:
-		push_warning("→ _append_message: virtual_content 已失效！msg_role=" + msg.get("role", "?"))
-		return
+	## 追加消息到 VBoxContainer 末尾
+
 	# 清理流式节点
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.queue_free()
@@ -1249,7 +1063,7 @@ func _append_message(msg: Dictionary) -> void:
 	if not toks.is_empty():
 		_context_memory += toks.get("input", 0) + toks.get("output", 0) + toks.get("reasoning", 0) + toks.get("cache", {}).get("read", 0) + toks.get("cache", {}).get("write", 0)
 	_update_info_bar()
-	var node := _build_message_node(msg)
+	var node := _message_log.build_node(msg)
 	if not is_instance_valid(node):
 		push_warning("→ _append_message: _build_message_node 返回无效节点！")
 		return
