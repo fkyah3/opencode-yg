@@ -36,11 +36,12 @@ func _create_sse_handler() -> SSEHandler:
 		if sid != _current_session_id:
 			return
 		if field == "reasoning":
-			if _streaming_label == null:
+			if _streaming_reasoning_label == null:
 				return
+			_streaming_reasoning_text += delta
+			_streaming_reasoning_label.visible = true
 			var col_html := theme_config.color_text_dim.to_html(false)
-			_streaming_text += "[color=#" + col_html + "]思考：" + delta + "[/color]"
-			_streaming_label.text = _streaming_text
+			_streaming_reasoning_label.text = "[color=#" + col_html + "]" + _streaming_reasoning_text + "[/color]"
 			_scroll_to_newest()
 		elif field == "text":
 			if _streaming_label == null:
@@ -48,7 +49,6 @@ func _create_sse_handler() -> SSEHandler:
 			_streaming_text += delta
 			_streaming_label.text = _streaming_text
 			_scroll_to_newest()
-			# Token 速率追踪
 			_rate_tokens += delta.length()
 			if _rate_time < 0.001:
 				_rate_time = 0.001
@@ -61,10 +61,9 @@ func _create_sse_handler() -> SSEHandler:
 			_finalize_streaming()
 		var mem: int = status.get("memory", _context_memory)
 		var ctx: int = status.get("context", _context_total)
-		if mem != _context_memory or ctx != _context_total:
-			_context_memory = mem
-			_context_total = ctx
-			_update_info_bar()
+		_context_memory = mem
+		_context_total = ctx
+		_update_info_bar()
 
 	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String) -> void:
 		if sid != _current_session_id or _streaming_label == null:
@@ -106,16 +105,18 @@ var _sse: SSEClient
 # ── 会话状态 ──
 var _current_session_id: String = ""
 var _streaming_text: String = ""
+var _streaming_reasoning_text: String = ""  # 流式推理累积文本
 var _streaming_label: RichTextLabel
-var _streaming_node: Control          # 流式容器的根节点（虚拟内容中的临时行）
+var _streaming_reasoning_label: RichTextLabel
+var _streaming_node: Control          # 流式容器的根节点
 var _cached_sessions: Array = []  # 缓存的会话列表，避免重复 HTTP 请求
 
 # ── 懒加载状态 ──
 var _lazy_cursor: String = ""  # 下一页游标
 var _lazy_loading: bool = false  # 正在加载更多
-	var _has_loaded_all: bool = false
-	var _refreshing_messages: bool = false  # 刷新锁（防 SSE + HTTP 双写 VBoxContainer）
-	var _skip_append_after: int = 0  # 发送序列号：_append_message 检查此号是否过期
+var _has_loaded_all: bool = false
+var _refreshing_messages: bool = false  # 刷新锁（防 SSE + HTTP 双写 VBoxContainer）
+var _skip_append_after: int = 0  # 发送序列号：_append_message 检查此号是否过期
 var _row_data: Array = []  # 消息数据（仅作数据缓存）
 # ── Agent/模型信息 ──
 var _primary_agent_name: String = "-"
@@ -150,7 +151,7 @@ func _ready() -> void:
 	_init_session_picker()
 	_init_command_palette()
 	await _bootstrap()
-	_load_agent_info()
+	await _load_agent_info()
 	_update_info_bar()
 	# 监听输入框输入，检测 / 命令
 	msg_input.text_changed.connect(_on_input_text_changed)
@@ -205,10 +206,14 @@ func _load_agent_info() -> void:
 	print("→ _load_agent_info")
 	var agent := await _api.get_primary_agent()
 	if agent.is_empty():
+		print("→ _load_agent_info: agent is empty")
 		return
 	_primary_agent_name = agent.get("name", "-")
 	var model: Dictionary = agent.get("model", {})
 	_primary_model_name = model.get("modelID", "-")
+	var model_limit: Dictionary = model.get("limit", {})
+	_context_total = model_limit.get("context", 0)
+	print("→ _load_agent_info: agent=" + _primary_agent_name + " model=" + _primary_model_name + " ctx_limit=" + str(_context_total))
 	_update_info_bar()
 
 
@@ -537,6 +542,13 @@ func _load_session_messages(sid: String) -> void:
 		_has_loaded_all = true
 
 	_row_data = messages
+	# 计算当前消息的 token 用量
+	_context_memory = 0
+	for msg in messages:
+		var toks: Dictionary = msg.get("tokens", {})
+		if not toks.is_empty():
+			_context_memory += toks.get("input", 0) + toks.get("output", 0) + toks.get("reasoning", 0) + toks.get("cache", {}).get("read", 0) + toks.get("cache", {}).get("write", 0)
+	_update_info_bar()
 	# 顺序追加：msg[0]=最旧 → 先加 → 在顶，msg[N]=最新 → 后加 → 在底
 	for msg in messages:
 		var node := _build_message_node(msg)
@@ -803,6 +815,7 @@ func _create_streaming_widget() -> VBoxContainer:
 	## 创建流式响应的容器结构（名称 + 思考文本 + 气泡文本区）
 	# 重置流式状态
 	_streaming_text = ""
+	_streaming_reasoning_text = ""
 
 	var msg_vbox := VBoxContainer.new()
 	msg_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -832,6 +845,16 @@ func _create_streaming_widget() -> VBoxContainer:
 	style.content_margin_top = 6
 	style.content_margin_bottom = 6
 	bubble.add_theme_stylebox_override("panel", style)
+
+	# 思考标签（独立于文字标签，推理内容灰色，文字开始后隐藏）
+	_streaming_reasoning_label = RichTextLabel.new()
+	_streaming_reasoning_label.bbcode_enabled = true
+	_streaming_reasoning_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_streaming_reasoning_label.fit_content = true
+	_streaming_reasoning_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_streaming_reasoning_label.add_theme_font_size_override("normal_font_size", theme_config.font_size_base - 1)
+	_streaming_reasoning_label.add_theme_color_override("default_color", theme_config.color_text_dim)
+	bubble.add_child(_streaming_reasoning_label)
 
 	_streaming_label = RichTextLabel.new()
 	_streaming_label.bbcode_enabled = true
@@ -949,8 +972,13 @@ func _append_message(msg: Dictionary) -> void:
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.queue_free()
 		_streaming_node = null
-		_streaming_label = null
+	_streaming_label = null
+	_streaming_reasoning_label = null
 	_row_data.append(msg)
+	var toks: Dictionary = msg.get("tokens", {})
+	if not toks.is_empty():
+		_context_memory += toks.get("input", 0) + toks.get("output", 0) + toks.get("reasoning", 0) + toks.get("cache", {}).get("read", 0) + toks.get("cache", {}).get("write", 0)
+	_update_info_bar()
 	var node := _build_message_node(msg)
 	if not is_instance_valid(node):
 		push_warning("→ _append_message: _build_message_node 返回无效节点！")
