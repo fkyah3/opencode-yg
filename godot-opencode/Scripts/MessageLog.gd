@@ -34,7 +34,10 @@ func get_streaming_node() -> VBoxContainer:
 
 # ── 清空所有节点（包括流式）────────────────────────────────────────
 func clear_all() -> void:
+	## 立即从场景树摘除所有子节点（先 remove_child 再 queue_free），
+	## 确保新节点加入时旧节点不参与 VBoxContainer 布局。
 	for c in _container.get_children():
+		_container.remove_child(c)
 		c.queue_free()
 	_streaming_node = null
 	_streaming_label = null
