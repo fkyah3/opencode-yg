@@ -36,6 +36,7 @@ var _sse: SSEClient
 var _current_session_id: String = ""
 var _streaming_text: String = ""
 var _streaming_reasoning_text: String = ""
+var _raw_toggle: CheckBox
 var _scroll_pending: bool = false
 
 # ── 懒加载状态 ──
@@ -54,6 +55,7 @@ var _streaming_node: Control
 # ── 上下文 ──
 var _context_memory: int = 0
 var _context_total: int = 0
+var _raw_mode: bool = true  # RAW 模式：显示原文，不经过 Markdown 渲染
 var _cached_sessions: Array = []  # 会话列表缓存
 
 # ── Token 速率 ──
@@ -162,6 +164,12 @@ func _ready() -> void:
 	# 连接虚拟滚动的滚动信号
 	scroll.get_v_scroll_bar().value_changed.connect(_on_scroll_changed)
 	scroll.resized.connect(_on_scroll_resized)
+	# RAW 模式切换
+	var toggle := get_node_or_null("../RawModeToggle") as CheckBox
+	if toggle != null:
+		_raw_toggle = toggle
+		_raw_toggle.button_pressed = _raw_mode
+		_raw_toggle.toggled.connect(_on_raw_mode_toggled)
 
 
 func _apply_font_theme() -> void:
@@ -600,6 +608,21 @@ func _refresh_messages() -> void:
 
 # ═══════════════════ 虚拟滚动核心 ═══════════════════
 
+func _on_raw_mode_toggled(pressed: bool) -> void:
+	print("→ _on_raw_mode_toggled " + str(pressed))
+	_raw_mode = pressed
+	# 只重绘已有消息（保留流式节点）
+	for c in virtual_content.get_children():
+		if c == _streaming_node and is_instance_valid(_streaming_node):
+			continue
+		c.queue_free()
+	for msg in _row_data:
+		virtual_content.add_child(_build_message_node(msg))
+	_refreshing_messages = false
+	await get_tree().process_frame
+	_scroll_to_newest()
+
+
 func _on_scroll_changed(_value: float) -> void:
 	print("→ _on_scroll_changed value=" + str(_value))
 
@@ -875,10 +898,9 @@ func _finalize_streaming() -> void:
 
 
 func _build_message_node(msg: Dictionary) -> Control:
-	## 创建一个消息节点树（VBoxContainer → name/thinking/label）
+	## 创建一个消息节点树
 	var is_user: bool = msg.get("role", "") == "user"
 	var parts: Array = msg.get("parts", [])
-
 	var root := VBoxContainer.new()
 	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
@@ -890,65 +912,103 @@ func _build_message_node(msg: Dictionary) -> Control:
 	name_label.append_text("你" if is_user else "AI")
 	root.add_child(name_label)
 
-	# 思考/工具 → 拼 BBCode 片段，全部放入一个泡泡标签
-	var thinking_text := ""
-	var bbcode_parts := PackedStringArray()
-	for p in parts:
-		var pt: String = p.get("type", "")
-		match pt:
-			"reasoning":
-				var rt: String = p.get("text", "")
-				if not rt.is_empty():
-					thinking_text += rt
-			"text":
-				var txt: String = p.get("text", "")
-				if not txt.is_empty():
-					bbcode_parts.append(part_renderer.render_part_text(txt))
-			"tool", "tool-call":
-				bbcode_parts.append(part_renderer.render_part_tool(p))
+	if _raw_mode:
+		# — RAW 模式：所有内容合并到一个泡泡，思考灰色，文字原文 —
+		var raw_parts := PackedStringArray()
+		for p in parts:
+			var pt: String = p.get("type", "")
+			match pt:
+				"reasoning":
+					var rt: String = p.get("text", "")
+					if not rt.is_empty():
+						raw_parts.append("[color=#" + theme_config.color_text_dim.to_html(false) + "]思考：" + rt + "[/color]")
+				"text":
+					var txt: String = p.get("text", "")
+					if not txt.is_empty():
+						raw_parts.append(txt)
+				"tool", "tool-call":
+					var tool_name: String = p.get("tool", p.get("name", "?"))
+					var state: Dictionary = p.get("state", {})
+					var stype: String = state.get("status", "")
+					var icon: String = "✅" if stype == "completed" else ("❌" if stype == "error" else "🔧")
+					var ttitle: String = state.get("title", "")
+					var fpath: String = state.get("input", {}).get("filePath", "")
+					var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
+					raw_parts.append("[b]" + icon + " " + tname.trim_suffix(".md") + "[/b]")
+		if not raw_parts.is_empty():
+			var bubble := PanelContainer.new()
+			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var style := StyleBoxFlat.new()
+			style.bg_color = theme_config.bubble_user_bg if is_user else theme_config.bubble_ai_bg
+			style.border_color = theme_config.bubble_user_border if is_user else theme_config.bubble_ai_border
+			style.border_width_left = 3
+			style.corner_radius_bottom_right = 6
+			style.corner_radius_top_right = 6
+			style.content_margin_left = 10
+			style.content_margin_right = 10
+			style.content_margin_top = 6
+			style.content_margin_bottom = 6
+			bubble.add_theme_stylebox_override("panel", style)
+			var label := RichTextLabel.new()
+			label.bbcode_enabled = true
+			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			label.fit_content = true
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			label.add_theme_color_override("default_color", theme_config.color_text)
+			label.append_text("\n".join(raw_parts))
+			bubble.add_child(label)
+			root.add_child(bubble)
+	else:
+		# — 渲染模式：思考独立标签，文字通过 MarkdownBBCode 转换 —
+		var thinking_text := ""
+		var bbcode_parts := PackedStringArray()
+		for p in parts:
+			var pt: String = p.get("type", "")
+			match pt:
+				"reasoning":
+					var rt: String = p.get("text", "")
+					if not rt.is_empty():
+						thinking_text += rt
+				"text":
+					var txt: String = p.get("text", "")
+					if not txt.is_empty():
+						bbcode_parts.append(part_renderer.render_part_text(txt))
+				"tool", "tool-call":
+					bbcode_parts.append(part_renderer.render_part_tool(p))
 
-	# 思考标签
-	if not thinking_text.is_empty():
-		var think_label := RichTextLabel.new()
-		think_label.bbcode_enabled = true
-		think_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		think_label.fit_content = true
-		think_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		think_label.add_theme_color_override("default_color", theme_config.color_text_dim)
-		think_label.append_text("[color=#" + theme_config.color_text_dim.to_html(false) + "]思考：" + thinking_text + "[/color]")
-		root.add_child(think_label)
+		if not thinking_text.is_empty():
+			var think_label := RichTextLabel.new()
+			think_label.bbcode_enabled = true
+			think_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			think_label.fit_content = true
+			think_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			think_label.add_theme_color_override("default_color", theme_config.color_text_dim)
+			think_label.append_text("[color=#" + theme_config.color_text_dim.to_html(false) + "]思考：" + thinking_text + "[/color]")
+			root.add_child(think_label)
 
-	# 泡泡（仅在有 renderable 内容时添加）
-	if not bbcode_parts.is_empty():
-		var bubble := PanelContainer.new()
-		bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var bstyle := StyleBoxFlat.new()
-		bstyle.bg_color = theme_config.bubble_user_bg if is_user else theme_config.bubble_ai_bg
-		bstyle.border_color = theme_config.bubble_user_border if is_user else theme_config.bubble_ai_border
-		bstyle.border_width_left = 3
-		bstyle.corner_radius_bottom_right = 6
-		bstyle.corner_radius_top_right = 6
-		bstyle.content_margin_left = 10
-		bstyle.content_margin_right = 10
-		bstyle.content_margin_top = 6
-		bstyle.content_margin_bottom = 6
-		bubble.add_theme_stylebox_override("panel", bstyle)
-
-		var text_label := RichTextLabel.new()
-		text_label.bbcode_enabled = true
-		text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		text_label.fit_content = true
-		text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		text_label.add_theme_color_override("default_color", theme_config.color_text)
-		# 检查 BBCode 缓存
-		var bbcode: String = msg.get("_bbcode", "")
-		if bbcode.is_empty():
-			bbcode = "\n".join(bbcode_parts)
-			msg["_bbcode"] = bbcode
-		text_label.clear()
-		text_label.append_text(bbcode)
-		bubble.add_child(text_label)
-		root.add_child(bubble)
+		if not bbcode_parts.is_empty():
+			var bubble := PanelContainer.new()
+			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var style := StyleBoxFlat.new()
+			style.bg_color = theme_config.bubble_user_bg if is_user else theme_config.bubble_ai_bg
+			style.border_color = theme_config.bubble_user_border if is_user else theme_config.bubble_ai_border
+			style.border_width_left = 3
+			style.corner_radius_bottom_right = 6
+			style.corner_radius_top_right = 6
+			style.content_margin_left = 10
+			style.content_margin_right = 10
+			style.content_margin_top = 6
+			style.content_margin_bottom = 6
+			bubble.add_theme_stylebox_override("panel", style)
+			var label := RichTextLabel.new()
+			label.bbcode_enabled = true
+			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			label.fit_content = true
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			label.add_theme_color_override("default_color", theme_config.color_text)
+			label.append_text("\n".join(bbcode_parts))
+			bubble.add_child(label)
+			root.add_child(bubble)
 
 	return root
 
