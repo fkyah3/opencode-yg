@@ -1,17 +1,6 @@
-[gd_resource type="Resource" script_class="ThemeConfig" format=3]
+[gd_resource type="Resource" script_class="ThemeConfig" format=3 uid="uid://d28l608uuphef"]
 
-[ext_resource type="Script" path="res://Scripts/ThemeConfig.gd" id="1"]
+[ext_resource type="Script" uid="uid://bcohfkop0elr5" path="res://Scripts/ThemeConfig.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
-font_path_normal = "res://fonts/JetBrains_Mono/static/JetBrainsMono-Regular.ttf"
-font_path_bold = "res://fonts/JetBrains_Mono/static/JetBrainsMono-Bold.ttf"
-font_size_base = 16
-color_text = Color(0.93, 0.93, 0.93, 1.0)
-color_text_dim = Color(0.37, 0.37, 0.37, 1.0)
-color_text_name = Color(0.75, 0.75, 0.75, 1.0)
-color_text_info = Color(0.5, 0.5, 0.5, 1.0)
-bubble_user_bg = Color(0.13, 0.13, 0.13, 1.0)
-bubble_user_border = Color(0.3, 0.6, 1.0, 1.0)
-bubble_ai_bg = Color(0.07, 0.07, 0.07, 1.0)
-bubble_ai_border = Color(0.75, 0.75, 0.75, 0.35)

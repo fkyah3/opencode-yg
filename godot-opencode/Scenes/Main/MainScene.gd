@@ -99,6 +99,7 @@ var _session_state: String = "idle"  # idle | sending | thinking | generating | 
 
 # ── 子模块（注入 ThemeConfig 后初始化，顺序：theme_config → PartRenderer → SSEHandler） ──
 @onready var part_renderer: PartRenderer = PartRenderer.new(theme_config)
+@onready var message_log: MessageLog = MessageLog.new(virtual_content, theme_config, part_renderer)
 @onready var sse_handler: SSEHandler = _create_sse_handler()
 
 
@@ -1007,7 +1008,7 @@ func _build_message_node(msg: Dictionary) -> Control:
 	root.add_child(name_label)
 
 	if _raw_mode:
-		# — RAW 模式：所有内容合并到一个泡泡，思考灰色，文字原文 —
+		# — 统一流式风格：灰色思考，粗体工具，原文文字 —
 		var raw_parts := PackedStringArray()
 		for p in parts:
 			var pt_raw: String = p.get("type", "")

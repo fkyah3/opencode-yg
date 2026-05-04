@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b7yu22g3ewera"]
 
 [ext_resource type="Script" uid="uid://gpk6duweakev" path="res://Scenes/Main/MainScene.gd" id="1"]
-[ext_resource type="Resource" path="res://theme_config.tres" id="2"]
+[ext_resource type="Resource" uid="uid://d28l608uuphef" path="res://theme_config.tres" id="2"]
 
 [node name="MainScene" type="Control" unique_id=1939686237]
 layout_mode = 3
@@ -13,6 +13,11 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
 theme_config = ExtResource("2")
+chat_padding_h = 50
+chat_input_gap = 12
+input_padding = 50
+input_min_height = 150
+load_limit = 40
 
 [node name="Bg" type="ColorRect" parent="." unique_id=1750236572]
 layout_mode = 0
