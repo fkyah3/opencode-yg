@@ -496,6 +496,8 @@ func _send_message_direct(text: String) -> void:
 
 	# 创建流式响应容器
 	_message_log.create_streaming_widget()
+	_streaming_label = _message_log.get_streaming_label()
+	_streaming_node = _message_log.get_streaming_node()
 
 	var send_sid := _current_session_id
 	var result := await _api.send_message(_current_session_id, text)
@@ -954,6 +956,8 @@ func _on_send_pressed() -> void:
 
 	# 创建流式响应容器
 	_message_log.create_streaming_widget()
+	_streaming_label = _message_log.get_streaming_label()
+	_streaming_node = _message_log.get_streaming_node()
 
 	var send_sid := _current_session_id
 	var res = await _api.send_message(send_sid, text)

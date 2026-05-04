@@ -24,6 +24,14 @@ func _init(container: VBoxContainer, theme_config: ThemeConfig, part_renderer: P
 	_part_renderer = part_renderer
 
 
+# ── 流式节点访问器 ─────────────────────────────────────────────
+func get_streaming_label() -> RichTextLabel:
+	return _streaming_label
+
+func get_streaming_node() -> VBoxContainer:
+	return _streaming_node
+
+
 # ── 清空所有节点（包括流式）────────────────────────────────────────
 func clear_all() -> void:
 	for c in _container.get_children():
@@ -148,10 +156,6 @@ func create_streaming_widget() -> VBoxContainer:
 	_container.add_child(msg_vbox)
 	_streaming_node = msg_vbox
 	return msg_vbox
-
-
-func get_streaming_label() -> RichTextLabel:
-	return _streaming_label
 
 
 func lock_streaming() -> void:
