@@ -928,7 +928,10 @@ func _build_message_node(msg: Dictionary) -> Control:
 		# — RAW 模式：所有内容合并到一个泡泡，思考灰色，文字原文 —
 		var raw_parts := PackedStringArray()
 		for p in parts:
-			var pt: String = p.get("type", "")
+			var pt_raw: String = p.get("type", "")
+			var pt: String = pt_raw
+			if pt.begins_with("tool-"):
+				pt = "tool"
 			match pt:
 				"reasoning":
 					var rt: String = p.get("text", "")
@@ -946,7 +949,15 @@ func _build_message_node(msg: Dictionary) -> Control:
 					var ttitle: String = state.get("title", "")
 					var fpath: String = state.get("input", {}).get("filePath", "")
 					var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
-					raw_parts.append("[b]" + icon + " " + tname.trim_suffix(".md") + "[/b]")
+					var raw_line: String = "[b]" + icon + " " + tname.trim_suffix(".md") + "[/b]"
+					var raw_content: String = state.get("input", {}).get("content", "")
+					raw_parts.append(raw_line)
+					if not raw_content.is_empty():
+						raw_parts.append("```" + raw_content.left(2000) + "```")
+					if stype == "completed":
+						var output: String = state.get("output", "")
+						if not output.is_empty():
+							raw_parts.append("[color=#88cc88]" + output.left(2000) + "[/color]")
 		if not raw_parts.is_empty():
 			var bubble := PanelContainer.new()
 			bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -975,7 +986,10 @@ func _build_message_node(msg: Dictionary) -> Control:
 		var thinking_text := ""
 		var bbcode_parts := PackedStringArray()
 		for p in parts:
-			var pt: String = p.get("type", "")
+			var pt_raw: String = p.get("type", "")
+			var pt: String = pt_raw
+			if pt.begins_with("tool-"):
+				pt = "tool"
 			match pt:
 				"reasoning":
 					var rt: String = p.get("text", "")

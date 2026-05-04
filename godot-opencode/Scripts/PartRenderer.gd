@@ -37,6 +37,11 @@ func render_part_tool(d: Dictionary) -> String:
 	var parts := PackedStringArray()
 	parts.append("**" + icon + " " + tname.trim_suffix(".md") + "**")
 
+	# 所有工具一律显示 input 中的 content（如有）
+	var raw: String = state.get("input", {}).get("content", "")
+	if not raw.is_empty():
+		parts.append("\n```\n" + raw.left(2000) + "\n```")
+
 	# edit → 原文红、修改后绿
 	if tool_name == "edit":
 		var old_str: String = state.get("input", {}).get("oldString", "")
@@ -45,15 +50,10 @@ func render_part_tool(d: Dictionary) -> String:
 			var old_esc := old_str.replace("[", "[lb]")
 			var new_esc := new_str.replace("[", "[lb]")
 			parts.append("\n[color=#ff5555]─ 原文 ─[/color]\n[color=#ff5555]" + old_esc + "[/color]\n[color=#55ff55]─ 修改后 ─[/color]\n[color=#55ff55]" + new_esc + "[/color]")
-	else:
-		# write/bash/shell → 代码块包裹内容
-		var mutation: bool = tool_name in ["write", "bash", "shell"]
-		if mutation:
-			var raw: String = state.get("input", {}).get("content", "")
-			var out: String = state.get("output", "")
-			if not raw.is_empty():
-				parts.append("\n```\n" + raw.left(1500) + "\n```")
-			elif not out.is_empty():
-				parts.append("\n```\n" + out.left(1500) + "\n```")
+
+	# 已完成工具的 output（执行结果）
+	var out: String = state.get("output", "")
+	if status == "completed" and not out.is_empty():
+		parts.append("\n[color=#88cc88]" + out.left(2000) + "[/color]")
 
 	return "\n".join(parts)
