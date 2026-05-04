@@ -113,6 +113,7 @@ var _lazy_cursor: String = ""  # 下一页游标
 var _lazy_loading: bool = false  # 正在加载更多，防止并发重复请求
 var _has_loaded_all: bool = false
 var _prev_max_value: float = 0.0  # 上一次记录的 max_value，用于诊断 thumb 变化
+var _custom_minimum_size_stale: bool = false  # 需在 _process 中重算总高
 
 # ── Agent/模型信息 ──
 var _primary_agent_name: String = "-"
@@ -434,6 +435,11 @@ func _process(delta: float) -> void:
 			scroll.scroll_vertical = int(bar.max_value)
 	# _scroll_pending 在 _on_scroll_changed 中检测真底时清零
 
+	# 高度修正：滚动路径中不逐行改 custom_minimum_size，统一在此重算
+	if _custom_minimum_size_stale:
+		_custom_minimum_size_stale = false
+		virtual_content.custom_minimum_size.y = _y_offsets.back() + _row_heights.back() if not _row_heights.is_empty() else 0.0
+
 
 func _bootstrap() -> void:
 	print("→ _bootstrap")
@@ -736,17 +742,13 @@ func _update_visible_rows(scroll_y: float) -> void:
 		# 渲染后测量高度，修正 _row_heights 和 _y_offsets
 		if not _row_heights.is_empty() and row_idx < _row_heights.size():
 			var _actual_h := found.get_combined_minimum_size().y
-			if _actual_h > 0:
+			if _actual_h > 0 and row_idx < _row_heights.size():
 				var diff: float = _actual_h - _row_heights[row_idx]
 				if abs(diff) > 2.0:
 					_row_heights[row_idx] = _actual_h
-					var cms := virtual_content.custom_minimum_size
-					cms.y += diff
-					virtual_content.custom_minimum_size = cms
 					for j in range(row_idx + 1, _y_offsets.size()):
-						_y_offsets[j] += diff
-						if _row_assignments.has(j):
-							_row_assignments[j].position.y = _y_offsets[j]
+						_y_offsets[j] = _y_offsets[j - 1] + _row_heights[j - 1]
+					_custom_minimum_size_stale = true
 		_row_assignments[row_idx] = found
 
 func _row_idx_at_y(y: float) -> int:
