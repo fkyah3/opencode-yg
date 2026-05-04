@@ -426,13 +426,12 @@ func _init_sse() -> void:
 
 
 func _process(delta: float) -> void:
-	# print("→ _process")
-	# 防抖滚动: 每 0.1s 最多触发一次
+	# 主动推底：设 scroll_vertical，value_changed 在 Layout Pass 后才刷新 max_value
 	if _scroll_pending:
-		_scroll_pending = false
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
+	# _scroll_pending 在 _on_scroll_changed 中检测真底时清零
 
 
 func _bootstrap() -> void:
@@ -538,10 +537,11 @@ func _load_session_messages(sid: String) -> void:
 
 	# 数据准备：正常顺序（msg[0]=最旧，msg[N]=最新），滚到底展示最新
 	_row_data = messages
-	_set_status("渲染 " + str(messages.size()) + " 条消息...")
 	_compute_heights_and_offsets()
 	_adjust_pool_size()
-	# ⭐ 等一帧——布局完成后 label 宽度正确，BBCode 几何初始化直接使用正确宽度
+	# 设总高——标记可以滚动了
+	virtual_content.custom_minimum_size.y = _y_offsets.back() + _row_heights.back() if not _row_heights.is_empty() else 0.0
+	# 等一帧——布局完成后 label 有宽度，BBCode 几何初始化直接使用正确宽度
 	await get_tree().process_frame
 	_update_visible_rows(0)
 
@@ -643,7 +643,13 @@ func _on_scroll_changed(_value: float) -> void:
 	print("→ _on_scroll_changed value=" + str(_value))
 	## 滚动时更新可见行
 	_update_visible_rows(scroll.scroll_vertical)
-	
+
+	# 检测真底：scroll_pending 清零（数据帧到达即完成）
+	if _scroll_pending:
+		var bar := scroll.get_v_scroll_bar()
+		if bar != null and bar.max_value > 0 and scroll.scroll_vertical >= int(bar.max_value) - 2:
+			_scroll_pending = false
+
 	# 懒加载：拉到顶部时加载更旧的消息
 	if _lazy_cursor.is_empty() or _lazy_loading:
 		return
