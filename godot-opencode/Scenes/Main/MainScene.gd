@@ -526,10 +526,12 @@ func _process(delta: float) -> void:
 	# 主动推底：设 scroll_vertical，value_changed 在 Layout Pass 后才刷新 max_value
 	# 推底一次即清标记，防止用户上拉后被拽回
 	if _scroll_pending:
-		_scroll_pending = false
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
+			if scroll.scroll_vertical >= bar.max_value - 2.0:
+				_scroll_pending = false  # 已到真底
+			# else: 还没到底（节点高度还在增长中），保持标记，下一帧继续推
 
 	# 注意：VBoxContainer 自动管理总高，滚动路径不碰 custom_minimum_size
 
