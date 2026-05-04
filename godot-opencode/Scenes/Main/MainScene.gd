@@ -18,6 +18,7 @@ class_name MainScene
 @onready var info_agent: Label = %InfoAgent
 @onready var info_model: Label = %InfoModel
 @onready var info_ctx: Label = %InfoCtx
+@onready var info_balance: Label = %InfoBalance
 @onready var info_rate: Label = %InfoRate
 
 
@@ -83,10 +84,11 @@ func _create_sse_handler() -> SSEHandler:
 	h.on_question_asked = func(props: Dictionary) -> void:
 		_on_question_asked(props)
 
-	h.on_server_connected = func() -> void:
-		_update_info_bar()
-		if _api and is_instance_valid(_api):
-			_refresh_sessions()
+h.on_server_connected = func() -> void:
+	_update_info_bar()
+	_fetch_balance()
+	if _api and is_instance_valid(_api):
+		_refresh_sessions()
 
 	return h
 
@@ -572,7 +574,7 @@ func _on_scroll_changed(_value: float) -> void:
 
 
 func _lazy_load_more() -> void:
-	## 加载更多旧消息，插入到 VBoxContainer 顶部
+	## 加载更多旧消息，批量创建后一次性加入 VBoxContainer
 	var page = await _api.get_messages_page(_current_session_id, 50, _lazy_cursor)
 	if page.is_empty() or not (page.get("items") is Array) or page.items.is_empty():
 		_lazy_loading = false
@@ -580,13 +582,17 @@ func _lazy_load_more() -> void:
 			_has_loaded_all = true
 		return
 	var items: Array = page.items
-	# items 已是旧→新顺序，循环插入到最前
-	for j in range(items.size() - 1, -1, -1):
-		var msg: Dictionary = items[j]
-		_row_data.insert(0, msg)
-		var node := _build_message_node(msg)
-		virtual_content.add_child(node)
-		virtual_content.move_child(node, 0)
+
+	# 批量构建所有节点（不加入场景树）
+	var nodes: Array[Control] = []
+	for msg in items:
+		nodes.append(_build_message_node(msg))
+		_row_data.append(msg)
+	# 从末到首移动到 VBoxContainer 顶部 — 保持 old→new 顺序
+	for j in range(nodes.size() - 1, -1, -1):
+		virtual_content.add_child(nodes[j])
+		virtual_content.move_child(nodes[j], 0)
+
 	_lazy_cursor = page.get("cursor", "")
 	if _lazy_cursor.is_empty():
 		_has_loaded_all = true
@@ -855,9 +861,9 @@ func _build_message_node(msg: Dictionary) -> Control:
 			"text":
 				var txt: String = p.get("text", "")
 				if not txt.is_empty():
-					bbcode_parts.append(part_renderer.render_part_text(txt, theme_config))
+					bbcode_parts.append(part_renderer.render_part_text(txt))
 			"tool", "tool-call":
-				bbcode_parts.append(part_renderer.render_part_tool(p, theme_config))
+				bbcode_parts.append(part_renderer.render_part_tool(p))
 
 	# 思考标签
 	if not thinking_text.is_empty():
@@ -935,8 +941,30 @@ func _set_status(text: String) -> void:
 	status_label.text = text
 
 
-# ── 加载覆盖面板 ──
+func _fetch_balance() -> void:
+	## 从 DEEPSEEK_API_KEY 环境变量查询余额并更新 InfoBar
+	var key := OS.get_environment("DEEPSEEK_API_KEY")
+	if key.is_empty():
+		info_balance.text = "余额: 未配置"
+		return
+	info_balance.text = "余额: 查询中..."
 
+	var http := HTTPRequest.new()
+	add_child(http)
+	var on_done := func(_result: int, _code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+		var json := JSON.parse_string(body.get_string_from_utf8())
+		if json is Dictionary and json.has("balance_infos"):
+			var bi = json.balance_infos[0] if json.balance_infos.size() > 0 else {}
+			var total: String = bi.get("total_balance", "?")
+			info_balance.text = "余额: ¥" + total
+		else:
+			info_balance.text = "余额: 查询失败"
+		http.queue_free()
+	http.request_completed.connect(on_done)
+	var err := http.request("https://api.deepseek.com/user/balance", ["Authorization: Bearer " + key])
+	if err != OK:
+		info_balance.text = "余额: 请求失败"
+		http.queue_free()
 
 
 func _scroll_to_newest() -> void:
