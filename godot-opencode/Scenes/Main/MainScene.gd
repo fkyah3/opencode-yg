@@ -111,9 +111,10 @@ var _streaming_node: Control          # 流式容器的根节点（虚拟内容�
 var _cached_sessions: Array = []  # 缓存的会话列表，避免重复 HTTP 请求
 
 # ── 懒加载状态 ──
-var _lazy_cursor: String = ""  # 下一页游标
-var _lazy_loading: bool = false  # 正在加载更多，防止并发重复请求
-var _has_loaded_all: bool = false
+	var _lazy_cursor: String = ""  # 下一页游标
+	var _lazy_loading: bool = false  # 正在加载更多
+	var _has_loaded_all: bool = false
+	var _refreshing_messages: bool = false  # 刷新锁（防 SSE + HTTP 双写 VBoxContainer）
 var _row_data: Array = []  # 消息数据（仅作数据缓存）
 # ── Agent/模型信息 ──
 var _primary_agent_name: String = "-"
@@ -149,6 +150,7 @@ func _ready() -> void:
 	_init_command_palette()
 	await _bootstrap()
 	_load_agent_info()
+	_update_info_bar()
 	# 监听输入框输入，检测 / 命令
 	msg_input.text_changed.connect(_on_input_text_changed)
 	# 回车发送，Tab 换行
@@ -228,6 +230,8 @@ func _update_info_bar() -> void:
 		pct = float(_context_memory) / float(_context_total) * 100.0
 	info_ctx.text = "Ctx: " + _format_tokens(_context_memory) + " / " + _format_tokens(_context_total) + " (" + str(int(pct)) + "%)"
 	info_rate.text = "↑ " + str(_rate_tokens) + " tok/s" if _rate_time < 0.1 else "↑ " + str(int(float(_rate_tokens) / _rate_time)) + " tok/s"
+	status_memory.text = "记忆: " + _format_tokens(_context_memory)
+	status_context.text = "上下文: " + _format_tokens(_context_memory) + " / " + _format_tokens(_context_total) + " (" + str(int(pct)) + "%)"
 
 
 func _format_tokens(n: int) -> String:
@@ -546,11 +550,13 @@ func _load_session_messages(sid: String) -> void:
 
 func _refresh_messages() -> void:
 	print("→ _refresh_messages")
-	## 重新加载当前会话的最新消息
+	## 重新加载当前会话的最新消息（SSE 触发时加锁，防止和 _append_message 竞争）
 	if _current_session_id.is_empty():
 		return
+	_refreshing_messages = true
 	var page = await _api.get_messages_page(_current_session_id, 50)
 	if page.is_empty() or page.get("items", []).is_empty():
+		_refreshing_messages = false
 		return
 	var msgs: Array = page.items
 	_row_data = msgs
@@ -558,6 +564,7 @@ func _refresh_messages() -> void:
 	for msg in msgs:
 		var node := _build_message_node(msg)
 		virtual_content.add_child(node)
+	_refreshing_messages = false
 	await get_tree().process_frame
 	_scroll_pending = true
 
@@ -912,7 +919,10 @@ func _build_message_node(msg: Dictionary) -> Control:
 
 
 func _append_message(msg: Dictionary) -> void:
-	## 追加消息到 VBoxContainer 末尾
+	## 追加消息到 VBoxContainer 末尾（刷新锁开启时跳过，避免与 _refresh_messages 竞争）
+	if _refreshing_messages:
+		print("→ _append_message skipped (refreshing)")
+		return
 	# 清理流式节点
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.queue_free()
@@ -952,9 +962,9 @@ func _fetch_balance() -> void:
 	var http := HTTPRequest.new()
 	add_child(http)
 	var on_done := func(_result: int, _code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-		var json := JSON.parse_string(body.get_string_from_utf8())
+		var json: Variant = JSON.parse_string(body.get_string_from_utf8())
 		if json is Dictionary and json.has("balance_infos"):
-			var bi = json.balance_infos[0] if json.balance_infos.size() > 0 else {}
+			var bi: Variant = json.balance_infos[0] if json.balance_infos.size() > 0 else {}
 			var total: String = bi.get("total_balance", "?")
 			info_balance.text = "余额: ¥" + total
 		else:
