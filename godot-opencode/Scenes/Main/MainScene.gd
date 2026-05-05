@@ -3,7 +3,8 @@ class_name MainScene
 
 
 @onready var virtual_content: Control = %VirtualContent
-var view_container: VBoxContainer  # 会话消息容器，切会话时只替换此容器子节点，流式节点不动
+var _session_tabs: Dictionary = {}  # sessionID → SessionTab
+var _current_tab: SessionTab
 @onready var msg_input: TextEdit = %TextInput
 @onready var send_btn: Button = %SendBtn
 @onready var status_label: Label = %Status
@@ -58,8 +59,8 @@ var _context_memory: int = 0  # 当前会话消息 token 用量
 var _mc_memory: int = 0  # MC 插件全库记忆总量（用于状态栏显示）
 var _context_total: int = 0
 var _raw_mode: bool = true
-var _session_nodes: Dictionary = {}  # sessionID → Control[] 缓存节点树  # RAW 模式：显示原文，不经过 Markdown 渲染
-var _cached_sessions: Array = []  # 会话列表缓存
+var _session_tabs: Dictionary = {}  # sessionID → SessionTab
+var _current_tab: SessionTab
 
 # ── Token 速率 ──
 var _rate_tokens: int = 0
@@ -271,12 +272,6 @@ func _ready() -> void:
 	_apply_layout()
 	# ── 侧边栏状态指示标签 ──
 	_ensure_status_label()
-	# ── 初始化会话消息容器 ──
-	view_container = VBoxContainer.new()
-	view_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view_container.size_flags_vertical = 0
-	view_container.mouse_filter = Control.MOUSE_FILTER_PASS
-	virtual_content.add_child(view_container)
 	_update_session_state("idle")
 
 
@@ -556,9 +551,14 @@ func _send_message_direct(text: String) -> void:
 	_append_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
 	# 创建流式响应容器
-	_message_log.create_streaming_widget()
-	_streaming_label = _message_log.get_streaming_label()
-	_streaming_node = _message_log.get_streaming_node()
+	if _current_tab != null:
+		_current_tab.start_streaming()
+		_streaming_label = _current_tab.streaming_label
+		_streaming_node = _current_tab.streaming_node
+	else:
+		_message_log.create_streaming_widget()
+		_streaming_label = _message_log.get_streaming_label()
+		_streaming_node = _message_log.get_streaming_node()
 
 	var send_sid := _current_session_id
 	var result := await _api.send_message(_current_session_id, text)
@@ -711,23 +711,17 @@ func _open_session(sid: String) -> void:
 
 func _load_session_messages(sid: String) -> void:
 	print("→ _load_session_messages sid=" + sid)
-	## 从 API 加载消息或从缓存恢复节点
-	_streaming_label = null
-
-	# 先缓存当前会话的节点
+	## 从 API 加载消息或从缓存恢复
+    
 	_clear_messages()
-
 	_current_session_id = sid
 	_streaming_just_finalized = false
 
-	# ── 检查缓存 ──
-	if _session_nodes.has(sid):
-		_set_status("恢复会话...")
-		for c in _session_nodes[sid]:
-			view_container.add_child(c)
-		_session_nodes.erase(sid)
-		_auto_scroll = true
-		await get_tree().process_frame
+	# ── 检查缓存的 SessionTab ──
+	if _session_tabs.has(sid):
+		_current_tab = _session_tabs[sid]
+		_current_tab.visible = true
+		_row_data = _current_tab._row_data
 		_set_status("")
 		return
 
@@ -738,27 +732,30 @@ func _load_session_messages(sid: String) -> void:
 		_has_loaded_all = true
 		return
 	var messages: Array = page.items
-	# API 返回 items 为旧→新顺序
 	_lazy_cursor = page.get("cursor", "")
 	if _lazy_cursor.is_empty():
 		_has_loaded_all = true
 
+	# ── 创建新 SessionTab ──
+	var tab := SessionTab.new(theme_config, part_renderer)
+	tab.session_id = sid
+	tab.visible = true
+	tab.append_messages(messages)
+	virtual_content.add_child(tab)
+
+	_session_tabs[sid] = tab
+	_current_tab = tab
 	_row_data = messages
-	# 从最后一条消息的 tokens 设置 MC 记忆总量
+
+	# MC 记忆
 	if not messages.is_empty():
 		var last_toks: Dictionary = messages[-1].get("info", {}).get("tokens", {})
 		if not last_toks.is_empty():
 			_mc_memory = last_toks.get("input", 0) + last_toks.get("output", 0) + last_toks.get("reasoning", 0) + last_toks.get("cache", {}).get("read", 0) + last_toks.get("cache", {}).get("write", 0)
 	_update_info_bar()
-	# 顺序追加：msg[0]=最旧 → 先加 → 在顶，msg[N]=最新 → 后加 → 在底
-	for msg in messages:
-		var node := _message_log.build_node(msg)
-		view_container.add_child(node)
 
-	# 消息追加完毕，标记推送到底
 	_auto_scroll = true
 	await get_tree().process_frame
-
 	_set_status(str(messages.size()) + " 条消息")
 
 
@@ -779,7 +776,8 @@ func _refresh_messages() -> void:
 	_row_data = messages
 	_set_status("刷新 " + str(messages.size()) + " 条...")
 	for msg in messages:
-		view_container.add_child(_message_log.build_node(msg))
+		if _current_tab != null:
+			_current_tab.append_message(msg)
 	_refreshing_messages = false
 	await get_tree().process_frame
 	_scroll_to_newest()
@@ -802,7 +800,7 @@ func _on_scroll_changed(value: float) -> void:
 
 
 func _lazy_load_more() -> void:
-	## 加载更多旧消息，批量创建后一次性加入 VBoxContainer
+	## 加载更多旧消息，批量追加到当前 SessionTab
 	var page = await _api.get_messages_page(_current_session_id, load_limit, _lazy_cursor)
 	if page.is_empty() or not (page.get("items") is Array) or page.items.is_empty():
 		_lazy_loading = false
@@ -811,15 +809,10 @@ func _lazy_load_more() -> void:
 		return
 	var items: Array = page.items
 
-	# 批量构建所有节点（不加入场景树）
-	var nodes: Array[Control] = []
 	for msg in items:
-		nodes.append(_message_log.build_node(msg))
 		_row_data.append(msg)
-	# 从末到首移动到 VBoxContainer 顶部 — 保持 old→new 顺序
-	for j in range(nodes.size() - 1, -1, -1):
-		view_container.add_child(nodes[j])
-		view_container.move_child(nodes[j], 0)
+		if _current_tab != null:
+			_current_tab.append_message(msg)
 
 	_lazy_cursor = page.get("cursor", "")
 	if _lazy_cursor.is_empty():
@@ -1095,9 +1088,14 @@ func _on_send_pressed() -> void:
 	_append_message({"role": "user", "parts": [{"type": "text", "text": text}]})
 
 	# 创建流式响应容器
-	_message_log.create_streaming_widget()
-	_streaming_label = _message_log.get_streaming_label()
-	_streaming_node = _message_log.get_streaming_node()
+	if _current_tab != null:
+		_current_tab.start_streaming()
+		_streaming_label = _current_tab.streaming_label
+		_streaming_node = _current_tab.streaming_node
+	else:
+		_message_log.create_streaming_widget()
+		_streaming_label = _message_log.get_streaming_label()
+		_streaming_node = _message_log.get_streaming_node()
 
 	var send_sid := _current_session_id
 	var res = await _api.send_message(send_sid, text)
@@ -1189,6 +1187,8 @@ func _on_question_replied(request_id: String, reply_type: String, _message: Stri
 func _finalize_streaming() -> void:
 	print("→ _finalize_streaming")
 	## 完成流式响应：流式节点成为永久消息
+	if _current_tab != null:
+		_current_tab.finalize_streaming()
 	_streaming_label = null
 	_streaming_node = null
 	_streaming_just_finalized = true
@@ -1200,53 +1200,22 @@ func _finalize_streaming() -> void:
 
 
 func _append_message(msg: Dictionary) -> void:
-	## 追加消息到 VBoxContainer 末尾
-
-	# 清理流式节点
+	## 追加消息到当前 SessionTab
+	if _current_tab != null:
+		_current_tab.append_message(msg)
+	_row_data.append(msg)
+	_update_info_bar()
+	# 清理旧的流式节点
 	if _streaming_node != null and is_instance_valid(_streaming_node):
 		_streaming_node.queue_free()
 		_streaming_node = null
 	_streaming_label = null
-	_row_data.append(msg)
-	_update_info_bar()
-	var node := _message_log.build_node(msg)
-	if not is_instance_valid(node):
-		push_warning("→ _append_message: _build_message_node 返回无效节点！")
-		return
-	var before := view_container.get_child_count()
-	view_container.add_child(node)
-	var debug_info := "→ _append_message: children=" + str(before) + "→" + str(view_container.get_child_count())
-	var roles := PackedStringArray()
-	for c in view_container.get_children():
-		var rd: Dictionary = c.get_meta("row_data", {})
-		var role: String = rd.get("role", "?")
-		var vis: String = "v" if c.visible else "h"
-		roles.append(role + "(" + vis + ")")
-	debug_info += " roles=[" + ",".join(roles) + "]"
-	print(debug_info)
-	await get_tree().process_frame
 
 
 func _clear_messages() -> void:
-	## 隐藏当前会话的消息节点（缓存到 _session_nodes），清理状态
-	if not _current_session_id.is_empty():
-		# ── 淘汰最旧缓存（最多保留 3 个会话） ──
-		while _session_nodes.size() >= 3:
-			var oldest: String = _session_nodes.keys()[0]
-			if oldest == _current_session_id:
-				if _session_nodes.size() <= 1:
-					break
-				oldest = _session_nodes.keys()[1]
-			var stale: Array[Node] = _session_nodes[oldest]
-			for n in stale:
-				if is_instance_valid(n):
-					n.queue_free()
-			_session_nodes.erase(oldest)
-		var kids: Array[Node] = []
-		for c in view_container.get_children():
-			kids.append(c)
-			view_container.remove_child(c)
-		_session_nodes[_current_session_id] = kids
+	## 隐藏当前会话的 SessionTab（保留节点），清理流式状态
+	if _current_tab != null:
+		_current_tab.visible = false
 	_row_data.clear()
 	_streaming_label = null
 	_streaming_node = null
