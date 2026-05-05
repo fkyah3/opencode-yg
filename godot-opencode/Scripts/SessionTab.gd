@@ -1,14 +1,10 @@
-extends Control
+extends VBoxContainer
 class_name SessionTab
 ## 单个会话的独立面板。
-## 管理自己的消息节点、流式节点、滚动状态。
-## 每切一次会话就是显示/隐藏不同的 SessionTab。
+## 管理自己的消息节点、流式节点。
 
 var session_id: String = ""
 var _row_data: Array = []
-
-# ── 消息容器 ──
-var _msg_container: VBoxContainer
 
 # ── 流式节点 ──
 var streaming_node: Control
@@ -26,11 +22,6 @@ func _init(theme_config: ThemeConfig, part_renderer: PartRenderer) -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	size_flags_vertical = 0
 	mouse_filter = Control.MOUSE_FILTER_PASS
-	
-	_msg_container = VBoxContainer.new()
-	_msg_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_msg_container.size_flags_vertical = 0
-	add_child(_msg_container)
 
 
 # ── 消息管理 ─────────────────────────────────────────────
@@ -38,7 +29,7 @@ func _init(theme_config: ThemeConfig, part_renderer: PartRenderer) -> void:
 func append_message(msg: Dictionary) -> void:
 	## 追加消息节点到底部
 	var node := _build_raw_node(msg)
-	_msg_container.add_child(node)
+	add_child(node)
 	_row_data.append(msg)
 
 
@@ -46,20 +37,16 @@ func append_messages(msgs: Array) -> void:
 	## 批量追加消息（加载时用）
 	for m in msgs:
 		var node := _build_raw_node(m)
-		_msg_container.add_child(node)
+		add_child(node)
 	_row_data = msgs.duplicate()
 
 
 func clear_messages() -> void:
 	## 清空消息节点（流式节点不受影响）
-	for c in _msg_container.get_children():
-		_msg_container.remove_child(c)
+	for c in get_children():
+		remove_child(c)
 		c.queue_free()
 	_row_data.clear()
-
-
-func get_message_count() -> int:
-	return _msg_container.get_child_count()
 
 
 # ── 流式管理 ─────────────────────────────────────────────
@@ -89,7 +76,7 @@ func start_streaming() -> void:
 	label.add_theme_color_override("default_color", _theme_config.color_text)
 	bubble.add_child(label)
 	
-	_msg_container.add_child(bubble)
+	add_child(bubble)
 	streaming_node = bubble
 	streaming_label = label
 	_streaming_text = ""
