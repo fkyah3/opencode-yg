@@ -651,11 +651,7 @@ func _refresh_sessions() -> void:
 
 func _open_session(sid: String) -> void:
 	print("→ _open_session sid=" + sid)
-	## 打开会话：先打断旧会话生成，再加载新会话
-	if not _current_session_id.is_empty() and _current_session_id != sid:
-		if _api != null:
-			_api.abort_session(_current_session_id)
-			_update_session_state("idle")
+	## 打开会话：加载消息并初始化虚拟滚动
 	await _load_session_messages(sid)
 
 func _load_session_messages(sid: String) -> void:
@@ -1046,6 +1042,9 @@ func _on_permission_asked(properties: Dictionary) -> void:
 	var patterns: Array = properties.get("patterns", [])
 	var metadata: Dictionary = properties.get("metadata", {})
 	var sid: String = properties.get("sessionID", "")
+	if _permission_dialog == null or not is_instance_valid(_permission_dialog):
+		push_warning("_on_permission_asked: dialog 未初始化，跳过")
+		return
 
 	if sid != _current_session_id:
 		# 不是当前会话的权限请求，暂存但不弹窗
