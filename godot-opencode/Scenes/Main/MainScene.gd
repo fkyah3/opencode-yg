@@ -687,6 +687,7 @@ func _load_session_messages(sid: String) -> void:
 	_row_data = messages
 	# 计算当前消息的 token 用量
 	_context_memory = 0
+	print("→ _load_session_messages: first msg keys=" + str(messages[0].keys()) if not messages.is_empty() else "empty")
 	for msg in messages:
 		var toks: Dictionary = msg.get("tokens", {})
 		if not toks.is_empty():
