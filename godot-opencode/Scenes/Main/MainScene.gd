@@ -154,21 +154,9 @@ func _create_sse_handler() -> SSEHandler:
 			return
 		_update_session_state("tool_call")
 		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
-		if status != "completed" and status != "error":
-			# 工具刚开始：显示工具名+输入内容
-			_streaming_text += "\n" + icon + " " + tool_name
-			var input_val: Variant = state.get("input", {})
-			if input_val is Dictionary:
-				var content: String = input_val.get("content", "")
-				if not content.is_empty():
-					_streaming_text += "\n```\n" + content.left(1500) + "\n```"
-			elif input_val is String and not input_val.is_empty():
-				_streaming_text += "\n```\n" + str(input_val).left(1500) + "\n```"
-		else:
-			# 工具完成/报错：只追加输出，不重复工具名+内容
-			var output: String = state.get("output", "")
-			if not output.is_empty():
-				_streaming_text += "\n" + output.left(1000)
+		var fpath: String = state.get("input", {}).get("filePath", "")
+		var tline: String = icon + " " + tool_name + ((" " + fpath) if not fpath.is_empty() else "")
+		_streaming_text += "\n" + tline.trim_suffix(".md")
 		if _streaming_label != null:
 			_streaming_label.text = _streaming_text
 
