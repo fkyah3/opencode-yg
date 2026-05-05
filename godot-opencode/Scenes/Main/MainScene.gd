@@ -154,8 +154,12 @@ func _create_sse_handler() -> SSEHandler:
 		if sid != _current_session_id or _streaming_label == null:
 			return
 		_update_session_state("tool_call")
-		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
 		var fpath: String = state.get("input", {}).get("filePath", "")
+		# ── 更新侧边栏工具名 ──
+		var tlabel: Label = get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/ToolLabel")
+		if tlabel:
+			tlabel.text = tool_name + ((" " + fpath) if not fpath.is_empty() else "")
+		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
 		var tline: String = icon + " " + tool_name + ((" " + fpath) if not fpath.is_empty() else "")
 		_streaming_text += "\n" + tline.trim_suffix(".md")
 		if _streaming_label != null:
@@ -855,6 +859,15 @@ func _ensure_status_label() -> void:
 		sidebar.move_child(label, toggle.get_index())
 	else:
 		sidebar.add_child(label)
+	# ── 工具名标签 ──
+	if not sidebar.has_node("ToolLabel"):
+		var tool_label := Label.new()
+		tool_label.name = "ToolLabel"
+		tool_label.custom_minimum_size.y = 18
+		tool_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tool_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.2, 1))
+		sidebar.add_child(tool_label)
+		sidebar.move_child(tool_label, label.get_index() + 1)
 
 
 func _init_constraints() -> void:
@@ -1061,6 +1074,10 @@ func _finalize_streaming() -> void:
 	_streaming_node = null
 	_streaming_just_finalized = true
 	_scroll_to_newest()
+	# ── 清空侧边栏工具名 ──
+	var tlabel: Label = get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/ToolLabel")
+	if tlabel:
+		tlabel.text = ""
 
 
 func _append_message(msg: Dictionary) -> void:
