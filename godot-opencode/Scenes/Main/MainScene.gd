@@ -145,12 +145,11 @@ func _create_sse_handler() -> SSEHandler:
 		if status.get("type") == "idle" and sid == _current_session_id:
 			_finalize_streaming()
 			_update_session_state("idle")
-		var mem: int = status.get("memory", _mc_memory)
+	var mem: int = status.get("memory", -1)
+	if mem >= 0:
 		_mc_memory = mem
-		var ctx: int = status.get("context", 0)
-		if ctx > 0:
-			_context_total = ctx
-		_update_info_bar()
+		print("→ on_session_status: SET _mc_memory=" + str(mem))
+	_update_info_bar()
 
 	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String, state: Dictionary = {}) -> void:
 		if sid != _current_session_id or _streaming_label == null:
@@ -696,6 +695,7 @@ func _load_session_messages(sid: String) -> void:
 		var toks: Dictionary = info.get("tokens", msg.get("tokens", {}))
 		if not toks.is_empty():
 			_context_memory += toks.get("input", 0) + toks.get("output", 0) + toks.get("reasoning", 0) + toks.get("cache", {}).get("read", 0) + toks.get("cache", {}).get("write", 0)
+	print("→ _load_session_messages: after token sum _context_memory=" + str(_context_memory))
 	_update_info_bar()
 	# 顺序追加：msg[0]=最旧 → 先加 → 在顶，msg[N]=最新 → 后加 → 在底
 	for msg in messages:
