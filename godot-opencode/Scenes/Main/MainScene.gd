@@ -68,6 +68,7 @@ var _balance_text: String = "余额: 未配置"
 # ── 权限 / 问题对话框 ──
 var _permission_dialog: PermissionDialog
 var _question_dialog: QuestionDialog
+var _last_heartbeat_time: int = 0  # 上次收到 SSE heartbeat 的时间戳（毫秒）
 var _pending_permissions: Dictionary = {}  # request_id → properties
 var _pending_questions: Dictionary = {}    # request_id → properties
 
@@ -173,10 +174,14 @@ func _create_sse_handler() -> SSEHandler:
 		_on_question_asked(props)
 
 	h.on_server_connected = func() -> void:
+		_last_heartbeat_time = Time.get_ticks_msec()
 		_update_info_bar()
 		_fetch_balance()
 		if _api and is_instance_valid(_api):
 			_refresh_sessions()
+
+	h.on_heartbeat = func() -> void:
+		_last_heartbeat_time = Time.get_ticks_msec()
 
 	return h
 
@@ -534,6 +539,13 @@ func _process(delta: float) -> void:
 		var bar := scroll.get_v_scroll_bar()
 		if bar != null and bar.max_value > 0:
 			scroll.scroll_vertical = int(bar.max_value)
+
+	# ── SSE 心跳超时检测：无心跳 >15s 判定断开 ──
+	if _last_heartbeat_time > 0:
+		var now_ms: int = Time.get_ticks_msec()
+		if now_ms - _last_heartbeat_time > 15_000 and _session_state != "disconnected":
+			_update_session_state("disconnected")
+			push_warning("SSE 心跳超时：已离线 >15s")
 
 	# 注意：VBoxContainer 自动管理总高，滚动路径不碰 custom_minimum_size
 
