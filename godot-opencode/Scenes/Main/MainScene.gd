@@ -152,6 +152,13 @@ func _create_sse_handler() -> SSEHandler:
 		_update_info_bar()
 
 	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String, state: Dictionary = {}) -> void:
+		# ── 侧边栏工具名更新（不依赖流式状态） ──
+		if sid == _current_session_id:
+			var input: Dictionary = state.get("input", {})
+			var fpath: String = input.get("filePath", input.get("path", ""))
+			var tlabel: Label = get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/ToolLabel")
+			if tlabel:
+				tlabel.text = tool_name + ((" " + fpath.trim_suffix(".md")) if not fpath.is_empty() else "")
 		if sid != _current_session_id or _streaming_label == null:
 			return
 		_update_session_state("tool_call")

@@ -27,6 +27,48 @@ import * as OtelTracer from "@effect/opentelemetry/Tracer"
 
 const log = Log.create({ service: "llm" })
 export const OUTPUT_TOKEN_MAX = ProviderTransform.OUTPUT_TOKEN_MAX
+
+/**
+ * 尝试修补被截断的 JSON 工具调用
+ * - 补全缺失的引号、花括号、方括号
+ * - 适用于 finishReason="length" 场景
+ */
+function repairTruncatedJSON(raw: string): string | null {
+  let fixed = raw.trimEnd()
+  
+  // 引号未闭合：在末尾补全缺失的引号
+  const quoteCount = (fixed.match(/"/g) ?? []).length
+  if (quoteCount % 2 !== 0) fixed += '"'
+  
+  // 冒号后没值：补空值
+  if (/:\s*$/.test(fixed)) fixed += '""'
+  if (/:\s*"$/.test(fixed)) fixed += '"'
+  if (/,\s*$/.test(fixed)) fixed += '""'
+  
+  // 尝试解析，如果成功了直接返回
+  try {
+    JSON.parse(fixed)
+    return fixed
+  } catch {
+    // 没成功：继续修补
+  }
+  
+  // 花括号/方括号闭合
+  let depth = 0
+  for (const ch of fixed) {
+    if (ch === '{' || ch === '[') depth++
+    if (ch === '}' || ch === ']') depth--
+  }
+  while (depth > 0) {
+    if (fixed.endsWith('"')) fixed += '"'
+    fixed += '}'
+    depth--
+    try { JSON.parse(fixed); return fixed } catch { /* 继续 */ }
+  }
+  
+  return null
+}
+
 type Result = Awaited<ReturnType<typeof streamText>>
 
 export type StreamInput = {
@@ -333,6 +375,50 @@ const live: Layer.Layer<
           })
         : undefined
 
+/**
+ * 尝试修补被截断的 JSON 工具调用
+ * - 补全缺失的引号、花括号、方括号
+ * - 适用于 finishReason="length" 场景
+ */
+function repairTruncatedJSON(raw: string): string | null {
+  let fixed = raw.trimEnd()
+  
+  // 引号未闭合：在末尾补全缺失的引号
+  const quoteCount = (fixed.match(/"/g) ?? []).length
+  if (quoteCount % 2 !== 0) fixed += '"'
+  
+  // 冒号后没值：补空值
+  if (/:\s*$/.test(fixed)) fixed += '""'
+  if (/:\s*"$/.test(fixed)) fixed += '"'
+  if (/,\s*$/.test(fixed)) fixed += '""'
+  
+  // 尝试解析，如果成功了直接返回
+  try {
+    JSON.parse(fixed)
+    return fixed
+  } catch {
+    // 没成功：继续修补
+  }
+  
+  // 花括号/方括号闭合
+  let depth = 0
+  for (const ch of fixed) {
+    if (ch === '{' || ch === '[') depth++
+    if (ch === '}' || ch === ']') depth--
+  }
+  while (depth > 0) {
+    // 如果最后以 " 结尾，先合上引号
+    if (fixed.endsWith('"')) fixed += '"'
+    fixed += '}'
+    depth--
+    // 每次加完后尝试解析
+    try { JSON.parse(fixed); return fixed } catch { /* 继续 */ }
+  }
+  
+  // 全部尝试失败
+  return null
+}
+
       return streamText({
         onError(error) {
           l.error("stream error", {
@@ -351,10 +437,21 @@ const live: Layer.Layer<
               toolName: lower,
             }
           }
-          // 截断场景（finishReason=length）：输入 JSON 被截断不完整
-          // 抛出错误让 processor 感知截断而非静默路由到"invalid"
+          // 截断场景（finishReason=length）：尝试修补残缺 JSON
+          const rawInput = (failed.toolCall as { args?: string }).args ?? failed.toolCall.toolName
+          if (typeof rawInput === "string" && rawInput.length > 0) {
+            const repaired = repairTruncatedJSON(rawInput)
+            if (repaired) {
+              l.info("repaired truncated JSON for tool", { tool: failed.toolCall.toolName })
+              return {
+                ...failed.toolCall,
+                input: repaired,
+              }
+            }
+          }
+          // 修补失败：抛出异常让 processor 延续重试
           const errMsg = failed.error?.message ?? ""
-          if (errMsg.includes("length") || errMsg.includes("truncat") || errMsg.includes("unexpected end")) {
+          if (errMsg.includes("length") || errMsg.includes("truncat") || errMsg.includes("unexpected end") || errMsg.includes("pars")) {
             throw new Error(`Tool call truncated by output length limit: ${failed.toolCall.toolName}`)
           }
           return {
