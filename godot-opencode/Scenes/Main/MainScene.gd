@@ -340,6 +340,15 @@ func _update_info_bar() -> void:
 	info_rate.text = "↑ " + str(_rate_tokens) + " tok/s" if _rate_time < 0.1 else "↑ " + str(int(float(_rate_tokens) / _rate_time)) + " tok/s"
 	status_memory.text = "记忆: " + _format_tokens(_context_memory)
 	status_context.text = "上下文: " + _format_tokens(_context_memory) + " / " + _format_tokens(_context_total) + " (" + str(int(pct)) + "%)"
+	# ── 同步侧边栏 Agent/Model/Ctx ──
+	var sidebar := get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent") as VBoxContainer
+	if sidebar:
+		var sa: Label = sidebar.get_node_or_null("SidebarAgent")
+		if sa: sa.text = "Agent: " + _primary_agent_name
+		var sm: Label = sidebar.get_node_or_null("SidebarModel")
+		if sm: sm.text = "Model: " + _primary_model_name
+		var sc: Label = sidebar.get_node_or_null("SidebarCtx")
+		if sc: sc.text = "Ctx: " + _format_tokens(_context_memory) + " / " + _format_tokens(_context_total) + " (" + str(int(pct)) + "%)"
 
 
 func _format_tokens(n: int) -> String:
@@ -868,6 +877,19 @@ func _ensure_status_label() -> void:
 		tool_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.2, 1))
 		sidebar.add_child(tool_label)
 		sidebar.move_child(tool_label, label.get_index() + 1)
+	# ── 侧边栏 Agent / Model / Ctx 标签 ──
+	var sidebar_keys := ["SidebarAgent", "SidebarModel", "SidebarCtx"]
+	var sidebar_defaults := ["Agent: -", "Model: -", "Ctx: -"]
+	for i in sidebar_keys.size():
+		var k: String = sidebar_keys[i]
+		if not sidebar.has_node(k):
+			var sl := Label.new()
+			sl.name = k
+			sl.text = sidebar_defaults[i]
+			sl.custom_minimum_size.y = 18
+			sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			sl.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4, 1))
+			sidebar.add_child(sl)
 
 
 func _init_constraints() -> void:
