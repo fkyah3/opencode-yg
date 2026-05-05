@@ -686,16 +686,11 @@ func _load_session_messages(sid: String) -> void:
 		_has_loaded_all = true
 
 	_row_data = messages
-	# 计算当前消息的 token 用量
-	_context_memory = 0
-	print("→ _load_session_messages: first msg keys=" + str(messages[0].keys()) if not messages.is_empty() else "empty")
-	print("→ _load_session_messages: info keys=" + str(messages[0].get("info", {}).keys()) if not messages.is_empty() else "n/a")
-	for msg in messages:
-		var info: Dictionary = msg.get("info", {})
-		var toks: Dictionary = info.get("tokens", msg.get("tokens", {}))
-		if not toks.is_empty():
-			_context_memory += toks.get("input", 0) + toks.get("output", 0) + toks.get("reasoning", 0) + toks.get("cache", {}).get("read", 0) + toks.get("cache", {}).get("write", 0)
-	print("→ _load_session_messages: after token sum _context_memory=" + str(_context_memory))
+	# 从最后一条消息的 tokens 设置 MC 记忆总量
+	if not messages.is_empty():
+		var last_toks: Dictionary = messages[-1].get("info", {}).get("tokens", {})
+		if not last_toks.is_empty():
+			_mc_memory = last_toks.get("input", 0) + last_toks.get("output", 0) + last_toks.get("reasoning", 0) + last_toks.get("cache", {}).get("read", 0) + last_toks.get("cache", {}).get("write", 0)
 	_update_info_bar()
 	# 顺序追加：msg[0]=最旧 → 先加 → 在顶，msg[N]=最新 → 后加 → 在底
 	for msg in messages:
@@ -1146,10 +1141,6 @@ func _append_message(msg: Dictionary) -> void:
 		_streaming_node = null
 	_streaming_label = null
 	_row_data.append(msg)
-	var info: Dictionary = msg.get("info", {})
-	var toks: Dictionary = info.get("tokens", msg.get("tokens", {}))
-	if not toks.is_empty():
-		_context_memory += toks.get("input", 0) + toks.get("output", 0) + toks.get("reasoning", 0) + toks.get("cache", {}).get("read", 0) + toks.get("cache", {}).get("write", 0)
 	_update_info_bar()
 	var node := _message_log.build_node(msg)
 	if not is_instance_valid(node):
