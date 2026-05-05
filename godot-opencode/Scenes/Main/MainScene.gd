@@ -3,6 +3,7 @@ class_name MainScene
 
 
 @onready var virtual_content: Control = %VirtualContent
+var view_container: VBoxContainer  # 会话消息容器，切会话时只替换此容器子节点，流式节点不动
 @onready var msg_input: TextEdit = %TextInput
 @onready var send_btn: Button = %SendBtn
 @onready var status_label: Label = %Status
@@ -270,6 +271,12 @@ func _ready() -> void:
 	_apply_layout()
 	# ── 侧边栏状态指示标签 ──
 	_ensure_status_label()
+	# ── 初始化会话消息容器 ──
+	view_container = VBoxContainer.new()
+	view_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	view_container.size_flags_vertical = 0
+	view_container.mouse_filter = Control.MOUSE_FILTER_PASS
+	virtual_content.add_child(view_container)
 	_update_session_state("idle")
 
 
@@ -717,7 +724,7 @@ func _load_session_messages(sid: String) -> void:
 	if _session_nodes.has(sid):
 		_set_status("恢复会话...")
 		for c in _session_nodes[sid]:
-			virtual_content.add_child(c)
+			view_container.add_child(c)
 		_session_nodes.erase(sid)
 		_auto_scroll = true
 		await get_tree().process_frame
@@ -746,7 +753,7 @@ func _load_session_messages(sid: String) -> void:
 	# 顺序追加：msg[0]=最旧 → 先加 → 在顶，msg[N]=最新 → 后加 → 在底
 	for msg in messages:
 		var node := _message_log.build_node(msg)
-		virtual_content.add_child(node)
+		view_container.add_child(node)
 
 	# 消息追加完毕，标记推送到底
 	_auto_scroll = true
@@ -772,7 +779,7 @@ func _refresh_messages() -> void:
 	_row_data = messages
 	_set_status("刷新 " + str(messages.size()) + " 条...")
 	for msg in messages:
-		virtual_content.add_child(_message_log.build_node(msg))
+		view_container.add_child(_message_log.build_node(msg))
 	_refreshing_messages = false
 	await get_tree().process_frame
 	_scroll_to_newest()
@@ -811,8 +818,8 @@ func _lazy_load_more() -> void:
 		_row_data.append(msg)
 	# 从末到首移动到 VBoxContainer 顶部 — 保持 old→new 顺序
 	for j in range(nodes.size() - 1, -1, -1):
-		virtual_content.add_child(nodes[j])
-		virtual_content.move_child(nodes[j], 0)
+		view_container.add_child(nodes[j])
+		view_container.move_child(nodes[j], 0)
 
 	_lazy_cursor = page.get("cursor", "")
 	if _lazy_cursor.is_empty():
@@ -1206,12 +1213,11 @@ func _append_message(msg: Dictionary) -> void:
 	if not is_instance_valid(node):
 		push_warning("→ _append_message: _build_message_node 返回无效节点！")
 		return
-	var before := virtual_content.get_child_count()
-	virtual_content.add_child(node)
-	# 断言：记录每次 _append_message 后的子节点详情
-	var debug_info := "→ _append_message: children=" + str(before) + "→" + str(virtual_content.get_child_count())
+	var before := view_container.get_child_count()
+	view_container.add_child(node)
+	var debug_info := "→ _append_message: children=" + str(before) + "→" + str(view_container.get_child_count())
 	var roles := PackedStringArray()
-	for c in virtual_content.get_children():
+	for c in view_container.get_children():
 		var rd: Dictionary = c.get_meta("row_data", {})
 		var role: String = rd.get("role", "?")
 		var vis: String = "v" if c.visible else "h"
@@ -1237,9 +1243,9 @@ func _clear_messages() -> void:
 					n.queue_free()
 			_session_nodes.erase(oldest)
 		var kids: Array[Node] = []
-		for c in virtual_content.get_children():
+		for c in view_container.get_children():
 			kids.append(c)
-			virtual_content.remove_child(c)
+			view_container.remove_child(c)
 		_session_nodes[_current_session_id] = kids
 	_row_data.clear()
 	_streaming_label = null
