@@ -533,7 +533,6 @@ func _init_dialogs() -> void:
 	_question_dialog = QuestionDialog.new()
 	add_child(_question_dialog)
 	_question_dialog.question_replied.connect(_on_question_replied)
-	_question_dialog.question_rejected.connect(_on_question_rejected)
 	_question_dialog.visible = false
 
 	# 连接对话框
@@ -1081,22 +1080,20 @@ func _on_question_asked(properties: Dictionary) -> void:
 		return
 
 	_pending_questions[request_id] = properties
+	if _question_dialog == null or not is_instance_valid(_question_dialog):
+		push_warning("_on_question_asked: dialog 未初始化")
+		return
 	_question_dialog.show_question(request_id, question, options, allow_multiple)
 
 
-func _on_question_replied(request_id: String, answers: Array) -> void:
+func _on_question_replied(request_id: String, reply_type: String, _message: String) -> void:
 	print("→ _on_question_replied")
-	## 用户回答了问题，发送到服务器
+	## 用户回答了问题（或跳过），发送到服务器
 	_pending_questions.erase(request_id)
-	await _api.reply_question(request_id, answers)
-
-
-func _on_question_rejected(request_id: String) -> void:
-	print("→ _on_question_rejected")
-	## 用户跳过了问题
-	_pending_questions.erase(request_id)
-	# 发送空回答表示跳过
-	await _api.reply_question(request_id, [])
+	if reply_type == "reject":
+		await _api.reply_question(request_id, [])
+	else:
+		await _api.reply_question(request_id, [reply_type])
 
 
 
