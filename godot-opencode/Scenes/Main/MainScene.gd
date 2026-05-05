@@ -59,6 +59,7 @@ var _context_total: int = 0
 var _raw_mode: bool = true
 var _session_tabs: Dictionary = {}  # sessionID → SessionTab
 var _current_tab: SessionTab
+var _cached_sessions: Array = []  # 会话列表缓存，用于 session_picker 显示
 
 # ── Token 速率 ──
 var _rate_tokens: int = 0
