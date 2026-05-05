@@ -53,7 +53,8 @@ var _streaming_label: RichTextLabel
 var _streaming_node: Control
 
 # ── 上下文 ──
-var _context_memory: int = 0
+var _context_memory: int = 0  # 当前会话消息 token 用量
+var _mc_memory: int = 0  # MC 插件全库记忆总量（用于状态栏显示）
 var _context_total: int = 0
 var _raw_mode: bool = true  # RAW 模式：显示原文，不经过 Markdown 渲染
 var _cached_sessions: Array = []  # 会话列表缓存
@@ -144,10 +145,11 @@ func _create_sse_handler() -> SSEHandler:
 		if status.get("type") == "idle" and sid == _current_session_id:
 			_finalize_streaming()
 			_update_session_state("idle")
-		var mem: int = status.get("memory", _context_memory)
-		var ctx: int = status.get("context", _context_total)
-		_context_memory = mem
-		_context_total = ctx
+		var mem: int = status.get("memory", _mc_memory)
+		_mc_memory = mem
+		var ctx: int = status.get("context", 0)
+		if ctx > 0:
+			_context_total = ctx
 		_update_info_bar()
 
 	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String, state: Dictionary = {}) -> void:
@@ -349,7 +351,7 @@ func _update_info_bar() -> void:
 		pct = float(_context_memory) / float(_context_total) * 100.0
 	info_ctx.text = "Ctx: " + _format_tokens(_context_memory) + " / " + _format_tokens(_context_total) + " (" + str(int(pct)) + "%)"
 	info_rate.text = "↑ " + str(_rate_tokens) + " tok/s" if _rate_time < 0.1 else "↑ " + str(int(float(_rate_tokens) / _rate_time)) + " tok/s"
-	status_memory.text = "记忆: " + _format_tokens(_context_memory)
+	status_memory.text = "记忆: " + _format_tokens(_mc_memory)
 	status_context.text = "上下文: " + _format_tokens(_context_memory) + " / " + _format_tokens(_context_total) + " (" + str(int(pct)) + "%)"
 	# ── 同步侧边栏 Agent/Model/Ctx ──
 	var sidebar := get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent") as VBoxContainer
@@ -892,6 +894,15 @@ func _ensure_status_label() -> void:
 	else:
 		sidebar.add_child(label)
 	# ── 工具名标签 ──
+	if not sidebar.has_node("ToolHeader"):
+		var th := Label.new()
+		th.name = "ToolHeader"
+		th.text = "工具"
+		th.custom_minimum_size.y = 18
+		th.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		th.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+		sidebar.add_child(th)
+		sidebar.move_child(th, label.get_index() + 1)
 	if not sidebar.has_node("ToolLabel"):
 		var tool_label := Label.new()
 		tool_label.name = "ToolLabel"
