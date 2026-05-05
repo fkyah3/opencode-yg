@@ -155,17 +155,46 @@ func _create_sse_handler() -> SSEHandler:
 		if sid != _current_session_id or _streaming_label == null:
 			return
 		_update_session_state("tool_call")
-		var fpath: String = state.get("input", {}).get("filePath", "")
+		var input: Dictionary = state.get("input", {})
+		var fpath: String = input.get("filePath", input.get("path", ""))
+		var icon: String = "OK" if status == "completed" else ("ERR" if status == "error" else ">>")
+		# ── 按工具类型构建显示行 ──
+		var lines := PackedStringArray()
+		var header: String = icon + " " + tool_name + ((" " + fpath) if not fpath.is_empty() else "")
+		lines.append(header)
+		match tool_name:
+			"bash":
+				var cmd: String = input.get("command", input.get("content", ""))
+				if not cmd.is_empty():
+					lines.append("$ " + cmd.left(200))
+				var output: String = state.get("output", "")
+				if status == "completed" and not output.is_empty():
+					lines.append(output.right(300))
+			"read", "write":
+				var content: String = input.get("content", "")
+				if not content.is_empty():
+					lines.append(content.left(200))
+			"grep":
+				var q: String = input.get("pattern", input.get("query", ""))
+				if not q.is_empty():
+					lines.append("搜索: " + q)
+			"edit":
+				var old_str: String = input.get("oldString", "")
+				var new_str: String = input.get("newString", "")
+				if not old_str.is_empty() and not new_str.is_empty():
+					lines.append(old_str.left(60) + " → " + new_str.left(60))
+			"webfetch", "websearch":
+				var url: String = input.get("url", input.get("query", ""))
+				if not url.is_empty():
+					lines.append(url.left(120))
+		_streaming_text += "\n" + "\n".join(lines)
+		if _streaming_label != null:
+			_streaming_label.text = _streaming_text
 		# ── 更新侧边栏工具名 ──
 		var tlabel: Label = get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/ToolLabel")
 		if tlabel:
-			tlabel.text = ">> " + tool_name + ((" " + fpath) if not fpath.is_empty() else "")
+			tlabel.text = tool_name + ((" " + fpath.trim_suffix(".md")) if not fpath.is_empty() else "")
 			print("-> ToolLabel: " + tlabel.text)
-		var icon: String = "OK" if status == "completed" else ("ERR" if status == "error" else ">>")
-		var tline: String = icon + " " + tool_name + ((" " + fpath) if not fpath.is_empty() else "")
-		_streaming_text += "\n" + tline.trim_suffix(".md")
-		if _streaming_label != null:
-			_streaming_label.text = _streaming_text
 
 	h.on_message_updated = func(sid: String) -> void:
 		#[Step 1-观察] 不再调 _refresh_messages：流式 delta 已在过程中送达。
