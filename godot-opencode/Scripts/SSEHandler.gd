@@ -41,6 +41,19 @@ func handle_event(event_type: String, properties: Dictionary) -> void:
 			if on_part_delta.is_valid():
 				on_part_delta.call(sid, part_id, field, delta)
 
+		"message.part.updated":
+			# 直达版 message.part.updated（非 sync 包装）— 工具调用状态变化的主通道
+			var part: Dictionary = properties.get("part", {})
+			var part_type: String = part.get("type", "")
+			if part_type == "tool":
+				var sid: String = properties.get("sessionID", "")
+				var tool_name: String = part.get("tool", "?")
+				var state: Dictionary = part.get("state", {})
+				var status: String = state.get("status", "running")
+				var title: String = state.get("title", "")
+				if on_tool_updated.is_valid():
+					on_tool_updated.call(sid, tool_name, status, title, state)
+
 		"message.updated":
 			var sid: String = properties.get("sessionID", "")
 			if on_message_updated.is_valid():
