@@ -17,7 +17,8 @@ chat_padding_h = 50
 chat_input_gap = 12
 input_padding = 50
 input_min_height = 150
-load_limit = 40
+load_limit = 10
+constraint_count = 6
 
 [node name="Bg" type="ColorRect" parent="." unique_id=1750236572]
 layout_mode = 0
