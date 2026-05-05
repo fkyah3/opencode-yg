@@ -56,7 +56,8 @@ var _streaming_node: Control
 var _context_memory: int = 0  # 当前会话消息 token 用量
 var _mc_memory: int = 0  # MC 插件全库记忆总量（用于状态栏显示）
 var _context_total: int = 0
-var _raw_mode: bool = true  # RAW 模式：显示原文，不经过 Markdown 渲染
+var _raw_mode: bool = true
+var _session_nodes: Dictionary = {}  # sessionID → Control[] 缓存节点树  # RAW 模式：显示原文，不经过 Markdown 渲染
 var _cached_sessions: Array = []  # 会话列表缓存
 
 # ── Token 速率 ──
@@ -703,13 +704,27 @@ func _open_session(sid: String) -> void:
 
 func _load_session_messages(sid: String) -> void:
 	print("→ _load_session_messages sid=" + sid)
-	## 从 API 加载消息，追加到 VBoxContainer
+	## 从 API 加载消息或从缓存恢复节点
 	_streaming_label = null
-	_current_session_id = sid
-	_clear_messages()
-	_streaming_just_finalized = false
-	_set_status("加载消息...")
 
+	# 先缓存当前会话的节点
+	_clear_messages()
+
+	_current_session_id = sid
+	_streaming_just_finalized = false
+
+	# ── 检查缓存 ──
+	if _session_nodes.has(sid):
+		_set_status("恢复会话...")
+		for c in _session_nodes[sid]:
+			virtual_content.add_child(c)
+		_session_nodes.erase(sid)
+		_auto_scroll = true
+		await get_tree().process_frame
+		_set_status("")
+		return
+
+	_set_status("加载消息...")
 	var page = await _api.get_messages_page(sid, load_limit)
 	if page.is_empty() or page.get("items", []).is_empty():
 		_set_status("(无消息)")
@@ -1207,9 +1222,13 @@ func _append_message(msg: Dictionary) -> void:
 
 
 func _clear_messages() -> void:
-	## 清空消息区所有节点（包括流式），重置滚动位置，为新会话初始化
-	_message_log.clear_all()
-	print("→ _clear_messages after clear: children=" + str(virtual_content.get_child_count()))
+	## 隐藏当前会话的消息节点（缓存到 _session_nodes），清理状态
+	if not _current_session_id.is_empty():
+		var kids: Array[Node] = []
+		for c in virtual_content.get_children():
+			kids.append(c)
+			virtual_content.remove_child(c)
+		_session_nodes[_current_session_id] = kids
 	_row_data.clear()
 	_streaming_label = null
 	_streaming_node = null
