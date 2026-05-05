@@ -1224,6 +1224,18 @@ func _append_message(msg: Dictionary) -> void:
 func _clear_messages() -> void:
 	## 隐藏当前会话的消息节点（缓存到 _session_nodes），清理状态
 	if not _current_session_id.is_empty():
+		# ── 淘汰最旧缓存（最多保留 3 个会话） ──
+		while _session_nodes.size() >= 3:
+			var oldest: String = _session_nodes.keys()[0]
+			if oldest == _current_session_id:
+				if _session_nodes.size() <= 1:
+					break
+				oldest = _session_nodes.keys()[1]
+			var stale: Array[Node] = _session_nodes[oldest]
+			for n in stale:
+				if is_instance_valid(n):
+					n.queue_free()
+			_session_nodes.erase(oldest)
 		var kids: Array[Node] = []
 		for c in virtual_content.get_children():
 			kids.append(c)
