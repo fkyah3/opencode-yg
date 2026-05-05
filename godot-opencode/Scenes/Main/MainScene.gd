@@ -380,6 +380,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_open_session_picker()
 			get_viewport().set_input_as_handled()
 			return
+	if event is InputEventKey and event.pressed and event.keycode == KEY_BACKSPACE and event.alt_pressed:
+		# Alt+Backspace → 回到上一页（预留）
+		pass
 
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F6:
 		# 调试：触发 value_changed 信号模拟一次滚动刷新
@@ -403,6 +406,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		# 再关闭会话选择器
 		if _session_picker and _session_picker.visible:
 			_close_session_picker()
+			get_viewport().set_input_as_handled()
+			return
+		# ⭐ 没有面板打开时 → 打断 AI 生成
+		if not _current_session_id.is_empty() and _api != null:
+			_api.abort_session(_current_session_id)
+			_finalize_streaming()
+			_set_status("已打断")
 			get_viewport().set_input_as_handled()
 
 
