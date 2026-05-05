@@ -310,8 +310,12 @@ func _load_agent_info() -> void:
 	var agent := await _api.get_primary_agent()
 	print("→ _load_agent_info raw: " + str(agent))
 	if agent.is_empty():
-		print("→ _load_agent_info: agent is empty")
-		return
+		print("→ _load_agent_info: agent is empty, retry in 3s")
+		await get_tree().create_timer(3.0).timeout
+		agent = await _api.get_primary_agent()
+		print("→ _load_agent_info retry: " + str(agent))
+		if agent.is_empty():
+			return
 	_primary_agent_name = agent.get("name", "-")
 	var model: Dictionary = agent.get("model", {})
 	_primary_model_name = model.get("modelID", "-")
