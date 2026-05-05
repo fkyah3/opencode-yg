@@ -79,7 +79,7 @@ func build_node(msg: Dictionary) -> VBoxContainer:
 			"reasoning":
 				var rt: String = p.get("text", "")
 				if not rt.is_empty():
-					raw_parts.append("[color=#" + _theme_config.color_text_dim.to_html(false) + "]" + rt + "[/color]")
+					raw_parts.append(rt)
 			"text":
 				var txt: String = p.get("text", "")
 				if not txt.is_empty():
@@ -92,14 +92,14 @@ func build_node(msg: Dictionary) -> VBoxContainer:
 				var ttitle: String = state.get("title", "")
 				var fpath: String = state.get("input", {}).get("filePath", "")
 				var tname: String = tool_name + " " + (ttitle if not ttitle.is_empty() else fpath)
-				raw_parts.append("[b]" + icon + " " + tname.trim_suffix(".md") + "[/b]")
+				raw_parts.append(icon + " " + tname.trim_suffix(".md"))
 				var raw_content: String = state.get("input", {}).get("content", "")
 				if not raw_content.is_empty():
 					raw_parts.append("```" + raw_content.left(2000) + "```")
 				if stype == "completed":
 					var output: String = state.get("output", "")
 					if not output.is_empty():
-						raw_parts.append("[color=#88cc88]" + output.left(2000) + "[/color]")
+						raw_parts.append(output.left(2000))
 	if not raw_parts.is_empty():
 		var bubble := PanelContainer.new()
 		bubble.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -112,13 +112,13 @@ func build_node(msg: Dictionary) -> VBoxContainer:
 		style.set_content_margin_all(10)
 		bubble.add_theme_stylebox_override("panel", style)
 		var label := RichTextLabel.new()
-		label.bbcode_enabled = true
+		label.bbcode_enabled = false  # RAW 模式不解释任何 BBCode，纯文本渲染
 		label.selection_enabled = true
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.fit_content = true
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.add_theme_color_override("default_color", _theme_config.color_text)
-		label.append_text("\n".join(raw_parts))
+		label.text = "\n".join(raw_parts)
 		bubble.add_child(label)
 		sl.add_child(bubble)
 	else:
@@ -166,7 +166,7 @@ func create_streaming_widget() -> VBoxContainer:
 	bubble.add_theme_stylebox_override("panel", bstyle)
 
 	_streaming_label = RichTextLabel.new()
-	_streaming_label.bbcode_enabled = true
+	_streaming_label.bbcode_enabled = false  # 流式期间纯文本，不解释任何 BBCode
 	_streaming_label.selection_enabled = true
 	_streaming_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_streaming_label.fit_content = true
