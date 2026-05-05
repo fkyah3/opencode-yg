@@ -443,6 +443,11 @@ function repairTruncatedJSON(raw: string): string | null {
             const repaired = repairTruncatedJSON(rawInput)
             if (repaired) {
               l.info("repaired truncated JSON for tool", { tool: failed.toolCall.toolName })
+              // 即使修补成功，原始报错是 JSON parse 错误 → 内容可能仍然被截断
+              // 需要重试，不信任修补结果的语义完整性
+              if (failed.error?.message?.toLowerCase().includes("parse")) {
+                throw new Error(`Tool call truncated after JSON repair: ${failed.toolCall.toolName}`)
+              }
               return {
                 ...failed.toolCall,
                 input: repaired,
@@ -451,7 +456,8 @@ function repairTruncatedJSON(raw: string): string | null {
           }
           // 修补失败：抛出异常让 processor 延续重试
           const errMsg = failed.error?.message ?? ""
-          if (errMsg.includes("length") || errMsg.includes("truncat") || errMsg.includes("unexpected end") || errMsg.includes("pars")) {
+          const errLower = errMsg.toLowerCase()
+          if (errLower.includes("length") || errLower.includes("truncat") || errLower.includes("unexpected end") || errLower.includes("pars")) {
             throw new Error(`Tool call truncated by output length limit: ${failed.toolCall.toolName}`)
           }
           return {

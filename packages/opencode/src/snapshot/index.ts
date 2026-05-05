@@ -13,9 +13,14 @@ import { Log } from "../util"
 import { withStatics } from "@/util/schema"
 import { zod } from "@/util/effect-zod"
 
-// Windows: 替换路径中的非法字符（冒号等），和 NTFS 实际写入时的一致
+// Windows: 替换路径中的非法字符（冒号等，但不包括盘符冒号），和 NTFS 实际写入时的一致
 const normalizeWindowsPath = process.platform === "win32"
-  ? (p: string) => p.replace(/[:<>"|?*]/g, "_")
+  ? (p: string) => {
+      // 保留盘符冒号（E:\），只替换目录/文件名中的非法字符
+      const drive = p.length >= 2 && p[1] === ":" ? p.substring(0, 2) : ""
+      const rest = drive ? p.substring(2) : p
+      return drive + rest.replace(/[:<>"|?*]/g, "_")
+    }
   : (p: string) => p
 
 export const Patch = Schema.Struct({

@@ -3,8 +3,6 @@ class_name MainScene
 
 
 @onready var virtual_content: Control = %VirtualContent
-var _session_tabs: Dictionary = {}  # sessionID → SessionTab
-var _current_tab: SessionTab
 @onready var msg_input: TextEdit = %TextInput
 @onready var send_btn: Button = %SendBtn
 @onready var status_label: Label = %Status
