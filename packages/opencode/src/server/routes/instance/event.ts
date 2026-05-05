@@ -6,6 +6,9 @@ import { Log } from "@/util"
 import { BusEvent } from "@/bus/bus-event"
 import { Bus } from "@/bus"
 import { AsyncQueue } from "@/util/queue"
+import { Permission } from "@/permission"
+import { AppRuntime } from "@/effect/app-runtime"
+import { Effect } from "effect"
 
 const log = Log.create({ service: "server" })
 
@@ -46,6 +49,22 @@ export const EventRoutes = () =>
             properties: {},
           }),
         )
+
+        // Re-push pending permission.asked events on SSE reconnect.
+        setTimeout(() => {
+          AppRuntime.runPromise(
+            Effect.gen(function*() {
+              const svc = yield* Permission.Service
+              return yield* svc.list()
+            }),
+          ).then((pending) => {
+            for (const req of pending) {
+              q.push(JSON.stringify({ type: "permission.asked", properties: req }))
+            }
+          }).catch((e) => {
+            log.warn("Failed to fetch pending permissions on reconnect", e)
+          })
+        }, 0)
 
         // Send heartbeat every 10s to prevent stalled proxy streams.
         const heartbeat = setInterval(() => {
