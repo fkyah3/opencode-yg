@@ -145,11 +145,11 @@ func _create_sse_handler() -> SSEHandler:
 		if status.get("type") == "idle" and sid == _current_session_id:
 			_finalize_streaming()
 			_update_session_state("idle")
-	var mem: int = status.get("memory", -1)
-	if mem >= 0:
-		_mc_memory = mem
-		print("→ on_session_status: SET _mc_memory=" + str(mem))
-	_update_info_bar()
+		var mem: int = status.get("memory", -1)
+		if mem >= 0:
+			_mc_memory = mem
+			print("→ on_session_status: SET _mc_memory=" + str(mem))
+		_update_info_bar()
 
 	h.on_tool_updated = func(sid: String, tool_name: String, status: String, _title: String, state: Dictionary = {}) -> void:
 		if sid != _current_session_id or _streaming_label == null:
