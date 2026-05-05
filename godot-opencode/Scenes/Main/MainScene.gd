@@ -319,8 +319,13 @@ func _load_agent_info() -> void:
 	_primary_agent_name = agent.get("name", "-")
 	var model: Dictionary = agent.get("model", {})
 	_primary_model_name = model.get("modelID", "-")
-	var model_limit: Dictionary = model.get("limit", {})
-	_context_total = model_limit.get("context", 0)
+	# 从 provider 路由补充模型上下文上限
+	var provider_id: String = model.get("providerID", "")
+	if not provider_id.is_empty() and _primary_model_name != "-":
+		var model_info := await _api.get_model_info(provider_id, _primary_model_name)
+		var model_limit: Dictionary = model_info.get("limit", {})
+		if model_limit.get("context", 0) > 0:
+			_context_total = model_limit.get("context", 0)
 	print("→ _load_agent_info: agent=" + _primary_agent_name + " model=" + _primary_model_name + " ctx_limit=" + str(_context_total))
 	_update_info_bar()
 

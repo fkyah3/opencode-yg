@@ -152,9 +152,23 @@ func get_primary_agent() -> Dictionary:
 		for a in agents:
 			if a is Dictionary and a.get("mode") == "primary":
 				return a as Dictionary
+	# agents 可能是 {}（空对象）等非数组形式 → 服务器未就绪
 	return {}
 
-## 获取全局配置。返回 Dictionary，失败返回 {}。
+## 获取模型上下文限制。返回模型信息 Dictionary（{limit:{context,output}}），失败返回 {}。
+func get_model_info(provider_id: String, model_id: String) -> Dictionary:
+	var data = await _request(_base_url + "/provider", "GET")
+	if not (data is Dictionary):
+		return {}
+	var all_providers: Array = data.get("all", [])
+	for p in all_providers:
+		if p is Dictionary and p.get("id") == provider_id:
+			var models: Dictionary = p.get("models", {})
+			for mk in models:
+				var m: Dictionary = models[mk] if (models[mk] is Dictionary) else {}
+				if m.get("id", "") == model_id:
+					return m
+	return {}
 func get_config() -> Dictionary:
 	var data = await _request(_base_url + "/global/config", "GET")
 	if data is Dictionary:
