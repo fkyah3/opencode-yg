@@ -351,6 +351,12 @@ const live: Layer.Layer<
               toolName: lower,
             }
           }
+          // 截断场景（finishReason=length）：输入 JSON 被截断不完整
+          // 抛出错误让 processor 感知截断而非静默路由到"invalid"
+          const errMsg = failed.error?.message ?? ""
+          if (errMsg.includes("length") || errMsg.includes("truncat") || errMsg.includes("unexpected end")) {
+            throw new Error(`Tool call truncated by output length limit: ${failed.toolCall.toolName}`)
+          }
           return {
             ...failed.toolCall,
             input: JSON.stringify({

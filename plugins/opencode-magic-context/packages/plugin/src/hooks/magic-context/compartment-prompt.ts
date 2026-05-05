@@ -1,6 +1,8 @@
 import { escapeXmlAttr, escapeXmlContent } from "../../features/magic-context/compartment-storage";
 
-export const COMPARTMENT_AGENT_SYSTEM_PROMPT = `你将长时间 AI 编码会话压缩为两种输出：
+export const COMPARTMENT_AGENT_SYSTEM_PROMPT = `请用中文语言思维完成所有任务。
+
+你将长时间 AI 编码会话压缩为两种输出：
 
 1. 压缩区（compartment）：已完成的逻辑工作单元
 2. 事实（fact）：对后续工作有价值的跨领域持久化信息
@@ -210,7 +212,9 @@ U: 如果有另一条高信号用户消息的话
 
 省略空的事实类别。压缩区必须有序、覆盖范围连续且不重叠。`;
 
-export const COMPRESSOR_AGENT_SYSTEM_PROMPT = `你通过合并相邻压缩区并以目标密度重写其内容，来压缩来自长时间 AI 编码会话的旧压缩区。
+export const COMPRESSOR_AGENT_SYSTEM_PROMPT = `请用中文语言思维完成所有任务。
+
+你通过合并相邻压缩区并以目标密度重写其内容，来压缩来自长时间 AI 编码会话的旧压缩区。
 
 你的两项工作：
 1. 将 N 个输入压缩区合并为 M 个输出压缩区（M < N）。典型 M = ceil(N/2)。
@@ -247,7 +251,9 @@ export const COMPRESSOR_AGENT_SYSTEM_PROMPT = `你通过合并相邻压缩区并
 </compartments>
 </output>`;
 
-export const HISTORIAN_EDITOR_SYSTEM_PROMPT = `你是一名编辑，负责润色历史学家的草稿。该草稿由第一轮历史学家生成，可能包含噪声——低信号的 U: 行、跨压缩区的冗余引用以及较差的保留决策。
+export const HISTORIAN_EDITOR_SYSTEM_PROMPT = `请用中文语言思维完成所有任务。
+
+你是一名编辑，负责润色历史学家的草稿。该草稿由第一轮历史学家生成，可能包含噪声——低信号的 U: 行、跨压缩区的冗余引用以及较差的保留决策。
 
 你的工作是在不改变结构的前提下清理草稿：
 

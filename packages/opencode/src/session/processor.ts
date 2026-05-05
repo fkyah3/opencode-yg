@@ -583,7 +583,12 @@ export const layer: Layer.Layer<
           )
 
           if (ctx.needsCompaction) return "compact"
-          if (ctx.blocked || ctx.assistantMessage.error) return "stop"
+          if (ctx.blocked || ctx.assistantMessage.error) {
+            // finishReason="length" 表示工具调用被输出长度截断
+            // 不静默退出，允许 session 继续（LLM 重试）
+            if (ctx.assistantMessage.finish === "length") return "continue"
+            return "stop"
+          }
           return "continue"
         })
       })

@@ -71,6 +71,7 @@ func get_messages_page(session_id: String, limit: int = 50, before: String = "")
 	if not before.is_empty():
 		url += "&before=" + before
 	var resp = await _request_full(url, "GET")
+	print("→ get_messages_page url=" + url + " result_type=" + str(typeof(resp.get("result", ""))) + " is_array=" + str(resp.result is Array))
 	if resp.is_empty() or not (resp.result is Array):
 		return {"items": [], "cursor": "", "more": false}
 	var cursor := ""
