@@ -154,19 +154,21 @@ func _create_sse_handler() -> SSEHandler:
 			return
 		_update_session_state("tool_call")
 		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
-		_streaming_text += "\n[b]" + icon + " " + tool_name + "[/b]"
-		# 渲染工具调用的 input（命令内容）和 output（执行结果）
-		var input_val: Variant = state.get("input", {})
-		if input_val is Dictionary:
-			var content: String = input_val.get("content", "")
-			if not content.is_empty():
-				_streaming_text += "\n```\n" + content.left(1500) + "\n```"
-		elif input_val is String and not input_val.is_empty():
-			_streaming_text += "\n```\n" + str(input_val).left(1500) + "\n```"
-		if status == "completed":
+		if status != "completed" and status != "error":
+			# 工具刚开始：显示工具名+输入内容
+			_streaming_text += "\n" + icon + " " + tool_name
+			var input_val: Variant = state.get("input", {})
+			if input_val is Dictionary:
+				var content: String = input_val.get("content", "")
+				if not content.is_empty():
+					_streaming_text += "\n```\n" + content.left(1500) + "\n```"
+			elif input_val is String and not input_val.is_empty():
+				_streaming_text += "\n```\n" + str(input_val).left(1500) + "\n```"
+		else:
+			# 工具完成/报错：只追加输出，不重复工具名+内容
 			var output: String = state.get("output", "")
 			if not output.is_empty():
-				_streaming_text += "\n[color=#88cc88]" + output.left(1000) + "[/color]"
+				_streaming_text += "\n" + output.left(1000)
 		if _streaming_label != null:
 			_streaming_label.text = _streaming_text
 
