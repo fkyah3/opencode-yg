@@ -893,14 +893,22 @@ func _update_session_state(new_state: String) -> void:
 func _ensure_status_label() -> void:
 	## 确保侧边栏状态指示标签存在
 	var sidebar := get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent") as VBoxContainer
-	if sidebar == null or sidebar.has_node("StatusState"):
+	if sidebar == null:
 		return
-	var label := Label.new()
-	label.name = "StatusState"
-	label.text = "就绪"
-	label.custom_minimum_size.y = 22
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+	# ── 状态文字标签（仅首次创建） ──
+	if not sidebar.has_node("StatusState"):
+		var label := Label.new()
+		label.name = "StatusState"
+		label.text = "就绪"
+		label.custom_minimum_size.y = 22
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+		var toggle := sidebar.get_node_or_null("RawModeToggle")
+		if toggle:
+			sidebar.add_child(label)
+			sidebar.move_child(label, toggle.get_index())
+		else:
+			sidebar.add_child(label)
 	# ── 状态圆点 ──
 	if not sidebar.has_node("StatusDot"):
 		var dot := ColorRect.new()
@@ -910,14 +918,7 @@ func _ensure_status_label() -> void:
 		dot.color = Color(0.3, 0.85, 0.39, 1)
 		sidebar.add_child(dot)
 		sidebar.move_child(dot, 0)
-	# 插入到 RawModeToggle 前面
-	var toggle := sidebar.get_node_or_null("RawModeToggle")
-	if toggle:
-		sidebar.add_child(label)
-		sidebar.move_child(label, toggle.get_index())
-	else:
-		sidebar.add_child(label)
-	# ── 工具名标签 ──
+	# ── 工具名标签（Ctx 之后） ──
 	if not sidebar.has_node("ToolHeader"):
 		var th := Label.new()
 		th.name = "ToolHeader"
@@ -925,16 +926,24 @@ func _ensure_status_label() -> void:
 		th.custom_minimum_size.y = 18
 		th.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		th.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
-		sidebar.add_child(th)
-		sidebar.move_child(th, label.get_index() + 1)
+		var sc := sidebar.get_node_or_null("SidebarCtx")
+		if sc:
+			sidebar.add_child(th)
+			sidebar.move_child(th, sc.get_index() + 1)
+		else:
+			sidebar.add_child(th)
 	if not sidebar.has_node("ToolLabel"):
 		var tool_label := Label.new()
 		tool_label.name = "ToolLabel"
 		tool_label.custom_minimum_size.y = 18
 		tool_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tool_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.2, 1))
-		sidebar.add_child(tool_label)
-		sidebar.move_child(tool_label, label.get_index() + 1)
+		var sc := sidebar.get_node_or_null("SidebarCtx")
+		if sc:
+			sidebar.add_child(tool_label)
+			sidebar.move_child(tool_label, sc.get_index() + 2)
+		else:
+			sidebar.add_child(tool_label)
 	# ── 侧边栏 Agent / Model / Ctx 标签 ──
 	var sidebar_keys := ["SidebarAgent", "SidebarModel", "SidebarCtx"]
 	var sidebar_defaults := ["Agent: -", "Model: -", "Ctx: -"]
