@@ -803,7 +803,7 @@ func _on_input_gui_input(event: InputEvent) -> void:
 
 
 func _update_session_state(new_state: String) -> void:
-	## 更新侧边栏会话状态指示标签
+	## 更新侧边栏会话状态指示标签 + 状态圆点
 	_session_state = new_state
 	var texts := {
 		"idle": "就绪",
@@ -816,6 +816,16 @@ func _update_session_state(new_state: String) -> void:
 	var label: Label = get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/StatusState")
 	if label:
 		label.text = texts.get(new_state, new_state)
+	# ── 更新状态圆点颜色 ──
+	var dot: ColorRect = get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/StatusDot")
+	if dot:
+		match new_state:
+			"disconnected":
+				dot.color = Color(1, 0.27, 0.27, 1)  # 红
+			"idle", "error":
+				dot.color = Color(0.3, 0.85, 0.39, 1)  # 绿
+			_:
+				dot.color = Color(1, 0.84, 0, 1)  # 黄
 
 
 func _ensure_status_label() -> void:
@@ -829,6 +839,15 @@ func _ensure_status_label() -> void:
 	label.custom_minimum_size.y = 22
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+	# ── 状态圆点 ──
+	if not sidebar.has_node("StatusDot"):
+		var dot := ColorRect.new()
+		dot.name = "StatusDot"
+		dot.custom_minimum_size = Vector2(10, 10)
+		dot.size = Vector2(10, 10)
+		dot.color = Color(0.3, 0.85, 0.39, 1)
+		sidebar.add_child(dot)
+		sidebar.move_child(dot, 0)
 	# 插入到 RawModeToggle 前面
 	var toggle := sidebar.get_node_or_null("RawModeToggle")
 	if toggle:
