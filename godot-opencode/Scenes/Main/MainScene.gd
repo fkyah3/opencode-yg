@@ -651,7 +651,11 @@ func _refresh_sessions() -> void:
 
 func _open_session(sid: String) -> void:
 	print("→ _open_session sid=" + sid)
-	## 打开会话：加载消息并初始化虚拟滚动
+	## 打开会话：先打断旧会话生成，再加载新会话
+	if not _current_session_id.is_empty() and _current_session_id != sid:
+		if _api != null:
+			_api.abort_session(_current_session_id)
+			_update_session_state("idle")
 	await _load_session_messages(sid)
 
 func _load_session_messages(sid: String) -> void:
