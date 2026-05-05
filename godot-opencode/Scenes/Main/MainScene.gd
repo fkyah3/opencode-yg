@@ -690,10 +690,8 @@ func _load_session_messages(sid: String) -> void:
 	print("→ _load_session_messages: first msg keys=" + str(messages[0].keys()) if not messages.is_empty() else "empty")
 	print("→ _load_session_messages: info keys=" + str(messages[0].get("info", {}).keys()) if not messages.is_empty() else "n/a")
 	for msg in messages:
-		var toks: Dictionary = msg.get("tokens", {})
-		if toks.is_empty():
-			var info: Dictionary = msg.get("info", {})
-			toks = info.get("tokens", info.get("usage", msg.get("usage", {})))
+		var info: Dictionary = msg.get("info", {})
+		var toks: Dictionary = info.get("tokens", msg.get("tokens", {}))
 		if not toks.is_empty():
 			_context_memory += toks.get("input", 0) + toks.get("output", 0) + toks.get("reasoning", 0) + toks.get("cache", {}).get("read", 0) + toks.get("cache", {}).get("write", 0)
 	_update_info_bar()
@@ -1137,7 +1135,8 @@ func _append_message(msg: Dictionary) -> void:
 		_streaming_node = null
 	_streaming_label = null
 	_row_data.append(msg)
-	var toks: Dictionary = msg.get("tokens", {})
+	var info: Dictionary = msg.get("info", {})
+	var toks: Dictionary = info.get("tokens", msg.get("tokens", {}))
 	if not toks.is_empty():
 		_context_memory += toks.get("input", 0) + toks.get("output", 0) + toks.get("reasoning", 0) + toks.get("cache", {}).get("read", 0) + toks.get("cache", {}).get("write", 0)
 	_update_info_bar()
