@@ -308,6 +308,7 @@ func _init_command_palette() -> void:
 func _load_agent_info() -> void:
 	print("→ _load_agent_info")
 	var agent := await _api.get_primary_agent()
+	print("→ _load_agent_info raw: " + str(agent))
 	if agent.is_empty():
 		print("→ _load_agent_info: agent is empty")
 		return
