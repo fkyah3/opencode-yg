@@ -158,8 +158,9 @@ func _create_sse_handler() -> SSEHandler:
 		# ── 更新侧边栏工具名 ──
 		var tlabel: Label = get_node_or_null("Layout/Body/Sidebar/SidebarScroll/SidebarContent/ToolLabel")
 		if tlabel:
-			tlabel.text = tool_name + ((" " + fpath) if not fpath.is_empty() else "")
-		var icon: String = "✅" if status == "completed" else ("❌" if status == "error" else "🔧")
+			tlabel.text = ">> " + tool_name + ((" " + fpath) if not fpath.is_empty() else "")
+			print("-> ToolLabel: " + tlabel.text)
+		var icon: String = "OK" if status == "completed" else ("ERR" if status == "error" else ">>")
 		var tline: String = icon + " " + tool_name + ((" " + fpath) if not fpath.is_empty() else "")
 		_streaming_text += "\n" + tline.trim_suffix(".md")
 		if _streaming_label != null:
