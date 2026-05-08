@@ -1,7 +1,7 @@
 <p align="center"><b>fkyah3/opencode-yg</b><br>
 <code>DeepSeek depth optimization · Chinese AI Agent · Trinity · Archived</code></p>
 
-> **2025·4 — 2026·4** — This fork's mission is complete. No further feature updates.
+> **2026·4.26 — 2026·5.4** — This fork's mission is complete. No further feature updates.
 
 | Branch | Status |
 |:------|:-------|
